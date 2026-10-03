@@ -30,7 +30,7 @@ mdm 按主数据域垂直切分，每域独立注册标识符（表前缀 / 业�
 
 | 主数据域 | 域简称 | 承载内容 | 表前缀 / 业务码 / 错误码段 / 事件域 | 优先级 |
 | --- | --- | --- | --- | --- |
-| 组织 | org | 部门（组织架构树）+ 岗位（归属部门，含用户-岗位关联读口） | `org_` / `org` / `33xxxx` / `org.*` | 首批 |
+| 组织 | org | 部门（组织架构树）+ 岗位（归属部门）+ 用户-岗位关联（org_user_post） | `org_` / `org` / `33xxxx` / `org.*` | 首批 |
 | 供应商 | sup | 供应商档案（名称 / 联系人 / 资质 / 状态） | `sup_` / `sup` / `34xxxx` / `sup.*` | 首批 |
 | 客户 | cus | 客户档案（联系人 / 信用 / 结算方式） | `cus_` / `cus` / `35xxxx` / `cus.*` | 首批 |
 | 物料 | mat | 物料 / 商品档案（SKU 基础档案，含 BOM / 工艺路线承接位） | `mat_` / `mat` / `36xxxx` / `mat.*` | 首批 |
@@ -110,7 +110,7 @@ mdm 设计体系与 bms / biz 同构（总纲 + 节点），独立编号从 01 �
 
 - **引用方式**：业务产品（biz 等）对 mdm 主数据以 **code 逻辑外键**引用，单据保存名称 / 单价等**快照**；跨服务读走 mdm 公开契约或事件，**禁止跨库 JOIN**（bms《微服务演进规划》S2）。
 - **biz 侧调整**：biz 原 `sup`（供应商）、`gds`（商品主数据）与内置 `sale` 客户档案**迁入 mdm**；biz 采购 / 销售 / 仓储改为引用 mdm 供应商 / 客户 / 物料，`pur` / `sale` / `wh` 业务域保留。biz 原预留 `mat`（28xxxx）、`tax`（32xxxx）让位（物料归 mdm `mat`、税管域改名避让）。
-- **组织主数据**：`sys_user.dept_id` 保留为对 mdm 部门的**逻辑外键**；用户-岗位关联 `sys_user_post` **留在 bms**（`user:assign_role` 写侧），引用 mdm 岗位 id；角色主体链 `sys_role_assign`（subject_type = user / post / dept）留 bms，`subject_id` 引用 mdm id。组织主数据**只读出口**（组织数据源 / 名称回显）由 mdm 组织域实现。
+- **组织主数据**：`sys_user.dept_id` 保留在 bms，为对 mdm 部门的**逻辑外键**；用户-岗位关联表随组织主数据**迁 mdm**（`org_user_post`，2026-10-03），mdm 另供**用户-岗位契约**（查 / 分配 / 解绑）并在 bms 用户管理页经**具名插槽插件**提供分配界面；角色主体链 `sys_role_assign`（subject_type = user / post / dept）留 bms（授权归平台权限体系），`subject_id` 引用 mdm id。组织主数据**只读出口**（组织数据源 / 名称回显）由 mdm 组织域实现。
 - **工作区引用**：bms、biz 仓库根设软链 `mdm文档 → ../mdm/mdm文档`；mdm 仓库根设软链 `bms文档 → ../bms/bms文档`（见 7 节）。
 
 ## 7. 演进路线与验收判据 <a id="roadmap"></a>
