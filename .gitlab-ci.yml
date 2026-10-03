@@ -1,0 +1,34 @@
+# MDM 主数据仓库流水线（最小门禁）
+# 现状：产品处于规划/文档阶段，尚无代码；仅保留门禁冒烟（纯文档推送不建流水线）。
+# 代码阶段恢复/扩展：后端 ruff + pytest、前端 ESLint + Vitest + 双端构建、集成（MySQL/PostgreSQL/DM8）、
+#   镜像构建与扫描、E2E、Allure 报告等，参照 bms 仓库 .gitlab-ci.yml 按需裁剪启用。
+
+workflow:
+  rules:
+    # 指令驱动 + main 直推验证：push/MR 事件仅当文档/代码/CI 配置路径有变更时才建流水线（纯配置推送免 CI）。
+    # 注意：bms文档 为工作区软链，CI 只 clone mdm 时不可用，故只校验 mdm 仓库自身内容。
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_PIPELINE_SOURCE == "api"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"
+      changes:
+        paths:
+          - mdm文档/**/*
+          - backend/**/*
+          - frontend/**/*
+          - deploy/**/*
+          - .gitlab-ci.yml
+
+stages:
+  - lint
+
+default:
+  tags: [mdm]
+
+# ---- 门禁冒烟：所有流水线无条件必跑 ----
+gate-smoke:
+  stage: lint
+  image: python:3.14-slim
+  script:
+    - python --version
+    - python -c "import sys; assert sys.version_info >= (3, 14), 'Python < 3.14'"
+    - echo "gate ok"
