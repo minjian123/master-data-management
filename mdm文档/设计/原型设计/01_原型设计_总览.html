@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>原型设计 · 总览（mdm 主数据管理）</title>
+<link rel="stylesheet" href="../../bms文档/设计/原型设计/资源/原型样式.css">
+</head>
+<body>
+
+<div class="topnav">
+  <a href="../../文档首页.md">文档首页</a> ›
+  <a href="../../设计/概要设计/01_概要设计_总览.md">概要设计</a> ›
+  <span>原型设计 · 总览</span>
+</div>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>原型设计 · 总览</h1>
+      <p>mdm 主数据管理 · 可交互界面原型</p>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="#purpose">1. 用途与口径</a></li>
+        <li><a href="#modules">2. 模块清单</a></li>
+        <li><a href="#usage">3. 使用方式</a></li>
+        <li><a href="#iter">4. 迭代记录</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <main>
+
+      <h2 id="purpose">1. 用途与口径</h2>
+      <ul>
+        <li>本目录是 mdm 产品的**可交互界面原型**（`.html` 资产）：**原型即验收基准**——界面类任务开工前须有对应原型，验收以原型为准（bms《AI开发规范》「界面先原型」红线、《原型审查规范》）。</li>
+        <li>按主数据域分文件夹（一域一目录），域内按「设计说明 + 页面原型 + 表单页原型」组织；**命名用语义名**，不出现实现侧类名 / 能力键 / 文件路径。</li>
+        <li>样式与脚本复用基座原型资源（`bms文档/设计/原型设计/资源/`，产品仓库根软链 `bms文档` 提供）；**不在本目录复制 vendor 资产**。</li>
+        <li>组织域页面以 **Module Federation 运行时模块**接入 bms 宿主（见《[架构设计 · 总览](../架构设计/01_架构设计_总览.md)》与 mdm 需求 `01-4`），故本目录原型**独立打开**即可完整操作（不依赖宿主外壳）。</li>
+      </ul>
+
+      <h2 id="modules">2. 模块清单</h2>
+      <table>
+        <tr><th>序号</th><th>模块</th><th>原型入口</th><th>界面</th></tr>
+        <tr>
+          <td>02</td>
+          <td>岗位管理</td>
+          <td><a href="02_岗位管理/01_设计说明.html">02_岗位管理/</a></td>
+          <td>岗位管理页、岗位表单页</td>
+        </tr>
+        <tr>
+          <td>03</td>
+          <td>部门管理</td>
+          <td><a href="03_部门管理/01_设计说明.html">03_部门管理/</a></td>
+          <td>部门管理页、部门表单页</td>
+        </tr>
+      </table>
+
+      <p>
+        对应概要设计节点：<a href="../概要设计/02_概要设计_岗位管理.md">《概要设计 · 岗位管理》</a>、
+        <a href="../概要设计/03_概要设计_部门管理.md">《概要设计 · 部门管理》</a>。
+        供应商 / 客户 / 物料等域的原型随对应域概要设计推进时补入。
+      </p>
+
+      <h2 id="usage">3. 使用方式</h2>
+      <ul>
+        <li>直接以浏览器打开各模块「设计说明」页，经界面清单进入具体页面原型；页面内交互（增删改查 / 移动 / 分态）均可点击操作。</li>
+        <li>原型与《布局设计》《概要设计》冲突时，**以布局设计 / 概要设计为准**，并先修订原型再实现。</li>
+        <li>界面交付时按《原型审查规范》做**逐页对照**（截图识图）并把结论登记任务测试记录。</li>
+      </ul>
+
+      <h2 id="iter">4. 迭代记录</h2>
+      <table>
+        <tr><th>日期</th><th>变更</th><th>状态</th></tr>
+        <tr><td>2026-10-07</td><td>建立 mdm 原型设计总览；组织域（岗位管理 / 部门管理）原型随组织主数据承接自 bms 迁入并按模块拆分</td><td>已建立</td></tr>
+      </table>
+
+    </main>
+
+    <footer>
+      原型设计总览 · 依《文档生成规范》编写 · mdm 主数据管理
+    </footer>
+  </div>
+
+</div>
+
+</body>
+</html>
