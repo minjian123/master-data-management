@@ -38,8 +38,12 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.compiler import compiles
 
 from alembic import context
+from services.table_registry import register as register_product_tables
 
 config = context.config
+
+# 表归属**产品注入**（bms 12_04）：迁移期链派生（`chain_tables`）与元数据子集需先注册本产品表归属
+register_product_tables()
 
 _SYNC_ONLY_DIALECTS = frozenset({"dm"})
 """仅同步驱动的方言（达梦；无异步方言实现）。"""

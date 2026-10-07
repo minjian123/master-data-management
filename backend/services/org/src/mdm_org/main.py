@@ -10,14 +10,21 @@
 from bms_core.application import BaseServiceApplicationFactory
 from bms_core.core.concurrent import ConcurrentStableList
 from bms_core.services.module_registry import ModuleRecord
+from bms_core.services.table_registry import TableRecord
 from fastapi import APIRouter
 
 from mdm_org import CONTRACT_VERSION, SERVICE_NAME, SERVICE_TITLE, __version__
 from mdm_org.api.router import api_router
+from mdm_org.events import register_product_event_contracts
 from services.module_registry import MDM_SERVICE_RECORDS
+from services.table_registry import MDM_TABLE_RECORDS
 
 PRODUCT_KEY = "mdm"
 """产品标识（mdm 主数据管理；与应用工厂声明、平台侧登记行一致）。"""
+
+# 事件契约登记（进程级默认注册表；幂等）：启动期事件契约校验与契约快照共用
+# （`[event].contract_mode` 缺省 enforce，未登记契约拒发 10010）
+register_product_event_contracts()
 
 
 class ApplicationFactory(BaseServiceApplicationFactory):
@@ -43,6 +50,18 @@ class ApplicationFactory(BaseServiceApplicationFactory):
             tuple[ModuleRecord, ...]: mdm 产品服务登记记录（插入序）。
         """
         return MDM_SERVICE_RECORDS
+
+    def table_records(self) -> tuple[TableRecord, ...]:
+        """本产品表归属记录（产品自持；基座装配期登记并置**合并视图**）。
+
+        基座把本清单注册进表归属注册表（`register_table_records`），迁移链派生
+        （`chain_tables`）、开发库自动建表与归属校验一律取「平台清单 + 注入记录」的合并视图
+        （同 `table_name` 同值去重、异值即拒；bms 12_04）。
+
+        Returns:
+            tuple[TableRecord, ...]: mdm 组织域表归属记录（插入序）。
+        """
+        return MDM_TABLE_RECORDS
 
     def service_routers(self) -> ConcurrentStableList[APIRouter]:
         """业务路由（探针路由由基座统一挂载）。

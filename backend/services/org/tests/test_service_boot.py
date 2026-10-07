@@ -41,21 +41,32 @@ async def test_assembly_declares_product_service_list(service_app: FastAPI) -> N
 async def test_routes_mount_under_service_namespace(service_app: FastAPI) -> None:
     """路由：探针与根路由由基座统一挂载；业务路由经服务级登记表聚合挂 `/api/v1`。
 
-    本任务为工程骨架——**尚无业务端点**（组织主数据端点归 01_02 / 只读出口归 01_03），
-    故 `/api/v1` 下暂无模块路由；待业务端点登记后本断言随之扩展。
+    骨架断言（无业务端点）随 **01_02 交付扩展**——组织域五组管理面端点已登记
+    （`/api/v1/org/...`，只读出口归 01_03）。
     取路由经基座 `service_route_sets`（应用路由为惰性结构，直接读 `app.routes` 取不到路径）。
     """
     visible, invisible = service_route_sets(service_app)
     assert {"/", "/healthz", "/readyz"} <= visible
-    assert [path for path in sorted(visible) if path.startswith("/api/v1")] == []
+    org_paths = [path for path in sorted(visible) if path.startswith("/api/v1/org")]
+    assert "/api/v1/org/depts" in org_paths
+    assert "/api/v1/org/posts" in org_paths
+    assert "/api/v1/org/user-posts" in org_paths
+    assert "/api/v1/org/role-posts" in org_paths
+    assert "/api/v1/org/role-depts" in org_paths
     assert "/metrics" in invisible
 
 
 @pytest.mark.kiwi_id(2253)
 def test_asgi_and_models_skeleton() -> None:
-    """入口骨架：ASGI 模块级应用可构造；服务包声明空的模型模块清单（本期无业务表）。"""
+    """入口骨架：ASGI 模块级应用可构造；服务包模型模块清单随 01_02 落表登记（五表模块）。"""
     from mdm_org import asgi
     from mdm_org.models import MODEL_MODULES
 
     assert asgi.app.title == SERVICE_TITLE
-    assert MODEL_MODULES == ()
+    assert MODEL_MODULES == (
+        "mdm_org.models.dept",
+        "mdm_org.models.post",
+        "mdm_org.models.user_post",
+        "mdm_org.models.role_post",
+        "mdm_org.models.role_dept",
+    )

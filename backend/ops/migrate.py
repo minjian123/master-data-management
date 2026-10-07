@@ -48,6 +48,10 @@ from bms_core.db.migration import (
 from sqlalchemy.engine import make_url
 
 from services.module_registry import local_service_keys
+from services.table_registry import register as register_product_tables
+
+# 表归属**产品注入**（bms 12_04）：迁移链表集派生需先注册本产品表归属（幂等）
+register_product_tables()
 
 TARGETS = ("all", "platform", "tenants", "tenant", "archive")
 

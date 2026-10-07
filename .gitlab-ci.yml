@@ -1,6 +1,7 @@
 # MDM 主数据仓库流水线
-# 现状：产品工程骨架与平台接入（01_01）——后端工作区（uv workspace）+ org 服务 + 运维脚本 + 契约快照。
-# 门禁：门禁冒烟（无条件必跑）/ ruff / pyright（strict）/ pytest + 覆盖率 / 离线清单与契约零漂移。
+# 现状：产品工程骨架与平台接入（01_01）+ 组织主数据域实现（01_02）——uv workspace + org 服务（五表 + 管理面端点）
+#       + 运维脚本 + 公开契约快照 + 事件契约快照。
+# 门禁：门禁冒烟（无条件必跑）/ ruff / pyright（strict）/ pytest + 覆盖率 / 离线清单 + 公开契约零漂移 + 事件契约零漂移。
 # 未启用（随后续任务引入）：镜像构建与扫描、三库（MySQL / PostgreSQL / DM8）集成、服务子流水线、E2E、Allure。
 
 workflow:
@@ -81,3 +82,4 @@ backend-modules:
     - *backend-setup
     - uv run python -m ops.check_modules
     - uv run python -m ops.contract_snapshot check
+    - uv run python -m ops.event_contracts check

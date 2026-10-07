@@ -1,12 +1,15 @@
 """组织主数据服务路由聚合：模块路由经服务级登记表统一挂到 `/api/v1`。
 
 探针路由（`/healthz` `/readyz`）由共享应用基座统一挂载，不在此处登记。
-
-本期为工程骨架（无业务端点）——组织主数据维护端点归 01_02、只读出口与用户-岗位契约归 01_03；
-届时在 `ConcurrentStableList` 内追加各模块路由（服务级登记表避免多服务同进程登记串扰）。
+01_02 登记部门 / 岗位 / 用户-岗位 / 角色-岗位 / 角色-部门五组管理面路由；
+只读出口（组织数据源 / 名称回显）与按用户解析角色契约归 01_03。
 """
 
 from bms_core.api.base import BaseRouter, mount_service_routers
 from bms_core.core.concurrent import ConcurrentStableList
 
-api_router = mount_service_routers(ConcurrentStableList[BaseRouter]())
+from mdm_org.api import dept, post, role_dept, role_post, user_post
+
+api_router = mount_service_routers(
+    ConcurrentStableList[BaseRouter]([dept.router, post.router, user_post.router, role_post.router, role_dept.router])
+)

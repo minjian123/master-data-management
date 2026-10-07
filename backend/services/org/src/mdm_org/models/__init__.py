@@ -1,7 +1,13 @@
-"""组织主数据服务模型包（本期无业务表；组织主数据表随 01_02 引入）。
+"""组织主数据服务模型包。
 
 `MODEL_MODULES` 是服务包自声明的模型模块清单（基座迁移链据此注册 `Base.metadata`）；
-无模型的服务必须声明**空元组**（缺声明即按链解析报错）。01_02 落表时在此登记各模型模块。
+包名前缀经 `[app].package_prefix = "mdm"` → 基座按 `mdm_org.models` 解析（bms 12_04）。
 """
 
-MODEL_MODULES: tuple[str, ...] = ()
+MODEL_MODULES: tuple[str, ...] = (
+    "mdm_org.models.dept",
+    "mdm_org.models.post",
+    "mdm_org.models.user_post",
+    "mdm_org.models.role_post",
+    "mdm_org.models.role_dept",
+)

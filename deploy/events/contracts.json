@@ -1,0 +1,97 @@
+{
+  "contracts": [
+    {
+      "deprecated": false,
+      "description": "部门变更后（新建 / 修改 / 移动 / 删除）",
+      "event_type": "org.dept.changed",
+      "fields": {
+        "changed_type": {
+          "required": false,
+          "type": "string"
+        },
+        "dept_id": {
+          "required": true,
+          "type": "string"
+        }
+      },
+      "version": "1.0.0"
+    },
+    {
+      "deprecated": false,
+      "description": "岗位变更后（新建 / 修改 / 删除）",
+      "event_type": "org.post.changed",
+      "fields": {
+        "changed_type": {
+          "required": false,
+          "type": "string"
+        },
+        "post_id": {
+          "required": true,
+          "type": "string"
+        }
+      },
+      "version": "1.0.0"
+    },
+    {
+      "deprecated": false,
+      "description": "角色-部门分配变更后（供 bms 权限版本失效）",
+      "event_type": "org.role_dept.changed",
+      "fields": {
+        "changed_type": {
+          "required": false,
+          "type": "string"
+        },
+        "dept_id": {
+          "required": true,
+          "type": "string"
+        },
+        "role_id": {
+          "required": true,
+          "type": "string"
+        }
+      },
+      "version": "1.0.0"
+    },
+    {
+      "deprecated": false,
+      "description": "角色-岗位分配变更后（供 bms 权限版本失效）",
+      "event_type": "org.role_post.changed",
+      "fields": {
+        "changed_type": {
+          "required": false,
+          "type": "string"
+        },
+        "post_id": {
+          "required": true,
+          "type": "string"
+        },
+        "role_id": {
+          "required": true,
+          "type": "string"
+        }
+      },
+      "version": "1.0.0"
+    },
+    {
+      "deprecated": false,
+      "description": "用户-岗位分配变更后（全量覆盖 / 解绑 / 用户删除清理）",
+      "event_type": "org.user_post.changed",
+      "fields": {
+        "changed_type": {
+          "required": false,
+          "type": "string"
+        },
+        "post_id": {
+          "required": true,
+          "type": "string"
+        },
+        "user_id": {
+          "required": true,
+          "type": "string"
+        }
+      },
+      "version": "1.0.0"
+    }
+  ],
+  "subscriptions": []
+}

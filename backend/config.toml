@@ -16,6 +16,9 @@ worker_id = 0
 service = ""
 # 文档端点开关（Swagger /docs、ReDoc /redoc、OpenAPI /openapi.json；dev 基线开，生产关闭走 CI 契约快照）
 docs_enabled = true
+# 服务包名前缀：链的服务模型模块按 {package_prefix}_{service}.models 解析（mdm → mdm_org.models）
+# 平台默认 bms；产品部署必须配为自有前缀，否则迁移链与开发库自动建表取不到产品模型（bms 12_04）
+package_prefix = "mdm"
 
 [server]
 # 监听地址与端口（容器内统一 8000，与网关 upstream `org:8000` 对齐）
