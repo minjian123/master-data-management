@@ -12,28 +12,33 @@
 | 覆盖模块 | 02-岗位管理（用户-岗位多对多关联） |
 | 上游依据 | 《[概要设计 · 岗位管理](../../概要设计/02_概要设计_岗位管理.md)》、《[架构设计 · 总览](../../架构设计/01_架构设计_总览.md)》「域服务划分与数据边界」节 |
 | ORM 模型 | `mdm_org/models/user_post.py::OrgUserPost` |
-| 状态 | 已设计（实现在需求 `01-2` / 任务 `01_02`；原 bms `sys_user_post`，2026-10-03 归 mdm） |
+| 状态 | 已落库（需求 `01-2` / 任务 `01_02`，2026-10-07；原 bms `sys_user_post`，2026-10-03 归 mdm） |
 | 相关节点 | [数据库设计总览](../01_数据库设计_总览.md)、[org_post](org_post.md) |
 
 ## 2. 字段 <a id="fields"></a>
 
-**关联表**：联合主键、不设 `id`；带审计、**无软删除、无 `version`**（见 bms《数据库设计 · 数据规范》「公共字段」节关联表口径）。
+**关联表**：以雪花 `id` 为主键（基座 `BaseModel`），业务列复合唯一防重（见 bms《数据库设计 · 数据规范》「公共字段」节关联表口径——2026-10-07 修订）。
 
 | 字段 | 类型 | 可空 | 约束 / 默认 | 说明 |
 | --- | --- | --- | --- | --- |
-| `user_id` | BIGINT | 否 | 联合主键 | 用户 id（逻辑外键 → bms `sys_user.id`，**跨服务**） |
-| `post_id` | BIGINT | 否 | 联合主键 | 岗位 id（逻辑外键 → `org_post.id`，同库） |
+| `id` | BIGINT | 否 | 主键，雪花 ID | 主键 |
+| `user_id` | BIGINT | 否 | 与 `post_id` + `deleted_at` 复合唯一 | 用户 id（逻辑外键 → bms `sys_user.id`，**跨服务**） |
+| `post_id` | BIGINT | 否 | 与 `user_id` + `deleted_at` 复合唯一 | 岗位 id（逻辑外键 → `org_post.id`，同库） |
 | `created_at` | DATETIME | 否 | 审计 | 创建时间（UTC） |
 | `created_by` | BIGINT | 是 | 审计 | 创建人 |
+| `updated_at` | DATETIME | 否 | 审计 | 更新时间（UTC） |
+| `updated_by` | BIGINT | 是 | 审计 | 更新人 |
+| `deleted_at` | DATETIME | 是 | 软删除（NULL=未删） | 软删除时间 |
+| `version` | INT | 否 | 默认 1 | 乐观锁版本 |
 
-> **无 `version`（显式标注）**：关联表以联合主键保证幂等，无乐观锁；**无软删除**，解绑即物理删除该行。
+> **解绑语义**：解绑走**软删除**（`deleted_at` 置位，留痕），复合唯一含 `deleted_at` 使解绑后可重新绑定；`version` 由 `BaseModel` 提供（乐观锁）。
 
 ## 3. 索引与约束 <a id="index"></a>
 
 | 名称 | 类型 | 列 | 说明 |
 | --- | --- | --- | --- |
-| `pk_org_user_post` | 联合主键 | `(user_id, post_id)` | 多对多防重 |
-| `idx_org_user_post_post_id` | 普通 | `post_id` | 岗位下用户反查（`user_id` 已由主键前缀覆盖） |
+| `uq_org_user_post_user_post_deleted_at` | 唯一 | `(user_id, post_id, deleted_at)` | 多对多防重（软删除后可重绑） |
+| `idx_org_user_post_post_id` | 普通 | `post_id` | 岗位下用户反查（`user_id` 为唯一索引先导列，不再单列） |
 
 - 无物理外键；`user_id` 指向 bms `sys_user.id`（**跨服务逻辑外键**），`post_id` 指向 `org_post.id`（同库）。
 - **用户删除补偿**：bms 用户删除经 `sys.user.deleted` 事件驱动本域清理其关联行（不跨库强约束）。
@@ -49,5 +54,6 @@
 | 日期 | 版本 | 变更 | 作者 |
 | --- | --- | --- | --- |
 | 2026-10-07 | v1 | 新建表结构（mdm 组织域，原 bms `sys_user_post` 迁入） | minjian |
+| 2026-10-07 | v2 | 主键口径修订：联合主键 → 雪花 `id` 主键 + `(user_id, post_id, deleted_at)` 复合唯一；补软删除与 `version`（对齐基座 `BaseModel` 与 bms 现役实现） | minjian |
 
 > 数据表设计 · 与 bms《数据库开发规范》「数据表文件规范」节配套
