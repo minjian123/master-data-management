@@ -1,7 +1,7 @@
-# MDM 主数据仓库流水线（最小门禁）
-# 现状：产品处于规划/文档阶段，尚无代码；仅保留门禁冒烟（纯文档推送不建流水线）。
-# 代码阶段恢复/扩展：后端 ruff + pytest、前端 ESLint + Vitest + 双端构建、集成（MySQL/PostgreSQL/DM8）、
-#   镜像构建与扫描、E2E、Allure 报告等，参照 bms 仓库 .gitlab-ci.yml 按需裁剪启用。
+# MDM 主数据仓库流水线
+# 现状：产品工程骨架与平台接入（01_01）——后端工作区（uv workspace）+ org 服务 + 运维脚本 + 契约快照。
+# 门禁：门禁冒烟（无条件必跑）/ ruff / pyright（strict）/ pytest + 覆盖率 / 离线清单与契约零漂移。
+# 未启用（随后续任务引入）：镜像构建与扫描、三库（MySQL / PostgreSQL / DM8）集成、服务子流水线、E2E、Allure。
 
 workflow:
   rules:
@@ -20,15 +20,64 @@ workflow:
 
 stages:
   - lint
+  - test
 
 default:
   tags: [mdm]
+  image: python:3.14-slim
+
+variables:
+  # 内网加速源（与 bms 侧 CI 同口径）；uv 以 copy 硬链接模式装入工作区 venv（跨挂载点安全）
+  PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
+  UV_DEFAULT_INDEX: https://pypi.tuna.tsinghua.edu.cn/simple
+  UV_LINK_MODE: copy
 
 # ---- 门禁冒烟：所有流水线无条件必跑 ----
 gate-smoke:
   stage: lint
-  image: python:3.14-slim
   script:
     - python --version
     - python -c "import sys; assert sys.version_info >= (3, 14), 'Python < 3.14'"
     - echo "gate ok"
+
+# ---- 后端门禁（backend/ 工作区）----
+# 依赖安装：`uv sync --frozen` 会按 pyproject 的 git 源拉取共享基座 `bms-core`（锁 bms 提交 SHA）；
+# runner 与本仓库同一内网 GitLab 时匿名只读即可，若需凭据可加：
+#   git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@<host>/".insteadOf "https://<host>/"
+
+.backend-setup: &backend-setup
+  - pip install --no-cache-dir uv
+  - cd backend
+  - uv sync --frozen
+
+backend-lint:
+  stage: lint
+  script:
+    - *backend-setup
+    - uv run ruff check .
+    - uv run ruff format --check .
+
+backend-typecheck:
+  stage: lint
+  script:
+    - *backend-setup
+    - uv run pyright
+
+backend-test:
+  stage: test
+  variables:
+    BMS_ENV: test
+  script:
+    - *backend-setup
+    - >-
+      uv run pytest
+      --cov=mdm_org --cov=services --cov=ops
+      --cov-branch --cov-report=term --cov-fail-under=70
+  coverage: '/^TOTAL.*?\s+\d+\s+\d+\s+(\d+(?:\.\d+)?%)$/'
+
+backend-modules:
+  stage: test
+  script:
+    - *backend-setup
+    - uv run python -m ops.check_modules
+    - uv run python -m ops.contract_snapshot check

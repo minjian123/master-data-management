@@ -1,0 +1,37 @@
+# dev 环境覆盖（可读日志 + 本地 SQLite 每服务库 + 放行本地前端开发服务器）
+
+[app]
+debug = true
+
+[log]
+level = "DEBUG"
+format = "console"
+# 慢请求阈值（dev 严：便于发现性能问题）
+slow_request_ms = 500
+
+[cors]
+allow_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+[database]
+# 本地 SQLite 库统一落工作区根 database/mdm（相对 backend/ 上两级；仅改此处即可切库）
+sqlite_dir = "../../database/mdm"
+# SQLite 开发库自动建表（按迁移链表集、幂等）；本期 org 链无脚本 → 不建业务表
+auto_create = true
+
+[database.platform]
+# 平台服务库（占位 {database} = mdm_{service}）→ mdm_org.db
+url = "sqlite+aiosqlite:///./mdm_platform.db"
+url_template = "sqlite+aiosqlite:///./mdm_{service}.db"
+
+[database.tenants]
+# 服务租户库（占位 {database} = mdm_{service}_{tenant}）→ mdm_org_demo.db
+url = "sqlite+aiosqlite:///./mdm_tenant_demo.db"
+url_template = "sqlite+aiosqlite:///./mdm_{service}_{tenant}.db"
+
+[database.archive]
+# 归档库（只读）
+url = "sqlite+aiosqlite:///./mdm_archive.db"
+
+[tenant]
+# 开发库自动建表覆盖的租户编码（仅 SQLite auto_create 生效）
+dev_tenants = ["demo"]

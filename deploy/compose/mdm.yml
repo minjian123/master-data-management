@@ -1,0 +1,63 @@
+# mdm 产品服务编排（服务名 = 服务标识 `org`，与平台网关声明式上游 `org:8000` 对齐）
+#
+# 拉起（在 mdm 仓 `deploy/` 目录，`.env` 提供变量）：
+#   docker compose -f compose/mdm.yml --env-file .env up -d
+#
+# 口径：
+# - 服务名（Compose DNS）取服务标识 `org`，与平台网关 upstream 节点同口径——对外经产品命名空间
+#   `/api/mdm/v1/org/...` 暴露（网关由平台侧 `PRODUCT_ROUTES` 生成，mdm 无需改网关）；
+# - **平台基础设施归 bms 部署**（网关 / 认证 / Redis / RocketMQ / 关系库 / Keycloak），本编排不重复；
+#   mdm 服务经 .env 接入平台基础设施与平台网络（见 `networks.platform`）；
+# - 仅内部网络（expose 8000，不映射宿主端口），经平台网关统一入口访问，调试走 `docker compose exec`；
+# - 镜像标签必填（`MDM_TAG_ORG`，`:?` 语法无 latest 兜底）——由发布流程按版本台账注入；
+# - 服务运行库（每服务独立库 × 每租户）：`mdm_org` / `mdm_org_{租户}`（库名前缀 `mdm`，
+#   经 `[database].name_prefix` 配置项派生）；建库 / 迁移编排走 `backend/ops`（db_admin / migrate）。
+#
+# 环境变量（.env，模板见 deploy/.env.example）：密钥与连接串一律经环境变量注入，不入库 / 不入镜像。
+
+x-service-env: &service-env
+  BMS_ENV: ${BMS_ENV:-dev}
+  # 库名前缀（mdm 产品专属；与 config.toml 基线一致，此处显式重申防环境漂移）
+  BMS_DATABASE__NAME_PREFIX: mdm
+  # 运行库（每服务库；URL 模板占位 {service} / {tenant} / {database}，密码经环境变量注入）
+  BMS_DATABASE__PLATFORM__URL_TEMPLATE: ${BMS_DATABASE__PLATFORM__URL_TEMPLATE:?}
+  BMS_DATABASE__PLATFORM__PASSWORD: ${BMS_DATABASE__PLATFORM__PASSWORD:-}
+  BMS_DATABASE__TENANTS__URL_TEMPLATE: ${BMS_DATABASE__TENANTS__URL_TEMPLATE:?}
+  BMS_DATABASE__TENANTS__PASSWORD: ${BMS_DATABASE__TENANTS__PASSWORD:-}
+  # 外部依赖（Compose DNS，禁硬编码 IP）
+  BMS_REDIS__URL: ${BMS_REDIS__URL:-redis://redis:6379/0}
+  BMS_TRACER__OTLP_ENDPOINT: ${BMS_TRACER__OTLP_ENDPOINT:-http://otel-collector:4318}
+  # 服务间同步调用（http + Compose DNS 基址模板；出站附自签服务 JWT）
+  BMS_SERVICE_CLIENT__PROVIDER: http
+  BMS_SERVICE_CLIENT__OPTIONS: '{"base_url_template":"http://{service}:8000","attach_service_token":true}'
+  # 边缘信任（dev 关旁路强制；prod 开 true）
+  BMS_EDGE__REQUIRE_GATEWAY_IDENTITY: ${BMS_EDGE__REQUIRE_GATEWAY_IDENTITY:-false}
+  # 身份密钥（只经 .env 注入；空值允许装配、使用时 fail-closed）
+  BMS_SERVICE_TOKEN__KEYS: ${BMS_SERVICE_TOKEN__KEYS:-}
+  BMS_SERVICE_TOKEN__ACTIVE_KID: ${BMS_SERVICE_TOKEN__ACTIVE_KID:-}
+  BMS_SECURITY__KEYS: ${BMS_SECURITY__KEYS:-}
+  BMS_SECURITY__ACTIVE_KID: ${BMS_SECURITY__ACTIVE_KID:-}
+  BMS_SECURITY__SECRET_KEY: ${BMS_SECURITY__SECRET_KEY:-}
+
+x-service-base: &service-base
+  restart: unless-stopped
+  expose:
+    - "8000"
+  networks:
+    - platform
+  environment:
+    <<: *service-env
+
+services:
+  org:
+    <<: *service-base
+    image: ${MDM_REGISTRY_IMAGE_PREFIX:?MDM_REGISTRY_IMAGE_PREFIX required}/mdm-org:${MDM_TAG_ORG:?MDM_TAG_ORG required}
+    container_name: mdm-org
+
+networks:
+  # 平台网络（bms 部署创建）：使平台网关可解析 `org:8000`，本服务亦可达平台服务
+  # 缺省名 `deploy_default`（bms 在 deploy/ 目录以 compose 项目名 `deploy` 创建）；
+  # 实际网络名以平台部署为准，经 .env 的 PLATFORM_NETWORK 覆盖。
+  platform:
+    external: true
+    name: ${PLATFORM_NETWORK:-deploy_default}

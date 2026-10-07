@@ -1,0 +1,79 @@
+# mdm 后端工作区根（uv workspace）：虚拟工程，只承载工作区成员与共享工具配置。
+# 成员：services/*（各服务工程，独立 pyproject / 独立构建）。
+# 共享基座：跨仓 git 源依赖 `bms-core`（锁 bms 提交 SHA，见详细设计 §4.1）；
+# 依赖与安装：`uv sync` 把共享基座与服务工程以可编辑方式装入工作区 `.venv`；`uv run` 直接可用。
+
+[tool.uv.workspace]
+members = ["services/*"]
+
+[tool.uv]
+# 传递依赖约束：与平台（bms）运行锁口径对齐——SQLAlchemy 2.1 起 greenlet 不再作为默认依赖，
+# 基座异步栈（`sqlalchemy.ext.asyncio`）确需 greenlet；约束到平台已验证的 2.0.x 行，避免解析漂移
+constraint-dependencies = ["sqlalchemy>=2.0,<2.1"]
+
+[tool.uv.sources]
+# 共享基座库（bms 仓 `backend/libs/bms_core`）：锁提交 SHA 保证构建可精确复现，
+# 并与「bms 侧 `org` 标识已释放（11_01）」强绑定；升级须同步改 rev（人工或接入 Renovate）。
+# 凭据：仓库为内网 GitLab（只读 clone 无需凭据）；CI 内以 git `insteadOf` 注入 CI_JOB_TOKEN。
+bms-core = { git = "http://192.168.0.107:8080/bms/bms.git", subdirectory = "backend/libs/bms_core", rev = "9f05b27674bbc69abdba41306425e25fb2e8ca7e" }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.27",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "pyright>=1.1.380",
+]
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+# 中文标点为文档与注释的有意用法，关闭歧义字符检查
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.isort]
+# 工作区自有包与脚本区视为第一方（与第三方依赖分组稳定，避免归类漂移）
+known-first-party = [
+    "mdm_org",
+    "services",
+    "ops",
+    "tests_support",
+]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.14"
+include = ["services"]
+# alembic 迁移脚本不纳入类型检查（含大量动态写法）
+ignore = ["alembic"]
+# src 布局：把服务源码根加入解析路径，供 `import mdm_org` 与严格类型检查
+extraPaths = ["services/org/src"]
+# 共享基座 `bms-core` 为**跨仓安装包**（site-packages，未随包发布 `py.typed` 声明）：
+# 缺 stub 提示降级；自有代码仍按 strict 全量检查（基座侧以源码形式纳入其本仓检查）。
+reportMissingTypeStubs = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+# importlib 模式：多套同名 `tests` 目录互不冲突，测试模块按路径唯一命名
+addopts = "--import-mode=importlib"
+testpaths = [
+    "services/org/tests",
+    "tests",
+]
+pythonpath = [
+    ".",
+    "services/org/src",
+]
+markers = [
+    "kiwi_id: Kiwi TCMS 用例编号（如 @pytest.mark.kiwi_id(1)）",
+    "integration: 需要真实外部服务的集成用例（未配置环境时跳过）",
+]

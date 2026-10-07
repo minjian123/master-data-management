@@ -1,0 +1,22 @@
+# test 环境覆盖（CI 门禁）：可读日志 + CI 内 SQLite 临时库（连接串亦可经 BMS_ 环境变量注入）
+
+[app]
+debug = false
+
+[log]
+level = "INFO"
+format = "console"
+
+[database]
+# CI 内临时库落工作区 var/（不入库）；结构真值由用例按需建表，不依赖自动建表
+auto_create = false
+sqlite_dir = "../../var/test-db"
+
+[database.platform]
+url = "sqlite+aiosqlite:///./mdm_platform.db"
+
+[database.tenants]
+url = "sqlite+aiosqlite:///./mdm_tenant_demo.db"
+
+[database.archive]
+url = "sqlite+aiosqlite:///./mdm_archive.db"

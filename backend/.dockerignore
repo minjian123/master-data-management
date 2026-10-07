@@ -1,0 +1,9 @@
+# 服务运行镜像构建上下文（backend/）：排除虚拟环境、开发库、缓存与测试产物
+.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.coverage
+**/coverage.json
+*.db
+tests/

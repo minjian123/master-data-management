@@ -1,0 +1,33 @@
+# mdm 后端配置（基线；三环境差异见 config.dev.toml / config.test.toml / config.prod.toml）
+# 环境由 BMS_ENV 指定（缺省取本文件 [app].env，再缺省 dev）；环境变量（BMS_ 前缀）优先级最高。
+# **最小差异口径**：本文件只写 mdm 特有项，其余一律走基座 `Settings` 默认值。
+# 密钥 / 连接串一律经配置读取（配置文件或 BMS_ 环境变量），不在代码或 CI 中写死。
+
+[app]
+# 应用名（进入 OpenAPI 与日志）
+name = "mdm 主数据管理"
+# 运行环境（dev/test/prod；实际生效值由 BMS_ENV 决定并回写）
+env = "dev"
+# 调试开关（dev 覆盖为 true）
+debug = false
+# 雪花 ID WorkerId（0~1023，同环境多副本须全局唯一）
+worker_id = 0
+# 服务标识（微服务名；空则取服务包声明 `mdm_org.SERVICE_NAME` = org，启动期回写解析结果）
+service = ""
+# 文档端点开关（Swagger /docs、ReDoc /redoc、OpenAPI /openapi.json；dev 基线开，生产关闭走 CI 契约快照）
+docs_enabled = true
+
+[server]
+# 监听地址与端口（容器内统一 8000，与网关 upstream `org:8000` 对齐）
+host = "0.0.0.0"
+port = 8000
+workers = 1
+
+[database]
+# 库名前缀（统一来源）：平台库 {prefix}_{service} / 服务租户库 {prefix}_{service}_{code} / 归档库 {prefix}_archive
+# mdm 产品专属前缀 → mdm_org / mdm_org_{租户} / mdm_archive（库键仍为基座相对键 platform / tenant_{code}）
+name_prefix = "mdm"
+
+[tenant]
+# 租户解析缓存 TTL（秒）与引擎活跃上限（基座默认值外的最小显式声明，其余走基座默认）
+resolve_cache_ttl = 60
