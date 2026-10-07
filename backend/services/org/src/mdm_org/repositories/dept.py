@@ -76,6 +76,20 @@ class DeptRepository(BaseDbRepository[OrgDept]):
         statement = self._select().where(self._column("ancestors").like(f"{prefix}%"))
         return ConcurrentStableList((await self._session.execute(statement)).scalars().all())
 
+    async def list_by_ids(self, dept_ids: ConcurrentStableList[int]) -> ConcurrentStableList[OrgDept]:
+        """按主键集合批量取部门（名称回显用；单批 IN 查询，避免 N+1）。
+
+        Args:
+            dept_ids: 部门 id 序列。
+
+        Returns:
+            ConcurrentStableList[OrgDept]: 部门列表（库返回序；不含软删除）。
+        """
+        if not dept_ids:
+            return ConcurrentStableList()
+        statement = self._select().where(self._column("id").in_(tuple(dept_ids)))
+        return ConcurrentStableList((await self._session.execute(statement)).scalars().all())
+
     async def count_referenced(self, dept_id: int) -> int:
         """取部门子树内的部门数（含自身；删除前后一致性核对用）。
 

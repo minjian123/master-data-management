@@ -3,8 +3,9 @@
 from typing import Annotated, cast
 
 from bms_core.api.base import BaseRouter, require_auth
-from bms_core.api.deps import get_audit_capturer, get_idempotency_store, get_outbox_store, get_uow
+from bms_core.api.deps import get_audit_capturer, get_cache_region, get_idempotency_store, get_outbox_store, get_uow
 from bms_core.audit.base import AuditCapturer
+from bms_core.cache.base import CacheRegion
 from bms_core.core.concurrent import ConcurrentStableList
 from bms_core.core.context import current_user_id
 from bms_core.db.session import DbSession
@@ -19,6 +20,7 @@ from fastapi import Depends, Header
 from mdm_org.repositories.dept import DeptRepository
 from mdm_org.repositories.role_dept import RoleDeptRepository
 from mdm_org.schemas.role_dept import RoleDeptAssignRequest, RoleDeptIds
+from mdm_org.services.open_read import bump_user_roles_generation
 from mdm_org.services.role_dept import RoleDeptService
 
 router = BaseRouter(
@@ -29,6 +31,7 @@ router = BaseRouter(
 )
 
 UowDep = Annotated[UnitOfWork, Depends(get_uow)]
+CacheDep = Annotated[CacheRegion, Depends(get_cache_region)]
 OutboxDep = Annotated[BaseOutboxStore, Depends(get_outbox_store)]
 AuditDep = Annotated[AuditCapturer, Depends(get_audit_capturer)]
 IdempotencyDep = Annotated[IdempotencyStore, Depends(get_idempotency_store)]
@@ -84,6 +87,7 @@ async def assign_role_depts(
     req: RoleDeptAssignRequest,
     uow: UowDep,
     outbox: OutboxDep,
+    cache: CacheDep,
     audit: AuditDep,
     idempotency: IdempotencyDep,
     idempotency_key: IdempotencyKeyHeader = None,
@@ -100,6 +104,7 @@ async def assign_role_depts(
     dept_ids = await _service(uow, outbox).assign_role_depts(role_id=role_id, dept_ids=req.dept_ids)
     result = RoleDeptIds(dept_ids=dept_ids)
     _audit(audit, role_id)
+    await bump_user_roles_generation(cache, current_tenant_id_str())
     if key:
         await idempotency.save(key, result.model_dump(mode="json"))
     return ApiResponse.ok(result)
@@ -111,6 +116,7 @@ async def unassign_role_dept(
     dept_id: int,
     uow: UowDep,
     outbox: OutboxDep,
+    cache: CacheDep,
     audit: AuditDep,
 ) -> ApiResponse[RoleDeptIds]:
     """解绑单个角色-部门。
@@ -121,4 +127,5 @@ async def unassign_role_dept(
     await service.unassign_role_dept(role_id=role_id, dept_id=dept_id)
     dept_ids = await service.list_role_depts(role_id)
     _audit(audit, role_id)
+    await bump_user_roles_generation(cache, current_tenant_id_str())
     return ApiResponse.ok(RoleDeptIds(dept_ids=dept_ids))

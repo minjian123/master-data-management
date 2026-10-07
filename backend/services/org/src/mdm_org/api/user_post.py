@@ -3,8 +3,16 @@
 from typing import Annotated, cast
 
 from bms_core.api.base import BaseRouter, require_auth
-from bms_core.api.deps import get_audit_capturer, get_config_source, get_idempotency_store, get_outbox_store, get_uow
+from bms_core.api.deps import (
+    get_audit_capturer,
+    get_cache_region,
+    get_config_source,
+    get_idempotency_store,
+    get_outbox_store,
+    get_uow,
+)
 from bms_core.audit.base import AuditCapturer
+from bms_core.cache.base import CacheRegion
 from bms_core.config.base import BaseConfigSource
 from bms_core.core.concurrent import ConcurrentStableList
 from bms_core.core.context import current_user_id
@@ -20,6 +28,7 @@ from fastapi import Depends, Header
 from mdm_org.repositories.post import PostRepository
 from mdm_org.repositories.user_post import UserPostRepository
 from mdm_org.schemas.user_post import UserPostAssignRequest, UserPostIds
+from mdm_org.services.open_read import bump_user_roles_generation
 from mdm_org.services.user_post import UserPostService
 
 router = BaseRouter(
@@ -31,6 +40,7 @@ router = BaseRouter(
 
 UowDep = Annotated[UnitOfWork, Depends(get_uow)]
 ConfigDep = Annotated[BaseConfigSource, Depends(get_config_source)]
+CacheDep = Annotated[CacheRegion, Depends(get_cache_region)]
 OutboxDep = Annotated[BaseOutboxStore, Depends(get_outbox_store)]
 AuditDep = Annotated[AuditCapturer, Depends(get_audit_capturer)]
 IdempotencyDep = Annotated[IdempotencyStore, Depends(get_idempotency_store)]
@@ -89,6 +99,7 @@ async def assign_user_posts(
     uow: UowDep,
     config: ConfigDep,
     outbox: OutboxDep,
+    cache: CacheDep,
     audit: AuditDep,
     idempotency: IdempotencyDep,
     idempotency_key: IdempotencyKeyHeader = None,
@@ -105,6 +116,7 @@ async def assign_user_posts(
     post_ids = await _service(uow, config, outbox).assign_user_posts(user_id=user_id, post_ids=req.post_ids)
     result = UserPostIds(post_ids=post_ids)
     _audit(audit, user_id)
+    await bump_user_roles_generation(cache, current_tenant_id_str())
     if key:
         await idempotency.save(key, result.model_dump(mode="json"))
     return ApiResponse.ok(result)
@@ -117,6 +129,7 @@ async def unassign_user_post(
     uow: UowDep,
     config: ConfigDep,
     outbox: OutboxDep,
+    cache: CacheDep,
     audit: AuditDep,
 ) -> ApiResponse[UserPostIds]:
     """解绑单个用户-岗位。
@@ -127,4 +140,5 @@ async def unassign_user_post(
     await service.unassign_user_post(user_id=user_id, post_id=post_id)
     post_ids = await service.list_user_posts(user_id)
     _audit(audit, user_id)
+    await bump_user_roles_generation(cache, current_tenant_id_str())
     return ApiResponse.ok(UserPostIds(post_ids=post_ids))

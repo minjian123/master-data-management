@@ -14,3 +14,7 @@ auto_create = false
 
 [tenant]
 allow_demo_fallback = false
+
+[cache]
+# 生产缓存实现：Redis（多副本共享失效代与结果缓存）
+provider = "redis"

@@ -35,14 +35,16 @@ class PostRepository(BaseDbRepository[OrgPost]):
         query: BasePageQuery,
         *,
         dept_id: int | None = None,
+        dept_ids: ConcurrentStableList[int] | None = None,
         status: str | None = None,
         keyword: str | None = None,
     ) -> ConcurrentStableList[OrgPost]:
-        """分页查询岗位（按部门 / 状态 / 关键字筛选）。
+        """分页查询岗位（按部门 / 部门集合 / 状态 / 关键字筛选）。
 
         Args:
             query: 分页查询契约（`page` / `size` / 排序）。
-            dept_id: 归属部门过滤；None 不过滤。
+            dept_id: 归属部门过滤（单部门）；None 不过滤。
+            dept_ids: 归属部门集合过滤（部门含子级 / 数据范围限定）；None 不过滤。
             status: 状态过滤；None 不过滤。
             keyword: 关键字（岗位码 / 名称模糊）；None 不过滤。
 
@@ -51,7 +53,7 @@ class PostRepository(BaseDbRepository[OrgPost]):
         """
         statement = (
             self._apply_sort(self._select(), self._resolve_sort(query))
-            .where(*self._conditions(dept_id=dept_id, status=status, keyword=keyword))
+            .where(*self._conditions(dept_id=dept_id, dept_ids=dept_ids, status=status, keyword=keyword))
             .limit(query.size)
             .offset((query.page - 1) * query.size)
         )
@@ -61,13 +63,15 @@ class PostRepository(BaseDbRepository[OrgPost]):
         self,
         *,
         dept_id: int | None = None,
+        dept_ids: ConcurrentStableList[int] | None = None,
         status: str | None = None,
         keyword: str | None = None,
     ) -> int:
         """统计岗位总数（与 `list_filtered` 同口径）。
 
         Args:
-            dept_id: 归属部门过滤；None 不过滤。
+            dept_id: 归属部门过滤（单部门）；None 不过滤。
+            dept_ids: 归属部门集合过滤；None 不过滤。
             status: 状态过滤；None 不过滤。
             keyword: 关键字过滤；None 不过滤。
 
@@ -77,7 +81,10 @@ class PostRepository(BaseDbRepository[OrgPost]):
         statement = (
             select(func.count())
             .select_from(self.model)
-            .where(*self._scope_where(), *self._conditions(dept_id=dept_id, status=status, keyword=keyword))
+            .where(
+                *self._scope_where(),
+                *self._conditions(dept_id=dept_id, dept_ids=dept_ids, status=status, keyword=keyword),
+            )
         )
         return int((await self._session.execute(statement)).scalar_one())
 
@@ -91,6 +98,34 @@ class PostRepository(BaseDbRepository[OrgPost]):
             ConcurrentStableList[OrgPost]: 岗位列表（插入序）。
         """
         statement = self._select().where(self._column("dept_id") == dept_id)
+        return ConcurrentStableList((await self._session.execute(statement)).scalars().all())
+
+    async def list_by_depts(self, dept_ids: ConcurrentStableList[int]) -> ConcurrentStableList[OrgPost]:
+        """取一组部门下的岗位（部门含子级的用户派生用；单批 IN 查询避免 N+1）。
+
+        Args:
+            dept_ids: 部门 id 序列。
+
+        Returns:
+            ConcurrentStableList[OrgPost]: 岗位列表（库返回序；不含软删除）。
+        """
+        if not dept_ids:
+            return ConcurrentStableList()
+        statement = self._select().where(self._column("dept_id").in_(tuple(dept_ids)))
+        return ConcurrentStableList((await self._session.execute(statement)).scalars().all())
+
+    async def list_by_ids(self, post_ids: ConcurrentStableList[int]) -> ConcurrentStableList[OrgPost]:
+        """按主键集合批量取岗位（名称回显用；单批 IN 查询，避免 N+1）。
+
+        Args:
+            post_ids: 岗位 id 序列。
+
+        Returns:
+            ConcurrentStableList[OrgPost]: 岗位列表（库返回序；不含软删除）。
+        """
+        if not post_ids:
+            return ConcurrentStableList()
+        statement = self._select().where(self._column("id").in_(tuple(post_ids)))
         return ConcurrentStableList((await self._session.execute(statement)).scalars().all())
 
     async def count_by_dept(self, dept_id: int) -> int:
@@ -111,13 +146,15 @@ class PostRepository(BaseDbRepository[OrgPost]):
         self,
         *,
         dept_id: int | None,
+        dept_ids: ConcurrentStableList[int] | None,
         status: str | None,
         keyword: str | None,
     ) -> ConcurrentStableList[ColumnElement[bool]]:
         """构造筛选条件（列表与计数同口径）。
 
         Args:
-            dept_id: 归属部门过滤。
+            dept_id: 归属部门过滤（单部门）。
+            dept_ids: 归属部门集合过滤。
             status: 状态过滤。
             keyword: 关键字。
 
@@ -127,6 +164,8 @@ class PostRepository(BaseDbRepository[OrgPost]):
         conditions: ConcurrentStableList[ColumnElement[bool]] = ConcurrentStableList()
         if dept_id is not None:
             conditions.add(self._column("dept_id") == dept_id)
+        if dept_ids is not None:
+            conditions.add(self._column("dept_id").in_(tuple(dept_ids)))
         if status is not None:
             conditions.add(self._column("status") == status)
         if keyword:

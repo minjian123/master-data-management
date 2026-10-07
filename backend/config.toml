@@ -34,3 +34,15 @@ name_prefix = "mdm"
 [tenant]
 # 租户解析缓存 TTL（秒）与引擎活跃上限（基座默认值外的最小显式声明，其余走基座默认）
 resolve_cache_ttl = 60
+
+[cache]
+# 缓存实现选择（组织只读出口的「按用户解析角色」结果缓存；dev/test 用内存，生产经 config.prod.toml 切 redis）
+# 空串 = null 占位（不缓存、直查）
+provider = "memory"
+options = {}
+
+[service_client]
+# 服务间同步调用实现（组织只读出口的用户维度经平台用户只读出口取数；空串 = null 占位不外呼）
+provider = "http"
+# 出站附自签服务 JWT（服务身份 = 本组织服务键）+ tenant claim；目标服务按白名单校验调用方服务标识
+options = { attach_service_token = true }

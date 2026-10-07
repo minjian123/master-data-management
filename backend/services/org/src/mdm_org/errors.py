@@ -70,6 +70,9 @@ class OrgErrorCode(IntEnum):
     ROLE_DEPT_NOT_FOUND = 330091
     """角色-部门分配不存在。"""
 
+    ORG_SOURCE_UNAVAILABLE = 330101
+    """用户来源不可达 / 未装配（组织只读出口的用户维度取数通道）。"""
+
 
 class OrgError(BizError):
     """组织域异常基类（段位基；子类预置码位与 HTTP 状态）。"""
@@ -207,3 +210,9 @@ class OrgRoleDeptNotFoundError(OrgError):
 
     code_: ClassVar[int] = OrgErrorCode.ROLE_DEPT_NOT_FOUND
     http_status_: ClassVar[int] = 404
+
+
+class OrgSourceUnavailableError(OrgError):
+    """用户来源不可达 / 未装配（330101；用户维度出口明确降级，不静默返回旧值）。"""
+
+    code_: ClassVar[int] = OrgErrorCode.ORG_SOURCE_UNAVAILABLE

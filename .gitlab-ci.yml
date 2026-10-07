@@ -82,4 +82,6 @@ backend-modules:
     - *backend-setup
     - uv run python -m ops.check_modules
     - uv run python -m ops.contract_snapshot check
+    # 契约门禁：基线 ↔ 实时公开契约破坏性变更比对（--engine auto：docker 可用走 oasdiff，否则内置结构化判定）
+    - uv run python -m ops.contract_gate check
     - uv run python -m ops.event_contracts check

@@ -14,10 +14,18 @@ POST_CODE_PATTERN_KEY = "org.post_code_pattern"
 POST_MAX_PER_USER_KEY = "org.post_max_per_user"
 """单用户可分配岗位数上限（默认 10）。"""
 
+DATA_SOURCE_MAX_FILTER_IDS_KEY = "org.data_source_max_filter_ids"
+"""组织只读出口「部门过滤候选集」规模上限（默认 1000）。"""
+
+USER_ROLES_CACHE_TTL_KEY = "org.user_roles_cache_ttl"
+"""按用户解析角色结果缓存 TTL（秒；默认 30；≤0 表示不缓存）。"""
+
 DEFAULT_DEPT_TREE_MAX_DEPTH = 10
 DEFAULT_DEPT_MAX_CHILDREN = 500
 DEFAULT_POST_CODE_PATTERN = r"^[A-Za-z][A-Za-z0-9_]{0,31}$"
 DEFAULT_POST_MAX_PER_USER = 10
+DEFAULT_DATA_SOURCE_MAX_FILTER_IDS = 1000
+DEFAULT_USER_ROLES_CACHE_TTL = 30
 
 
 async def read_int(source: BaseConfigSource, key: str, default: int) -> int:

@@ -41,6 +41,20 @@ class UserPostRepository(BaseDbRepository[OrgUserPost]):
         statement = self._select().where(self._column("post_id") == post_id)
         return ConcurrentStableList((await self._session.execute(statement)).scalars().all())
 
+    async def list_by_posts(self, post_ids: ConcurrentStableList[int]) -> ConcurrentStableList[OrgUserPost]:
+        """取一组岗位下的用户关联（部门含子级的用户派生用；单批 IN 查询避免 N+1）。
+
+        Args:
+            post_ids: 岗位 id 序列。
+
+        Returns:
+            ConcurrentStableList[OrgUserPost]: 关联记录（库返回序）。
+        """
+        if not post_ids:
+            return ConcurrentStableList()
+        statement = self._select().where(self._column("post_id").in_(tuple(post_ids)))
+        return ConcurrentStableList((await self._session.execute(statement)).scalars().all())
+
     async def get_active(self, *, user_id: int, post_id: int) -> OrgUserPost | None:
         """取未解绑的用户-岗位关联。
 

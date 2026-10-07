@@ -41,6 +41,20 @@ class RolePostRepository(BaseDbRepository[OrgRolePost]):
         statement = self._select().where(self._column("post_id") == post_id)
         return ConcurrentStableList((await self._session.execute(statement)).scalars().all())
 
+    async def list_by_posts(self, post_ids: ConcurrentStableList[int]) -> ConcurrentStableList[OrgRolePost]:
+        """取一组岗位的已分配角色关联（按用户解析角色的岗位链用；单批 IN 查询避免 N+1）。
+
+        Args:
+            post_ids: 岗位 id 序列。
+
+        Returns:
+            ConcurrentStableList[OrgRolePost]: 关联记录（库返回序）。
+        """
+        if not post_ids:
+            return ConcurrentStableList()
+        statement = self._select().where(self._column("post_id").in_(tuple(post_ids)))
+        return ConcurrentStableList((await self._session.execute(statement)).scalars().all())
+
     async def get_active(self, *, role_id: int, post_id: int) -> OrgRolePost | None:
         """取未解绑的角色-岗位分配。
 
