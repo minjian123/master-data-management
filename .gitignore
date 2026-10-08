@@ -231,5 +231,12 @@ temp/
 # Node 依赖（根目录不装依赖；前端依赖在各前端项目自己的目录内）
 node_modules/
 
+# 前端工作区构建与运行产物（frontend/：模块产物 / 独立预览产物 / MF 缓存 / 覆盖率 / 体积报告）
+frontend/**/dist/
+frontend/**/dist-standalone/
+frontend/**/.mf/
+frontend/**/coverage/
+frontend/**/node_modules/.tmp/
+
 # 基座软链（工作区模型：内容由 ../bms/bms文档 提供，权威源在 bms 仓库，不随本仓库跟踪）
 /bms文档

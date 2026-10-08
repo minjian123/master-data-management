@@ -1,0 +1,20 @@
+{
+  "name": "@mdm/api-types",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "mdm 产品前端契约生成类型（openapi-typescript 自 deploy/contracts 快照生成；勿手改 src）",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "gen": "node scripts/generate.mjs",
+    "gen:check": "node scripts/generate.mjs --check",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0"
+  }
+}

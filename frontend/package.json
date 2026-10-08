@@ -1,0 +1,37 @@
+{
+  "name": "mdm-frontend-workspace",
+  "private": true,
+  "type": "module",
+  "description": "mdm 产品前端工作区（组织域运行时模块 + 契约类型包；平台基座包经 file: 引工作区 bms 克隆）",
+  "scripts": {
+    "api-types:gen": "pnpm --filter @mdm/api-types run gen",
+    "api-types:gen:check": "pnpm --filter @mdm/api-types run gen:check",
+    "api-types:typecheck": "pnpm --filter @mdm/api-types run typecheck",
+    "api-types:test": "pnpm --filter @mdm/api-types run test",
+    "api-types:lint": "pnpm --filter @mdm/api-types run lint",
+    "api-types:check": "pnpm run api-types:gen:check && pnpm run api-types:typecheck && pnpm run api-types:lint && pnpm run api-types:test",
+    "org:lint": "pnpm --filter @mdm/module-org run lint",
+    "org:typecheck": "pnpm --filter @mdm/module-org run typecheck",
+    "org:test": "pnpm --filter @mdm/module-org run test",
+    "org:build": "pnpm --filter @mdm/module-org run build",
+    "org:build:standalone": "pnpm --filter @mdm/module-org run build:standalone",
+    "org:budget": "pnpm --filter @mdm/module-org run budget",
+    "org:guard": "pnpm --filter @mdm/module-org run guard:isolation",
+    "org:check": "pnpm run org:lint && pnpm run org:typecheck && pnpm run org:test",
+    "lint": "pnpm run api-types:lint && pnpm run org:lint",
+    "check": "pnpm run api-types:check && pnpm run org:check"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.0.0",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "eslint": "^10.10.0",
+    "eslint-plugin-vue": "^10.11.0",
+    "prettier": "^3.9.6",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.70.0",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0",
+    "vue-eslint-parser": "^10.4.1"
+  }
+}
