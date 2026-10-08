@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>原型 · 部门表单页</title>
-<link rel="stylesheet" href="../../../bms文档/设计/原型设计/资源/vendor/element-plus.css">
-<link rel="stylesheet" href="../../../bms文档/设计/原型设计/资源/原型样式.css">
+<link rel="stylesheet" href="../../../../bms文档/设计/原型设计/资源/vendor/element-plus.css">
+<link rel="stylesheet" href="../../../../bms文档/设计/原型设计/资源/原型样式.css">
 <style>
   .ep-page { background: #fff; border: 1px solid #d0d7de; border-radius: 6px; padding: 16px; }
   .ep-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -17,7 +17,7 @@
 
 <div class="proto-bar">
   <span class="pb-crumb"><a href="01_设计说明.html">← 返回设计说明</a></span>
-  <span class="pb-name">部门与岗位 · 部门表单页</span>
+  <span class="pb-name">部门管理 · 部门表单页</span>
 </div>
 
 <div class="proto-frame">
@@ -66,17 +66,17 @@
           </el-form>
         </el-tab-pane>
         <el-tab-pane label="系统信息" name="sys">
-          <iframe class="sys-frame" src="../02_公共原型/04_系统信息组件.html" :style="{height: sysH + 'px'}" @load="pushSys($event, sys)"></iframe>
+          <iframe class="sys-frame" src="../../../../bms文档/设计/原型设计/02_公共原型/04_系统信息组件.html" :style="{height: sysH + 'px'}" @load="pushSys($event, sys)"></iframe>
         </el-tab-pane>
       </el-tabs>
     </div>
   </div>
 </div>
 
-<script src="../../../bms文档/设计/原型设计/资源/vendor/vue.global.prod.js"></script>
+<script src="../../../../bms文档/设计/原型设计/资源/vendor/vue.global.prod.js"></script>
 
-<script src="../../../bms文档/设计/原型设计/资源/vendor/element-plus.min.js"></script>
-<script src="../../../bms文档/设计/原型设计/资源/vendor/zh-cn.js"></script>
+<script src="../../../../bms文档/设计/原型设计/资源/vendor/element-plus.min.js"></script>
+<script src="../../../../bms文档/设计/原型设计/资源/vendor/zh-cn.js"></script>
 <script>
   var { createApp, ref, reactive, computed, watch } = Vue;
   var ElMessage = ElementPlus.ElMessage;

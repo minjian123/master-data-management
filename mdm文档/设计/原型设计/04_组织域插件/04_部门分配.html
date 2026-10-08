@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>原型 · 部门分配</title>
+<link rel="stylesheet" href="../../../../bms文档/设计/原型设计/资源/vendor/element-plus.css">
+<link rel="stylesheet" href="../../../../bms文档/设计/原型设计/资源/原型样式.css">
+<style>
+  .host-shell { background:#fff; border:1px solid #d0d7de; border-radius:6px; padding:16px; }
+  .host-bar { display:flex; align-items:center; gap:12px; padding-bottom:12px; border-bottom:1px dashed #d0d7de; margin-bottom:12px; }
+  .host-title { font-weight:600; }
+  .ep-toolbar { display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .dept-picker { border:1px solid #e4e7ed; border-radius:4px; padding:8px 12px; max-height:260px; overflow:auto; }
+</style>
+</head>
+<body>
+
+<div class="proto-bar">
+  <span class="pb-crumb"><a href="01_设计说明.html">← 返回设计说明</a></span>
+  <span class="pb-name">组织域插件 · 部门分配</span>
+</div>
+
+<div class="proto-frame">
+  <div id="app">
+    <div class="host-shell">
+      <div class="host-bar">
+        <span class="host-title">模拟宿主页 · 角色表单 · 角色分配</span>
+        <el-tag size="small" type="info">审批角色</el-tag>
+        <span class="proto-hint">该页签非独立页面：作用对象由宿主显式上下文提供；插件只读</span>
+      </div>
+
+      <el-tabs v-model="assignTab">
+        <el-tab-pane label="用户分配" name="users">
+          <el-empty description="宿主内建页签（非本域插件）"></el-empty>
+        </el-tab-pane>
+
+        <el-tab-pane label="岗位分配" name="posts">
+          <el-empty description="同域另一功能块（见 03_岗位分配.html）"></el-empty>
+        </el-tab-pane>
+
+        <el-tab-pane label="部门分配" name="depts">
+          <el-alert v-if="demoState === 'context'" type="warning" :closable="false"
+            title="显式上下文未就绪：本页签不渲染（宿主页其余照常）"></el-alert>
+
+          <template v-else>
+            <el-alert type="success" :closable="false" show-icon
+              title="数据归组织主数据域：分配与解绑即时提交（不随角色表单保存）"
+              description="按「用户归属部门」精确匹配授予角色——不含下级部门继承；用户归属由平台用户档案提供。"></el-alert>
+
+            <div class="ep-toolbar" style="margin-top:12px">
+              <el-button type="primary" @click="openAssign">分配部门</el-button>
+              <el-button @click="refresh">刷新</el-button>
+              <span class="ep-side" style="margin-left:auto">
+                <span class="proto-hint">降级演示：</span>
+                <el-button size="small" @click="demoState = 'context'">上下文未就绪</el-button>
+                <el-button size="small" type="primary" plain @click="demoState = ''">恢复</el-button>
+              </span>
+            </div>
+
+            <el-table :data="assignedRows" border stripe style="width:100%">
+              <el-table-column prop="name" label="部门" min-width="180"></el-table-column>
+              <el-table-column prop="path" label="部门路径" min-width="240"></el-table-column>
+              <el-table-column label="状态" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="row.status === 'enabled' ? 'success' : 'info'">{{ row.status === 'enabled' ? '启用' : '停用' }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="110">
+                <template #default="{ row }">
+                  <el-button link type="danger" @click="unbind(row)">解绑</el-button>
+                </template>
+              </el-table-column>
+              <template #empty>
+                <el-empty description="该角色暂未分配部门">
+                  <el-button size="small" type="primary" @click="openAssign">去分配</el-button>
+                </el-empty>
+              </template>
+            </el-table>
+
+            <p class="proto-hint" style="margin-top:8px">
+              与「岗位分配」同为同一宿主页签下的两个功能块：<a href="03_岗位分配.html">前往岗位分配原型 →</a>
+            </p>
+          </template>
+        </el-tab-pane>
+      </el-tabs>
+    </div>
+
+    <el-dialog v-model="dlg.visible" title="分配部门（全量覆盖）" width="560">
+      <p class="proto-hint" style="margin-top:0">勾选授予该角色的部门；保存后按勾选结果整体覆盖。</p>
+      <div class="dept-picker">
+        <el-tree ref="treeRef" :data="deptTree" show-checkbox node-key="id" default-expand-all
+          :props="{ label: 'name', children: 'children' }" :default-checked-keys="dlg.picked"></el-tree>
+      </div>
+      <el-alert type="warning" :closable="false" style="margin-top:12px"
+        title="部门分配按精确匹配生效：仅勾选的部门本身获得该角色，不含其下级部门（需逐级勾选）。"></el-alert>
+      <template #footer>
+        <el-button @click="dlg.visible = false">取消</el-button>
+        <el-button type="primary" @click="saveAssign">保存并提交</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</div>
+
+<script src="../../../../bms文档/设计/原型设计/资源/vendor/vue.global.prod.js"></script>
+
+<script src="../../../../bms文档/设计/原型设计/资源/vendor/element-plus.min.js"></script>
+<script src="../../../../bms文档/设计/原型设计/资源/vendor/zh-cn.js"></script>
+<script>
+  var { createApp, ref, reactive, computed } = Vue;
+  var app = createApp({
+    template: document.getElementById('app').outerHTML.replace(/<div id="app">/, '<div>').replace(/<\/div>\s*$/, ''),
+    setup: function () {
+      var assignTab = ref('depts');
+      var demoState = ref('');
+      var treeRef = ref(null);
+      var depts = [
+        { id: 1, name: '总部', parent: '', status: 'enabled' },
+        { id: 2, name: '技术部', parent: '总部', status: 'enabled' },
+        { id: 3, name: '财务部', parent: '总部', status: 'enabled' },
+        { id: 4, name: '人事部', parent: '总部', status: 'enabled' },
+        { id: 5, name: '平台组', parent: '技术部', status: 'enabled' }
+      ];
+      var deptTree = [
+        { id: 1, name: '总部', children: [
+          { id: 2, name: '技术部', children: [ { id: 5, name: '平台组' } ] },
+          { id: 3, name: '财务部' },
+          { id: 4, name: '人事部' }
+        ] }
+      ];
+      var assignedIds = ref([3]);
+      var dlg = reactive({ visible: false, picked: [] });
+
+      function toastMsg(m, type) {
+        var opts = { message: m };
+        if (type) { opts.type = type; opts.duration = 2000; }
+        Vue.ElMessage(opts);
+      }
+      function confirmAction(msg, fn, okText) {
+        Vue.ElMessageBox.confirm(msg, '确认操作', { type: 'warning', confirmButtonText: okText || '确定', cancelButtonText: '取消' })
+          .then(function () { fn(); }).catch(function () {});
+      }
+      function pathOf(dept) {
+        var names = [dept.name];
+        var cur = dept;
+        while (cur.parent) {
+          var parent = depts.filter(function (d) { return d.name === cur.parent; })[0];
+          if (!parent) break;
+          names.unshift(parent.name);
+          cur = parent;
+        }
+        return names.join(' / ');
+      }
+      var assignedRows = computed(function () {
+        return depts.filter(function (d) { return assignedIds.value.indexOf(d.id) >= 0; })
+          .map(function (d) { return { id: d.id, name: d.name, path: pathOf(d), status: d.status }; });
+      });
+      function refresh() { toastMsg('已刷新'); }
+      function openAssign() {
+        dlg.picked = assignedIds.value.slice();
+        dlg.visible = true;
+      }
+      function saveAssign() {
+        var tree = treeRef.value;
+        var keys = tree ? tree.getCheckedKeys() : dlg.picked.slice();
+        assignedIds.value = keys.slice();
+        dlg.visible = false;
+        toastMsg('已提交（即时生效）：审批角色 的部门分配已更新（精确匹配，不含下级）', 'success');
+      }
+      function unbind(row) {
+        confirmAction('解绑部门「' + row.name + '」？该部门下的用户将失去此角色。', function () {
+          assignedIds.value = assignedIds.value.filter(function (id) { return id !== row.id; });
+          toastMsg('已解绑（即时生效）', 'success');
+        }, '解绑');
+      }
+      return { assignTab, demoState, treeRef, deptTree, assignedIds, dlg, assignedRows, refresh, openAssign, saveAssign, unbind };
+    }
+  });
+  app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
+  app.mount('#app');
+</script>
+
+</body>
+</html>
