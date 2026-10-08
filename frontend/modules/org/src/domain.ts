@@ -99,6 +99,58 @@ export function toIdParam(id: string | null | undefined): number | null {
   return id as unknown as number
 }
 
+/** 选项项（下拉 / 勾选列表 / 树通用）。 */
+export interface DomainOption {
+  /** 标识（字符串口径）。 */
+  value: string
+  /** 展示名（层级项带缩进）。 */
+  label: string
+}
+
+/** 树节点（`el-tree` 数据面）。 */
+export interface DeptTreeOption {
+  /** 标识。 */
+  id: string
+  /** 展示名。 */
+  label: string
+  /** 子节点。 */
+  children?: DeptTreeOption[]
+}
+
+/**
+ * 部门树展平（带层级缩进；用于下拉筛选与勾选列表）。
+ *
+ * @param nodes 树节点。
+ * @param depth 深度（递归用）。
+ * @returns 展平选项。
+ */
+export function flattenDeptTree(nodes: readonly DeptTreeNode[], depth = 0): DomainOption[] {
+  const result: DomainOption[] = []
+  for (const node of nodes) {
+    result.push({ value: String(node.id), label: `${'　'.repeat(depth)}${node.name}` })
+    const children = (node.children ?? []) as DeptTreeNode[]
+    if (children.length > 0) result.push(...flattenDeptTree(children, depth + 1))
+  }
+  return result
+}
+
+/**
+ * 部门树转 `el-tree` 数据（**精确匹配**勾选口径下不级联，故仅作结构展示）。
+ *
+ * @param nodes 树节点。
+ * @returns 树数据。
+ */
+export function toDeptTreeData(nodes: readonly DeptTreeNode[]): DeptTreeOption[] {
+  return nodes.map((node) => {
+    const children = (node.children ?? []) as DeptTreeNode[]
+    return {
+      id: String(node.id),
+      label: node.name,
+      ...(children.length > 0 ? { children: toDeptTreeData(children) } : {}),
+    }
+  })
+}
+
 /**
  * 标识集合参数归一（同上口径）。
  *

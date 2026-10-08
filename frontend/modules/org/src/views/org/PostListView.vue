@@ -1,17 +1,25 @@
 <script setup lang="ts">
-// 岗位管理页：按部门（含子级）筛选 + 列表（新建 / 编辑 / 删除 / 启停）。
+// 岗位管理页：关键字 / 所属部门（含子级）/ 状态筛选 + 列表（多选批量删除 / 行内编辑·启停·删除）+
+// 「绑定角色」入口（**只读**：岗位侧角色绑定写端点属角色分配域，见按钮说明）+ 双击行打开岗位表单页。
 // 列表与分页复用平台件 `DataTable`（与服务端分页契约 `{ list, total, page, size }` 对齐）。
 import { DataTable, PageContainer, SectionContainer } from '@bms/ui-ep'
 import type { DataTableColumn } from '@bms/ui-ep'
-import { ElButton, ElMessage, ElMessageBox, ElSelect, ElOption, ElTag } from 'element-plus'
+import { ElButton, ElDialog, ElInput, ElMessage, ElMessageBox, ElOption, ElSelect, ElTag } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useOrgI18n } from '../../composables/useOrgI18n'
-import type { DeptTreeNode, PostItem, PostQuery } from '../../domain'
-import { ENTITY_STATUS, STATUS_OPTIONS } from '../../domain'
+import {
+  ENTITY_STATUS,
+  STATUS_OPTIONS,
+  flattenDeptTree,
+  type DeptTreeNode,
+  type DomainOption,
+  type PostItem,
+  type PostQuery,
+} from '../../domain'
 import { isApiAbsent, orgRuntime } from '../../runtime'
-import { deletePost, fetchDeptTree, fetchPostPage, updatePost } from '../../services/org-service'
+import { deletePost, fetchDeptTree, fetchPostPage, fetchPostRoleIds, updatePost } from '../../services/org-service'
 
 defineOptions({ name: 'MdmOrgPostList' })
 
@@ -24,10 +32,18 @@ const total = ref(0)
 const loading = ref(false)
 const errorText = ref('')
 /** 部门选项（树展平，用于筛选与列显示）。 */
-const deptOptions = ref<{ value: string; label: string }[]>([])
-
+const deptOptions = ref<DomainOption[]>([])
+/** 已勾选行键（多选批量操作）。 */
+const selectedKeys = ref<string[]>([])
+/** 关键字输入（点「查询」才生效）。 */
+const keywordInput = ref('')
 /** 查询条件。 */
 const query = ref<PostQuery>({ page: 1, size: 10 })
+
+/** 绑定角色弹窗（只读视图）。 */
+const rolesVisible = ref(false)
+const rolesTarget = ref<PostItem | null>(null)
+const boundRoleIds = ref<string[]>([])
 
 const columns = computed<DataTableColumn[]>(() => [
   { key: 'code', title: t('mdmOrg.post.column.code'), width: 160 },
@@ -47,6 +63,7 @@ async function load(): Promise<void> {
     const page = await fetchPostPage(query.value)
     list.value = page.list
     total.value = page.total ?? 0
+    selectedKeys.value = []
   } catch (caught) {
     errorText.value = isApiAbsent(caught) ? t('mdmOrg.common.apiAbsent') : t('mdmOrg.common.failed')
   } finally {
@@ -58,15 +75,7 @@ async function load(): Promise<void> {
 async function loadDepts(): Promise<void> {
   try {
     const tree = await fetchDeptTree()
-    const flat: { value: string; label: string }[] = []
-    const walk = (nodes: readonly DeptTreeNode[], depth = 0): void => {
-      for (const node of nodes) {
-        flat.push({ value: String(node.id), label: `${'　'.repeat(depth)}${node.name}` })
-        walk((node.children ?? []) as DeptTreeNode[], depth + 1)
-      }
-    }
-    walk((tree.items ?? []) as DeptTreeNode[])
-    deptOptions.value = flat
+    deptOptions.value = flattenDeptTree((tree.items ?? []) as DeptTreeNode[])
   } catch {
     // 选项失败不阻塞列表
   }
@@ -93,13 +102,35 @@ async function onPageSizeChange(next: number): Promise<void> {
 }
 
 /**
- * 筛选变化（回第 1 页）。
+ * 筛选条件变化（回第 1 页）。
  *
  * @param patch 条件增量。
  */
 async function onFilter(patch: Partial<PostQuery>): Promise<void> {
   query.value = { ...query.value, ...patch, page: 1 }
   await load()
+}
+
+/** 查询（关键字生效）。 */
+async function onSearch(): Promise<void> {
+  const trimmed = keywordInput.value.trim()
+  await onFilter({ keyword: trimmed === '' ? undefined : trimmed })
+}
+
+/** 重置筛选。 */
+async function onReset(): Promise<void> {
+  keywordInput.value = ''
+  query.value = { page: 1, size: query.value.size }
+  await load()
+}
+
+/**
+ * 勾选变化。
+ *
+ * @param keys 勾选行键。
+ */
+function onSelectionChange(keys: string[]): void {
+  selectedKeys.value = keys
 }
 
 /** 新建岗位。 */
@@ -117,7 +148,7 @@ function openEdit(row: Record<string, unknown>): void {
 }
 
 /**
- * 启停岗位。
+ * 启停岗位（立即生效）。
  *
  * @param row 行数据。
  */
@@ -134,7 +165,7 @@ async function onToggleStatus(row: PostItem): Promise<void> {
 }
 
 /**
- * 删除岗位。
+ * 删除岗位（二次确认）。
  *
  * @param row 行数据。
  */
@@ -153,6 +184,48 @@ async function onDelete(row: PostItem): Promise<void> {
   }
 }
 
+/** 批量删除（按勾选行逐个删除，逐条失败不阻塞其余）。 */
+async function onBatchDelete(): Promise<void> {
+  if (selectedKeys.value.length === 0) return
+  await ElMessageBox.confirm(
+    t('mdmOrg.post.batchDelete.confirm', { count: selectedKeys.value.length }),
+    t('mdmOrg.common.delete'),
+    {
+      confirmButtonText: t('mdmOrg.common.confirm'),
+      cancelButtonText: t('mdmOrg.common.cancel'),
+      type: 'warning',
+    },
+  )
+  let failed = 0
+  for (const id of selectedKeys.value) {
+    try {
+      await deletePost(id)
+    } catch {
+      failed += 1
+    }
+  }
+  if (failed === 0) ElMessage.success(t('mdmOrg.common.delete'))
+  else ElMessage.error(t('mdmOrg.post.batchDelete.partial', { failed }))
+  await load()
+}
+
+/**
+ * 绑定角色（**只读**视图：展示该岗位已绑角色；写侧归角色管理「角色分配」）。
+ *
+ * @param row 行数据。
+ */
+async function openRoles(row: PostItem): Promise<void> {
+  rolesTarget.value = row
+  boundRoleIds.value = []
+  rolesVisible.value = true
+  try {
+    const result = await fetchPostRoleIds(String(row.id))
+    boundRoleIds.value = (result.role_ids ?? []).map((roleId) => String(roleId))
+  } catch (caught) {
+    ElMessage.error(isApiAbsent(caught) ? t('mdmOrg.common.apiAbsent') : t('mdmOrg.common.failed'))
+  }
+}
+
 onMounted(async () => {
   await Promise.all([load(), loadDepts()])
 })
@@ -162,6 +235,13 @@ onMounted(async () => {
   <page-container :title="t('mdmOrg.post.list.title')" :description="t('mdmOrg.post.list.description')">
     <section-container>
       <div class="mdm-org-post__filters">
+        <el-input
+          v-model="keywordInput"
+          clearable
+          :placeholder="t('mdmOrg.post.filter.keyword')"
+          data-test="post-filter-keyword"
+          @keyup.enter="onSearch"
+        />
         <el-select
           :model-value="query.dept_id ?? ''"
           clearable
@@ -180,6 +260,8 @@ onMounted(async () => {
         >
           <el-option v-for="item in STATUS_OPTIONS" :key="item.value" :label="t(item.labelKey)" :value="item.value" />
         </el-select>
+        <el-button type="primary" data-test="post-search" @click="onSearch">{{ t('mdmOrg.post.filter.search') }}</el-button>
+        <el-button data-test="post-reset" @click="onReset">{{ t('mdmOrg.post.filter.reset') }}</el-button>
       </div>
     </section-container>
 
@@ -194,16 +276,35 @@ onMounted(async () => {
         :loading="loading"
         :error="errorText"
         row-key="id"
+        selectable
         form-key="mdm_org_post_list"
         :empty-text="t('mdmOrg.post.list.empty')"
         @update:page="onPageChange"
         @update:page-size="onPageSizeChange"
+        @selection-change="onSelectionChange"
+        @row-dblclick="openEdit"
         @refresh="load"
         @retry="load"
       >
         <template #toolbar>
           <el-button v-if="canUpdate" type="primary" data-test="post-create" @click="openCreate">
             {{ t('mdmOrg.post.list.create') }}
+          </el-button>
+          <el-button
+            v-if="canUpdate"
+            type="danger"
+            :disabled="selectedKeys.length === 0"
+            data-test="post-batch-delete"
+            @click="onBatchDelete"
+          >
+            {{ t('mdmOrg.post.action.batchDelete') }}
+          </el-button>
+          <el-button
+            :disabled="selectedKeys.length !== 1"
+            data-test="post-bind-roles"
+            @click="openRoles(list.find((item) => String(item.id) === selectedKeys[0]) as PostItem)"
+          >
+            {{ t('mdmOrg.post.action.bindRoles') }}
           </el-button>
           <el-button data-test="post-refresh" @click="load">{{ t('mdmOrg.common.refresh') }}</el-button>
         </template>
@@ -231,6 +332,15 @@ onMounted(async () => {
         </template>
       </data-table>
     </section-container>
+
+    <el-dialog v-model="rolesVisible" :title="t('mdmOrg.post.roles.title')" width="480" align-center>
+      <p class="mdm-org-post__hint" data-test="post-roles-hint">{{ t('mdmOrg.post.roles.readonlyHint') }}</p>
+      <el-tag v-for="role in boundRoleIds" :key="role" class="mdm-org-post__role" size="small">{{ role }}</el-tag>
+      <span v-if="boundRoleIds.length === 0" data-test="post-roles-empty">{{ t('mdmOrg.common.empty') }}</span>
+      <template #footer>
+        <el-button data-test="post-roles-close" @click="rolesVisible = false">{{ t('mdmOrg.common.confirm') }}</el-button>
+      </template>
+    </el-dialog>
   </page-container>
 </template>
 
@@ -238,5 +348,15 @@ onMounted(async () => {
 .mdm-org-post__filters {
   display: flex;
   gap: var(--bms-space-2);
+}
+
+.mdm-org-post__hint {
+  margin: 0 0 var(--bms-space-2);
+  color: var(--bms-color-text-secondary);
+  font-size: var(--bms-font-size-sm);
+}
+
+.mdm-org-post__role {
+  margin-right: var(--bms-space-1);
 }
 </style>

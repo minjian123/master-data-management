@@ -2,130 +2,123 @@
 // 插件：部门分配（挂宿主「角色分配」页签 `sys.role.detail.assign`）。
 //
 // 与「岗位分配」同一上下文通道（**显式上下文注入**，`roleId`）；差别在目标为**部门**，
-// 且语义为**精确匹配**（不含子部门）——按该域口径，勾选即选中该部门本身，不级联子树。
-import { EmptyState, useModuleSlotField } from '@bms/ui-ep'
+// 且语义为**精确匹配、不含下级**——弹窗内以部门树多选呈现（`check-strictly` 不级联）。
+import { ElTree } from 'element-plus'
+import { useModuleSlotField } from '@bms/ui-ep'
 import { onMounted, ref, watch } from 'vue'
 
 import { useOrgI18n } from '../../composables/useOrgI18n'
-import { toIdParamList } from '../../domain'
-import { isApiAbsent } from '../../runtime'
-import { assignRoleDepts, fetchDeptTree, fetchRoleDeptIds } from '../../services/org-service'
+import { useAssignment, type AssignedLabel } from '../../composables/useAssignment'
+import { flattenDeptTree, toDeptTreeData, toIdParamList, type DeptTreeNode, type DeptTreeOption } from '../../domain'
+import { assignRoleDepts, fetchDeptTree, fetchRoleDeptIds, unassignRoleDept } from '../../services/org-service'
 
-import AssignPanel, { type AssignTargetOption } from './AssignPanel.vue'
+import AssignPanel from './AssignPanel.vue'
 
 const { t } = useOrgI18n()
 
 /** 角色标识（宿主页显式上下文注入）。 */
 const roleId = useModuleSlotField<string>('roleId')
+const contextId = ref(roleId.value ?? '')
 
-/** 候选部门（树展平；缩进体现层级）。 */
-const options = ref<AssignTargetOption[]>([])
-/** 已分配部门。 */
-const assigned = ref<string[]>([])
-const loading = ref(false)
-const submitting = ref(false)
-/** 降级提示。 */
-const degraded = ref('')
+/** 部门名称索引（已分配项回显）。 */
+const deptNames = ref(new Map<string, AssignedLabel>())
+/** 部门树（弹窗内多选；精确匹配不级联）。 */
+const treeData = ref<DeptTreeOption[]>([])
+/** 树组件引用（勾选回填与取值）。 */
+const treeRef = ref<InstanceType<typeof ElTree>>()
 
-/** 当前角色标识（空串表示上下文缺失）。 */
-function currentRoleId(): string {
-  return roleId.value ?? ''
+const assignment = useAssignment(contextId, {
+  async loadAssigned(id) {
+    const [current, tree] = await Promise.all([fetchRoleDeptIds(id), fetchDeptTree()])
+    const flat = flattenDeptTree((tree.items ?? []) as DeptTreeNode[])
+    const index = new Map<string, AssignedLabel>()
+    for (const item of flat) index.set(item.value, { id: item.value, label: item.label.replace(/\u3000/g, '') })
+    deptNames.value = index
+    treeData.value = toDeptTreeData((tree.items ?? []) as DeptTreeNode[])
+    const ids = (current.dept_ids ?? []).map((deptId) => String(deptId))
+    return { ids, labels: [...index.values()] }
+  },
+  async submit(id, ids) {
+    await assignRoleDepts(id, { dept_ids: toIdParamList(ids) })
+  },
+  async unassign(id, deptId) {
+    await unassignRoleDept(id, deptId)
+  },
+})
+
+/**
+ * 树勾选变化（精确匹配：只取勾选节点本身，不含半选父级）。
+ *
+ * @param info 树勾选状态（`checkedKeys` 为可提交的标识集合）。
+ */
+function onTreeCheck(info: { checkedKeys: (string | number)[] }): void {
+  assignment.picked.value = info.checkedKeys.map((item) => String(item))
 }
 
 /**
- * 部门树展平（带层级缩进；`check-strictly` 口径＝精确匹配，不级联）。
+ * 把当前勾选回填到树（弹窗打开时同步）。
  *
- * @param nodes 树节点。
- * @param depth 深度。
- * @returns 展平选项。
+ * @param keys 勾选标识集合。
  */
-function flatten(
-  nodes: readonly { id: unknown; name: string; children?: readonly unknown[] }[],
-  depth = 0,
-): AssignTargetOption[] {
-  const result: AssignTargetOption[] = []
-  for (const node of nodes) {
-    result.push({ value: String(node.id), label: `${'　'.repeat(depth)}${node.name}` })
-    const children = node.children as readonly { id: unknown; name: string; children?: readonly unknown[] }[] | undefined
-    if (children !== undefined && children.length > 0) {
-      result.push(...flatten(children, depth + 1))
-    }
-  }
-  return result
+function syncTreeChecked(keys: string[]): void {
+  treeRef.value?.setCheckedKeys(keys)
 }
 
-/** 载入候选部门与当前分配。 */
+/** 重新载入（已分配 + 部门树）。 */
 async function reload(): Promise<void> {
-  const id = currentRoleId()
-  if (id === '') return
-  loading.value = true
-  degraded.value = ''
-  try {
-    const [tree, current] = await Promise.all([fetchDeptTree(), fetchRoleDeptIds(id)])
-    options.value = flatten(tree.items ?? [])
-    assigned.value = (current.dept_ids ?? []).map((deptId) => String(deptId))
-  } catch (caught) {
-    degraded.value = isApiAbsent(caught) ? t('mdmOrg.common.apiAbsent') : t('mdmOrg.common.failed')
-  } finally {
-    loading.value = false
-  }
+  if (contextId.value === '') return
+  await assignment.reload()
 }
 
-/**
- * 提交全量分配（即时提交；精确匹配语义）。
- *
- * @param ids 部门标识集合。
- */
-async function submit(ids: string[]): Promise<void> {
-  submitting.value = true
-  try {
-    const result = await assignRoleDepts(currentRoleId(), { dept_ids: toIdParamList(ids) })
-    assigned.value = (result.dept_ids ?? []).map((deptId) => String(deptId))
-  } finally {
-    submitting.value = false
-  }
-}
+// 宿主记录页签切换角色（上下文变化）→ 重新载入
+watch(roleId, (value) => {
+  contextId.value = value ?? ''
+  deptNames.value = new Map()
+  void reload()
+})
 
 onMounted(() => {
   void reload()
 })
 
-watch(roleId, () => {
-  assigned.value = []
-  options.value = []
-  void reload()
-})
+defineExpose({ syncTreeChecked })
 </script>
 
 <template>
   <div class="mdm-org-slot" data-test="slot-role-depts">
-    <p v-if="degraded !== ''" class="mdm-org-slot__degraded" data-test="slot-role-depts-degraded">{{ degraded }}</p>
-    <empty-state
-      v-if="currentRoleId() === ''"
-      type="data"
-      :title="t('mdmOrg.slot.contextAbsent')"
-      data-test="slot-role-depts-absent"
-    />
-    <template v-else>
-      <p class="mdm-org-slot__hint">{{ t('mdmOrg.slot.deptExactHint') }}</p>
-      <assign-panel
-        title-key="mdmOrg.slot.roleDepts.title"
-        target-label="部门"
-        :context-id="currentRoleId()"
-        :options="options"
-        :assigned="assigned"
-        :loading="loading"
-        :submitting="submitting"
-        :on-submit="submit"
-        @reload="reload"
-        @update:assigned="assigned = $event"
-      />
-    </template>
+    <assign-panel
+      title-key="mdmOrg.slot.roleDepts.title"
+      target-label="部门"
+      :context-id="contextId"
+      :assigned-rows="assignment.assignedRows.value"
+      :picked="assignment.picked.value"
+      :loading="assignment.loading.value"
+      :submitting="assignment.submitting.value"
+      :error-text="assignment.errorText.value"
+      @update:picked="assignment.picked.value = $event"
+      @submit="assignment.save($event)"
+      @unassign="assignment.unbind($event)"
+      @reload="reload"
+    >
+      <template #picker>
+        <p class="mdm-org-slot__hint" data-test="slot-role-depts-hint">{{ t('mdmOrg.slot.deptExactHint') }}</p>
+        <el-tree
+          ref="treeRef"
+          :data="treeData"
+          :props="{ label: 'label', children: 'children' }"
+          node-key="id"
+          show-checkbox
+          check-strictly
+          default-expand-all
+          data-test="slot-role-depts-tree"
+          @check="(_node: unknown, info: { checkedKeys: (string | number)[] }) => onTreeCheck(info)"
+        />
+      </template>
+    </assign-panel>
   </div>
 </template>
 
 <style scoped>
-.mdm-org-slot__degraded,
 .mdm-org-slot__hint {
   margin: 0 0 var(--bms-space-2);
   color: var(--bms-color-text-secondary);
