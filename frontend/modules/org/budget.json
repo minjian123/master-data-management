@@ -1,0 +1,9 @@
+{
+  "distDir": "dist",
+  "entryGzipKb": 17,
+  "largestGzipKb": 8,
+  "maxEntryFiles": 8,
+  "minAsyncChunks": 4,
+  "pageChunkHints": ["DeptListView", "DeptFormView", "PostListView", "PostFormView", "UserPostsPanel", "RolePostsPanel", "RoleDeptsPanel"],
+  "note": "模块产物单独计量（不并入宿主阈值）：入口块＝从 remoteEntry.js 出发的引用闭包（种子追静态+动态引用，其余只追静态引用）；页面 / 插槽件块经动态 import() 引用，不进闭包；pageChunkHints 为模块页面与插槽件块命名特征（由 src/views/org/ 与 src/components/slots/ 派生命名，改名须同步本表）。阈值口径同平台（实测基线 + 20%）：首轮构建实测 2026-10-08——入口闭包 13.5 KB（6 块，最大单块 6.2 KB）、入口外异步块 31 个；取整为 17 / 8 / 8。"
+}

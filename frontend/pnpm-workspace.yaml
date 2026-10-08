@@ -6,8 +6,8 @@ packages:
   # 前提：`mdm/` 与 `bms/` 同级克隆（见任务 01_04 详细设计 §3.2「构建前提」）。
   - '../../bms/frontend/packages/*'
 allowBuilds:
-  '@parcel/watcher': set this to true or false
-  vue-demi: set this to true or false
+  '@parcel/watcher': true
+  vue-demi: true
 onlyBuiltDependencies:
   - '@parcel/watcher'
   - vue-demi

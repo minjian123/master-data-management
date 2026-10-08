@@ -1,7 +1,8 @@
 # MDM 主数据仓库流水线
 # 现状：产品工程骨架与平台接入（01_01）+ 组织主数据域实现（01_02）——uv workspace + org 服务（五表 + 管理面端点）
-#       + 运维脚本 + 公开契约快照 + 事件契约快照。
-# 门禁：门禁冒烟（无条件必跑）/ ruff / pyright（strict）/ pytest + 覆盖率 / 离线清单 + 公开契约零漂移 + 事件契约零漂移。
+#       + 运维脚本 + 公开契约快照 + 事件契约快照 + **前端工作区（01_04：组织域运行时模块 + 契约类型包）**。
+# 门禁：门禁冒烟（无条件必跑）/ ruff / pyright（strict）/ pytest + 覆盖率 / 离线清单 + 公开契约零漂移 + 事件契约零漂移
+#       + 前端（契约类型零漂移 / 类型检查 / lint / 用例 / 模块构建体积预算与产物面隔离）。
 # 未启用（随后续任务引入）：镜像构建与扫描、三库（MySQL / PostgreSQL / DM8）集成、服务子流水线、E2E、Allure。
 
 workflow:
@@ -85,3 +86,51 @@ backend-modules:
     # 契约门禁：基线 ↔ 实时公开契约破坏性变更比对（--engine auto：docker 可用走 oasdiff，否则内置结构化判定）
     - uv run python -m ops.contract_gate check
     - uv run python -m ops.event_contracts check
+
+# ---- 前端门禁（frontend/ 工作区）----
+# **构建前提（跨仓）**：平台基座包（`@bms/core` / `@bms/ui-ep` / `@bms/api-types`）经 `file:` 引工作区
+# **bms 克隆**，且 bms 前端包纳入本工作区成员（见任务 01_04 详细设计 §3.2）——故前端作业先克隆 bms 到
+# 与 mdm **同级**目录（`../bms`）。同一内网 GitLab 时匿名 / `CI_JOB_TOKEN` 只读即可，亦可用
+# `BMS_REPO_URL` 覆写（例如换 SSH 或镜像地址）。
+#
+# 门禁面：契约类型零漂移 / 类型检查 / lint / 用例 / 模块构建（体积预算 + 产物面隔离）。
+
+.frontend-setup: &frontend-setup
+  - corepack enable
+  - node --version
+  - >-
+    git clone --depth 1
+    "${BMS_REPO_URL:-http://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/bms/bms.git}"
+    ../bms
+  - cd frontend
+  - pnpm install --frozen-lockfile
+
+frontend-lint:
+  stage: lint
+  image: node:24
+  script:
+    - *frontend-setup
+    - pnpm run lint
+    - pnpm run api-types:typecheck
+    - pnpm run org:typecheck
+
+frontend-test:
+  stage: test
+  image: node:24
+  script:
+    - *frontend-setup
+    # 契约类型零漂移（生成物 ↔ 产品契约快照逐字节比对）
+    - pnpm run api-types:gen:check
+    - pnpm run api-types:test
+    - pnpm run org:test
+
+frontend-build:
+  stage: test
+  image: node:24
+  script:
+    - *frontend-setup
+    - pnpm run org:build
+    # 体积预算（复用平台 module-metrics 单一计量）
+    - pnpm run org:budget
+    # 产物面隔离扫描（平台护栏同判据）
+    - pnpm run org:guard

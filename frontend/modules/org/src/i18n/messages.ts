@@ -1,0 +1,141 @@
+/**
+ * 模块文案真源（兼作 `i18nPacks` 注册载荷）。
+ *
+ * 页面与插槽件一律经 `useOrgI18n()` 取文案，**不硬编码中文**、不直连宿主 i18n 实例（隔离约定）。
+ * 菜单标题取自路由 `meta.title`（宿主装配菜单用），此处仅作页面内文案。
+ */
+
+/** 缺省语言标识（小写；`i18nPacks` 键为 `<模块名>:<语言标识>`）。 */
+export const ORG_DEFAULT_LOCALE = 'zh-cn'
+
+/** 中文文案。 */
+export const ORG_MESSAGES_ZH_CN: Record<string, string> = {
+  'mdmOrg.common.loading': '载入中…',
+  'mdmOrg.common.empty': '暂无数据',
+  'mdmOrg.common.total': '共 {total} 条',
+  'mdmOrg.common.enabled': '启用',
+  'mdmOrg.common.disabled': '停用',
+  'mdmOrg.common.save': '保存',
+  'mdmOrg.common.cancel': '取消',
+  'mdmOrg.common.edit': '编辑',
+  'mdmOrg.common.delete': '删除',
+  'mdmOrg.common.remove': '移除',
+  'mdmOrg.common.refresh': '刷新',
+  'mdmOrg.common.confirm': '确定',
+  'mdmOrg.common.failed': '操作失败，请稍后重试',
+  'mdmOrg.common.apiAbsent': '当前环境未接入组织服务，功能暂不可用',
+
+  'mdmOrg.dept.list.title': '部门管理',
+  'mdmOrg.dept.list.description': '组织架构树维护：新建 / 编辑 / 移动 / 删除；部门下用户与角色只读查看',
+  'mdmOrg.dept.list.create': '新建部门',
+  'mdmOrg.dept.list.empty': '暂无部门，请先新建根部门',
+  'mdmOrg.dept.column.name': '部门名称',
+  'mdmOrg.dept.column.code': '部门编码',
+  'mdmOrg.dept.column.status': '状态',
+  'mdmOrg.dept.detail.title': '部门信息',
+  'mdmOrg.dept.users.title': '部门用户（只读）',
+  'mdmOrg.dept.roles.title': '部门角色（只读）',
+  'mdmOrg.dept.form.create': '新建部门',
+  'mdmOrg.dept.form.edit': '编辑部门',
+  'mdmOrg.dept.form.name': '部门名称',
+  'mdmOrg.dept.form.code': '部门编码',
+  'mdmOrg.dept.form.parent': '上级部门',
+  'mdmOrg.dept.form.sort': '排序',
+  'mdmOrg.dept.form.status': '状态',
+  'mdmOrg.dept.form.root': '（作为根部门）',
+  'mdmOrg.dept.action.move': '移动',
+  'mdmOrg.dept.move.title': '移动部门',
+  'mdmOrg.dept.move.target': '移动到',
+  'mdmOrg.dept.delete.confirm': '确认删除该部门？存在子部门 / 岗位 / 角色分配时将被拒绝。',
+
+  'mdmOrg.post.list.title': '岗位管理',
+  'mdmOrg.post.list.description': '岗位维护：按部门（含子级）筛选；新建 / 编辑 / 删除 / 启停',
+  'mdmOrg.post.list.create': '新建岗位',
+  'mdmOrg.post.list.empty': '暂无岗位',
+  'mdmOrg.post.filter.dept': '所属部门',
+  'mdmOrg.post.filter.status': '状态',
+  'mdmOrg.post.column.code': '岗位编码',
+  'mdmOrg.post.column.name': '岗位名称',
+  'mdmOrg.post.column.dept': '所属部门',
+  'mdmOrg.post.column.status': '状态',
+  'mdmOrg.post.column.actions': '操作',
+  'mdmOrg.post.form.create': '新建岗位',
+  'mdmOrg.post.form.edit': '编辑岗位',
+  'mdmOrg.post.form.name': '岗位名称',
+  'mdmOrg.post.form.code': '岗位编码',
+  'mdmOrg.post.form.dept': '所属部门',
+  'mdmOrg.post.form.status': '状态',
+  'mdmOrg.post.form.enabled': '启用',
+  'mdmOrg.post.users.title': '岗位用户（只读）',
+  'mdmOrg.post.roles.title': '岗位角色（只读）',
+  'mdmOrg.post.delete.confirm': '确认删除该岗位？存在用户 / 角色分配时将被拒绝。',
+
+  'mdmOrg.slot.userPosts.title': '用户分配岗位',
+  'mdmOrg.slot.rolePosts.title': '岗位分配',
+  'mdmOrg.slot.roleDepts.title': '部门分配',
+  'mdmOrg.slot.assigned': '已分配 {count} 项',
+  'mdmOrg.slot.pick': '选择',
+  'mdmOrg.slot.picker.title': '选择{target}',
+  'mdmOrg.slot.submit': '提交变更',
+  'mdmOrg.slot.submitted': '已提交变更',
+  'mdmOrg.slot.noChange': '无未提交变更',
+  'mdmOrg.slot.empty': '尚未分配',
+  'mdmOrg.slot.contextAbsent': '当前页面未提供实体标识，插件暂不可用',
+  'mdmOrg.slot.noPermission': '无分配权限（org:update）',
+  'mdmOrg.slot.deptExactHint': '部门分配按精确匹配生效（不含子部门）',
+  'mdmOrg.slot.posts': '岗位',
+  'mdmOrg.slot.depts': '部门',
+}
+
+/** 英文文案（关键键位；缺省回退中文）。 */
+export const ORG_MESSAGES_EN: Record<string, string> = {
+  'mdmOrg.common.loading': 'Loading…',
+  'mdmOrg.common.empty': 'No data',
+  'mdmOrg.common.total': '{total} items',
+  'mdmOrg.common.enabled': 'Enabled',
+  'mdmOrg.common.disabled': 'Disabled',
+  'mdmOrg.common.save': 'Save',
+  'mdmOrg.common.cancel': 'Cancel',
+  'mdmOrg.common.edit': 'Edit',
+  'mdmOrg.common.delete': 'Delete',
+  'mdmOrg.common.remove': 'Remove',
+  'mdmOrg.common.refresh': 'Refresh',
+  'mdmOrg.common.confirm': 'OK',
+  'mdmOrg.common.failed': 'Operation failed, try again later',
+  'mdmOrg.common.apiAbsent': 'Organization service is not available in this environment',
+
+  'mdmOrg.dept.list.title': 'Departments',
+  'mdmOrg.dept.list.description': 'Organization tree: create / edit / move / delete; users and roles are read-only',
+  'mdmOrg.dept.list.create': 'New department',
+  'mdmOrg.dept.list.empty': 'No department yet',
+  'mdmOrg.dept.column.name': 'Name',
+  'mdmOrg.dept.column.code': 'Code',
+  'mdmOrg.dept.column.status': 'Status',
+
+  'mdmOrg.post.list.title': 'Posts',
+  'mdmOrg.post.list.description': 'Posts by department (including children): create / edit / delete / enable',
+  'mdmOrg.post.list.create': 'New post',
+  'mdmOrg.post.list.empty': 'No post',
+  'mdmOrg.post.column.code': 'Code',
+  'mdmOrg.post.column.name': 'Name',
+  'mdmOrg.post.column.dept': 'Department',
+  'mdmOrg.post.column.status': 'Status',
+  'mdmOrg.post.column.actions': 'Actions',
+
+  'mdmOrg.slot.userPosts.title': 'Assigned posts',
+  'mdmOrg.slot.rolePosts.title': 'Post assignment',
+  'mdmOrg.slot.roleDepts.title': 'Department assignment',
+  'mdmOrg.slot.assigned': '{count} assigned',
+  'mdmOrg.slot.pick': 'Select',
+  'mdmOrg.slot.submit': 'Submit changes',
+  'mdmOrg.slot.submitted': 'Changes submitted',
+  'mdmOrg.slot.empty': 'Nothing assigned',
+  'mdmOrg.slot.contextAbsent': 'Entity id is not provided by the host page',
+  'mdmOrg.slot.noPermission': 'No permission (org:update)',
+}
+
+/** 各语言文案表（`i18nPacks` 注册载荷：键 = `<模块名>:<语言标识>`）。 */
+export const ORG_MESSAGES: Record<string, Record<string, string>> = {
+  'zh-cn': ORG_MESSAGES_ZH_CN,
+  en: ORG_MESSAGES_EN,
+}
