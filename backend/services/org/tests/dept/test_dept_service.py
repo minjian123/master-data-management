@@ -50,15 +50,15 @@ async def test_dept_create_tree_and_ancestors() -> None:
     """新建部门：`ancestors` 路径正确、树结构可查、详情可取、不存在抛 330051。"""
     session, service, engine = await _env()
     try:
-        root = await service.create_dept(name="总部", parent_id=None, sort=1)
+        root = await service.create_dept(code="hq", name="总部", parent_id=None, sort=1)
         root_id = root.id
         assert root.ancestors == "/"
         await org_env.commit(session)
-        child = await service.create_dept(name="研发中心", parent_id=root_id, sort=1)
+        child = await service.create_dept(code="rd", name="研发中心", parent_id=root_id, sort=1)
         child_id = child.id
         assert child.ancestors == f"/{root_id}/"
         await org_env.commit(session)
-        grand = await service.create_dept(name="平台组", parent_id=child_id, sort=1)
+        grand = await service.create_dept(code="rd-platform", name="平台组", parent_id=child_id, sort=1)
         grand_id = grand.id
         assert grand.ancestors == f"/{root_id}/{child_id}/"
         await org_env.commit(session)
@@ -86,16 +86,16 @@ async def test_dept_move_cascades_and_rejects_cycle() -> None:
     """移动部门：级联更新子树 `ancestors`；移入自身 / 自身后代被拒（330053）。"""
     session, service, engine = await _env()
     try:
-        root = await service.create_dept(name="A", parent_id=None, sort=1)
+        root = await service.create_dept(code="a", name="A", parent_id=None, sort=1)
         root_id = root.id
         await org_env.commit(session)
-        child = await service.create_dept(name="A1", parent_id=root_id, sort=1)
+        child = await service.create_dept(code="a1", name="A1", parent_id=root_id, sort=1)
         child_id = child.id
         await org_env.commit(session)
-        grand = await service.create_dept(name="A1a", parent_id=child_id, sort=1)
+        grand = await service.create_dept(code="a1a", name="A1a", parent_id=child_id, sort=1)
         grand_id = grand.id
         await org_env.commit(session)
-        other = await service.create_dept(name="B", parent_id=None, sort=2)
+        other = await service.create_dept(code="b", name="B", parent_id=None, sort=2)
         other_id = other.id
         await org_env.commit(session)
 
@@ -127,10 +127,10 @@ async def test_dept_delete_reference_checks() -> None:
     uow = org_env.make_uow(session)
     outbox = org_env.make_outbox()
     try:
-        root = await service.create_dept(name="根", parent_id=None, sort=1)
+        root = await service.create_dept(code="root", name="根", parent_id=None, sort=1)
         root_id = root.id
         await org_env.commit(session)
-        child = await service.create_dept(name="子", parent_id=root_id, sort=1)
+        child = await service.create_dept(code="child", name="子", parent_id=root_id, sort=1)
         child_id = child.id
         await org_env.commit(session)
 
@@ -147,7 +147,7 @@ async def test_dept_delete_reference_checks() -> None:
         assert referenced.value.code == 330055
         await org_env.commit(session)
 
-        other = await service.create_dept(name="另一部门", parent_id=None, sort=2)
+        other = await service.create_dept(code="other", name="另一部门", parent_id=None, sort=2)
         other_id = other.id
         await org_env.commit(session)
         role_dept_service = org_env.make_role_dept_service(session, uow, outbox)
@@ -158,7 +158,7 @@ async def test_dept_delete_reference_checks() -> None:
         assert has_roles.value.code == 330056
         await org_env.commit(session)
 
-        leaf = await service.create_dept(name="无引用叶子", parent_id=None, sort=3)
+        leaf = await service.create_dept(code="leaf", name="无引用叶子", parent_id=None, sort=3)
         leaf_id = leaf.id
         await org_env.commit(session)
         await service.delete_dept(dept_id=leaf_id)
@@ -175,32 +175,32 @@ async def test_dept_validation_limits_and_duplicates() -> None:
     """校验：同父重名（330059）/ 子节点数上限（330058）/ 深度上限（330057）/ 父部门停用（330052）。"""
     session, service, engine = await _env(max_depth=2, max_children=1)
     try:
-        root = await service.create_dept(name="根", parent_id=None, sort=1)
+        root = await service.create_dept(code="root", name="根", parent_id=None, sort=1)
         root_id = root.id
         await org_env.commit(session)
-        child = await service.create_dept(name="子", parent_id=root_id, sort=1)
+        child = await service.create_dept(code="child", name="子", parent_id=root_id, sort=1)
         child_id = child.id
         await org_env.commit(session)
 
         with pytest.raises(OrgDeptNameExistsError) as dup:
-            await service.create_dept(name="子", parent_id=root_id, sort=2)
+            await service.create_dept(code="child-dup", name="子", parent_id=root_id, sort=2)
         assert dup.value.code == 330059
         await org_env.commit(session)
 
         with pytest.raises(OrgDeptChildrenLimitError) as limit:
-            await service.create_dept(name="子二", parent_id=root_id, sort=2)
+            await service.create_dept(code="child2", name="子二", parent_id=root_id, sort=2)
         assert limit.value.code == 330058
         await org_env.commit(session)
 
         with pytest.raises(OrgDeptDepthExceededError) as depth:
-            await service.create_dept(name="孙", parent_id=child_id, sort=1)
+            await service.create_dept(code="grandchild", name="孙", parent_id=child_id, sort=1)
         assert depth.value.code == 330057
         await org_env.commit(session)
 
         await service.update_dept(dept_id=child_id, status="disabled")
         await org_env.commit(session)
         with pytest.raises(OrgDeptParentUnavailableError) as unavailable:
-            await service.create_dept(name="寄子", parent_id=child_id, sort=1)
+            await service.create_dept(code="foster", name="寄子", parent_id=child_id, sort=1)
         assert unavailable.value.code == 330052
         await org_env.commit(session)
     finally:
@@ -212,7 +212,7 @@ async def test_dept_publishes_changed_event() -> None:
     """事件：部门新建经事务性发件箱写入 `org.dept.changed`（契约 enforce 放行）。"""
     session, service, engine = await _env()
     try:
-        dept = await service.create_dept(name="总部", parent_id=None, sort=1)
+        dept = await service.create_dept(code="hq", name="总部", parent_id=None, sort=1)
         dept_id = dept.id
         await org_env.commit(session)
         rows = (await session.execute(select(SysOutbox))).scalars().all()

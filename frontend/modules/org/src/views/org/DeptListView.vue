@@ -46,7 +46,8 @@ const notice = ref('')
 /** 编辑态（只读态点击「修改」进入）。 */
 const editing = ref(false)
 /** 编辑表单（页内）。 */
-const form = ref<{ name: string; parentId: string; sort: number; status: string }>({
+const form = ref<{ code: string; name: string; parentId: string; sort: number; status: string }>({
+  code: '',
   name: '',
   parentId: '',
   sort: 0,
@@ -118,6 +119,7 @@ async function onSelect(node: DeptTreeNode): Promise<void> {
 function startEdit(): void {
   if (selected.value === null) return
   form.value = {
+    code: selected.value.code,
     name: selected.value.name,
     parentId: selected.value.parent_id === null || selected.value.parent_id === undefined ? '' : String(selected.value.parent_id),
     sort: selected.value.sort,
@@ -140,7 +142,12 @@ async function saveEdit(): Promise<void> {
     if (form.value.parentId !== originalParent) {
       await moveDept(id, { parent_id: toIdParam(form.value.parentId) })
     }
-    await updateDept(id, { name: form.value.name, sort: form.value.sort, status: form.value.status })
+    await updateDept(id, {
+      code: form.value.code,
+      name: form.value.name,
+      sort: form.value.sort,
+      status: form.value.status,
+    })
     ElMessage.success(t('mdmOrg.common.save'))
     editing.value = false
     await load()
@@ -278,6 +285,9 @@ onMounted(load)
                 <el-select v-model="form.parentId" :disabled="!editing" clearable :placeholder="t('mdmOrg.dept.form.root')">
                   <el-option v-for="item in parentOptions" :key="item.value" :label="item.label" :value="item.value" />
                 </el-select>
+              </el-form-item>
+              <el-form-item :label="t('mdmOrg.dept.form.code')">
+                <el-input v-model="form.code" :disabled="!editing" data-test="dept-inline-code" />
               </el-form-item>
               <el-form-item :label="t('mdmOrg.dept.form.name')">
                 <el-input v-model="form.name" :disabled="!editing" data-test="dept-inline-name" />

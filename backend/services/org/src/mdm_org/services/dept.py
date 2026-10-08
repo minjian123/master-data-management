@@ -1,5 +1,6 @@
 """部门服务：组织架构树维护（新建 / 修改 / 移动级联 / 删除引用检查）与树查询。"""
 
+import re
 from typing import cast
 
 from bms_core.config.base import BaseConfigSource
@@ -15,6 +16,8 @@ from bms_core.outbox.base import BaseOutboxStore
 from mdm_org import config as org_config
 from mdm_org.errors import (
     OrgDeptChildrenLimitError,
+    OrgDeptCodeExistsError,
+    OrgDeptCodeFormatError,
     OrgDeptCycleError,
     OrgDeptDepthExceededError,
     OrgDeptHasChildrenError,
@@ -160,14 +163,16 @@ class DeptService(BaseFrameworkObject):
     async def create_dept(
         self,
         *,
+        code: str,
         name: str,
         parent_id: int | None,
         sort: int,
         actor: int | None = None,
     ) -> OrgDept:
-        """新建部门（校验父部门、深度与同父名称唯一）。
+        """新建部门（校验编码格式与唯一、父部门、深度与同父名称唯一）。
 
         Args:
+            code: 部门编码（必填；格式受 `org.dept_code_pattern` 约束、租户内唯一）。
             name: 部门名称。
             parent_id: 父部门 id；None 表示根部门。
             sort: 同级排序。
@@ -177,6 +182,8 @@ class DeptService(BaseFrameworkObject):
             OrgDept: 新建部门。
 
         Raises:
+            OrgDeptCodeFormatError: 部门编码不符合格式约束（330061）。
+            OrgDeptCodeExistsError: 部门编码已存在（330060）。
             OrgDeptParentUnavailableError: 父部门不存在或已停用（330052）。
             OrgDeptChildrenLimitError: 同级子部门数超上限（330058）。
             OrgDeptDepthExceededError: 部门树深度超上限（330057）。
@@ -184,6 +191,9 @@ class DeptService(BaseFrameworkObject):
         del actor
         # 校验读与写同事务（SQLAlchemy 2.0：先读后 begin 会因自动开启事务而失败）
         async with self._uow.begin():
+            await self._assert_code_format(code)
+            if await self._depts.get_by_code(code) is not None:
+                raise OrgDeptCodeExistsError(f"部门编码已存在：{code}")
             parent: OrgDept | None = None
             ancestors = ROOT_ANCESTORS
             if parent_id is not None:
@@ -206,7 +216,12 @@ class DeptService(BaseFrameworkObject):
                 if parent.ancestors.count("/") + 1 > max_depth:
                     raise OrgDeptDepthExceededError(f"部门树深度超上限：{max_depth}")
             dept = await self._depts.create(
-                name=name, parent_id=parent_id, ancestors=ancestors, sort=sort, status=STATUS_ENABLED
+                code=code,
+                name=name,
+                parent_id=parent_id,
+                ancestors=ancestors,
+                sort=sort,
+                status=STATUS_ENABLED,
             )
             await self._publish(dept.id, CHANGE_CREATED)
         return dept
@@ -215,16 +230,18 @@ class DeptService(BaseFrameworkObject):
         self,
         *,
         dept_id: int,
+        code: str | None = None,
         name: str | None = None,
         sort: int | None = None,
         status: str | None = None,
         version: int | None = None,
         actor: int | None = None,
     ) -> OrgDept:
-        """修改部门（名称 / 排序 / 状态；`version` 乐观锁比对）。
+        """修改部门（编码 / 名称 / 排序 / 状态；`version` 乐观锁比对）。
 
         Args:
             dept_id: 部门 id。
+            code: 新部门编码；None 不改（格式 + 唯一校验、自身同值豁免）。
             name: 新名称；None 不改。
             sort: 新排序；None 不改。
             status: 新状态；None 不改。
@@ -236,12 +253,21 @@ class DeptService(BaseFrameworkObject):
 
         Raises:
             OrgDeptNotFoundError: 部门不存在（330051）。
+            OrgDeptCodeFormatError: 部门编码不符合格式约束（330061）。
+            OrgDeptCodeExistsError: 部门编码与其它部门重复（330060）。
+            OrgDeptNameExistsError: 同父部门名称已存在（330059）。
             ConcurrentConflictError: 乐观锁冲突。
         """
         del actor
         async with self._uow.begin():
             dept = await self.require_dept(dept_id)
             _guard_version(dept.version, version)
+            if code is not None and code != dept.code:
+                await self._assert_code_format(code)
+                duplicate_code = await self._depts.get_by_code(code)
+                if duplicate_code is not None and duplicate_code.id != dept.id:
+                    raise OrgDeptCodeExistsError(f"部门编码已存在：{code}")
+                dept.code = code
             if name is not None and name != dept.name:
                 duplicate = await self._depts.get_by_parent_name(parent_id=dept.parent_id, name=name)
                 if duplicate is not None and duplicate.id != dept.id:
@@ -336,6 +362,25 @@ class DeptService(BaseFrameworkObject):
             await self._depts.soft_delete(dept_id)
             await self._publish(dept.id, CHANGE_DELETED)
 
+    async def _assert_code_format(self, code: str) -> None:
+        """校验部门编码格式（受 `org.dept_code_pattern` 约束；配置非法回落默认）。
+
+        Args:
+            code: 部门编码。
+
+        Raises:
+            OrgDeptCodeFormatError: 不符合格式（330061）。
+        """
+        pattern = await org_config.read_str(
+            self._config, org_config.DEPT_CODE_PATTERN_KEY, org_config.DEFAULT_DEPT_CODE_PATTERN
+        )
+        try:
+            matched = re.fullmatch(pattern, code) is not None
+        except re.error:
+            matched = re.fullmatch(org_config.DEFAULT_DEPT_CODE_PATTERN, code) is not None
+        if not matched:
+            raise OrgDeptCodeFormatError(f"部门 code 不符合格式约束：{code}")
+
     async def _publish(self, dept_id: int, changed_type: str) -> None:
         """发布部门变更事件（同事务写发件箱）。
 
@@ -412,6 +457,7 @@ def _build_tree(rows: ConcurrentStableList[OrgDept]) -> ConcurrentStableList[Dep
             DeptTreeNode(
                 id=row.id,
                 parent_id=row.parent_id,
+                code=row.code,
                 name=row.name,
                 ancestors=row.ancestors,
                 sort=row.sort,

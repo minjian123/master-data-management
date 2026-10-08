@@ -58,6 +58,12 @@ class OrgErrorCode(IntEnum):
     DEPT_NAME_EXISTS = 330059
     """同父部门名称已存在。"""
 
+    DEPT_CODE_EXISTS = 330060
+    """部门编码已存在（租户内唯一）。"""
+
+    DEPT_CODE_FORMAT = 330061
+    """部门编码不符合格式约束。"""
+
     USER_POST_NOT_FOUND = 330071
     """用户-岗位关联不存在。"""
 
@@ -183,6 +189,18 @@ class OrgDeptNameExistsError(OrgError):
     """同父部门名称已存在（330059）。"""
 
     code_: ClassVar[int] = OrgErrorCode.DEPT_NAME_EXISTS
+
+
+class OrgDeptCodeExistsError(OrgError):
+    """部门编码已存在（330060，租户内唯一）。"""
+
+    code_: ClassVar[int] = OrgErrorCode.DEPT_CODE_EXISTS
+
+
+class OrgDeptCodeFormatError(OrgError):
+    """部门编码不符合格式约束（330061）。"""
+
+    code_: ClassVar[int] = OrgErrorCode.DEPT_CODE_FORMAT
 
 
 class OrgUserPostNotFoundError(OrgError):

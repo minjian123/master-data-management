@@ -42,6 +42,9 @@
           <el-form label-position="top" :disabled="!editing">
             <el-row :gutter="16">
               <el-col :span="8">
+                <el-form-item label="部门编码" required><el-input v-model="form.code" placeholder="如 DEPT0002（租户内唯一，可修改）"></el-input></el-form-item>
+              </el-col>
+              <el-col :span="8">
                 <el-form-item label="部门名称" required><el-input v-model="form.name" placeholder="部门名称"></el-input></el-form-item>
               </el-col>
               <el-col :span="8">
@@ -88,13 +91,13 @@
       var dirty = ref(false);
       // 部门树（与部门管理页一致，含 ancestors 链与直属用户/岗位数）
       var deptTree = ref([
-        { id: 1, label: 'BMS 总部', status: 'enabled', sort: 0, ancestors: '/', userPost: '5 人 / 2 个岗位', children: [
-          { id: 2, label: '技术部', status: 'enabled', sort: 1, ancestors: '/1/2/', userPost: '12 人 / 3 个岗位', children: [
-            { id: 21, label: '开发组', status: 'enabled', sort: 1, ancestors: '/1/2/21/', userPost: '8 人 / 1 个岗位' },
-            { id: 22, label: '测试组', status: 'enabled', sort: 2, ancestors: '/1/2/22/', userPost: '4 人 / 1 个岗位' }
+        { id: 1, code: 'DEPT0001', label: 'BMS 总部', status: 'enabled', sort: 0, ancestors: '/', userPost: '5 人 / 2 个岗位', children: [
+          { id: 2, code: 'DEPT0002', label: '技术部', status: 'enabled', sort: 1, ancestors: '/1/2/', userPost: '12 人 / 3 个岗位', children: [
+            { id: 21, code: 'DEPT0003', label: '开发组', status: 'enabled', sort: 1, ancestors: '/1/2/21/', userPost: '8 人 / 1 个岗位' },
+            { id: 22, code: 'DEPT0004', label: '测试组', status: 'enabled', sort: 2, ancestors: '/1/2/22/', userPost: '4 人 / 1 个岗位' }
           ]},
-          { id: 3, label: '财务部', status: 'enabled', sort: 2, ancestors: '/1/3/', userPost: '6 人 / 1 个岗位' },
-          { id: 4, label: '人事部', status: 'disabled', sort: 3, ancestors: '/1/4/', userPost: '3 人 / 1 个岗位' }
+          { id: 3, code: 'DEPT0005', label: '财务部', status: 'enabled', sort: 2, ancestors: '/1/3/', userPost: '6 人 / 1 个岗位' },
+          { id: 4, code: 'DEPT0006', label: '人事部', status: 'disabled', sort: 3, ancestors: '/1/4/', userPost: '3 人 / 1 个岗位' }
         ]}
       ]);
       function findNode(id, list) {
@@ -119,7 +122,7 @@
         return out;
       }
       var parentTree = computed(function () { return prune(form.id, deptTree.value); });
-      var form = reactive({ id: 2, name: '技术部', parentId: 1, sort: 1, status: 'enabled', remark: '负责平台研发与测试支撑' });
+      var form = reactive({ id: 2, code: 'DEPT0002', name: '技术部', parentId: 1, sort: 1, status: 'enabled', remark: '负责平台研发与测试支撑' });
       var sys = reactive({
         id: '1902876345762181120',
         version: 1,
@@ -155,6 +158,7 @@
         var node = id && findNode(Number(id), deptTree.value);
         if (node) {
           form.id = node.id;
+          form.code = node.code || '';
           form.name = node.label;
           var chain = (node.ancestors || '').split('/').filter(Boolean);
           form.parentId = chain.length ? Number(chain[chain.length - 1]) : 0;
@@ -167,7 +171,9 @@
       })();
       function editForm() { dirty.value = false; editing.value = true; toastMsg('已进入编辑态（字段启用）'); }
       function saveForm() {
+        var c = (form.code || '').trim();
         var n = (form.name || '').trim();
+        if (!c) { toastMsg('部门编码必填', 'error'); return; }
         if (!n) { toastMsg('部门名称必填', 'error'); return; }
         if (form.parentId === form.id) { toastMsg('上级部门不能选择自身', 'error'); return; }
         dirty.value = false;

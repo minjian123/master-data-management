@@ -133,14 +133,17 @@ async def create_dept(
 ) -> ApiResponse[DeptItem]:
     """新建部门。
 
-    需要 org:create 权限；同父部门名称唯一；支持幂等键。
+    需要 org:create 权限；部门编码必填且租户内唯一（格式受 `org.dept_code_pattern` 约束）；
+    同父部门名称唯一；支持幂等键。
     """
     key = build_idempotency_key(key=idempotency_key, tenant=current_tenant_id_str()) if idempotency_key else ""
     if key and not await idempotency.begin(key):
         payload = await idempotency.load(key)
         if payload is not None:
             return ApiResponse.ok(DeptItem.model_validate(payload))
-    dept = await _service(uow, config, outbox).create_dept(name=req.name, parent_id=req.parent_id, sort=req.sort)
+    dept = await _service(uow, config, outbox).create_dept(
+        code=req.code, name=req.name, parent_id=req.parent_id, sort=req.sort
+    )
     result = _item(dept)
     _audit(audit, dept)
     if key:
@@ -172,12 +175,17 @@ async def update_dept(
     outbox: OutboxDep,
     audit: AuditDep,
 ) -> ApiResponse[DeptItem]:
-    """修改部门（名称 / 排序 / 状态）。
+    """修改部门（编码 / 名称 / 排序 / 状态）。
 
-    需要 org:update 权限；`version` 提供时做乐观锁比对（冲突转统一并发冲突）。
+    需要 org:update 权限；编码可改（格式与唯一校验、自身同值豁免）；`version` 提供时做乐观锁比对（冲突转统一并发冲突）。
     """
     dept = await _service(uow, config, outbox).update_dept(
-        dept_id=dept_id, name=req.name, sort=req.sort, status=req.status, version=req.version
+        dept_id=dept_id,
+        code=req.code,
+        name=req.name,
+        sort=req.sort,
+        status=req.status,
+        version=req.version,
     )
     _audit(audit, dept)
     return ApiResponse.ok(_item(dept))

@@ -21,15 +21,18 @@ class PostItem(BaseSchema):
 class PostCreateRequest(BaseSchema):
     """新建岗位请求。"""
 
-    code: str = Field(min_length=1, max_length=64, description="岗位码（租户内唯一；创建后不可改）")
+    code: str = Field(
+        min_length=1, max_length=64, description="岗位码（租户内唯一；格式受 org.post_code_pattern 约束）"
+    )
     name: str = Field(min_length=1, max_length=128, description="岗位名称")
     dept_id: int = Field(description="归属部门 id（须存在且启用）")
     sort: int = Field(default=0, description="排序")
 
 
 class PostUpdateRequest(BaseSchema):
-    """修改岗位请求（未传字段不改；`code` 不可改）。"""
+    """修改岗位请求（未传字段不改；`code` 可改）。"""
 
+    code: str | None = Field(default=None, min_length=1, max_length=64, description="岗位码（可改）")
     name: str | None = Field(default=None, min_length=1, max_length=128, description="岗位名称")
     dept_id: int | None = Field(default=None, description="归属部门 id")
     sort: int | None = Field(default=None, description="排序")

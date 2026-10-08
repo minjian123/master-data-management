@@ -12,6 +12,7 @@ class DeptTreeNode(BaseSchema):
 
     id: int
     parent_id: int | None = None
+    code: str
     name: str
     ancestors: str
     sort: int
@@ -37,6 +38,7 @@ class DeptItem(BaseSchema):
 
     id: int
     parent_id: int | None = None
+    code: str
     name: str
     ancestors: str
     sort: int
@@ -46,6 +48,9 @@ class DeptItem(BaseSchema):
 class DeptCreateRequest(BaseSchema):
     """新建部门请求。"""
 
+    code: str = Field(
+        min_length=1, max_length=64, description="部门编码（租户内唯一；格式受 org.dept_code_pattern 约束）"
+    )
     name: str = Field(min_length=1, max_length=128, description="部门名称（同父唯一）")
     parent_id: int | None = Field(default=None, description="父部门 id（空 = 根部门）")
     sort: int = Field(default=0, description="同级排序")
@@ -54,6 +59,7 @@ class DeptCreateRequest(BaseSchema):
 class DeptUpdateRequest(BaseSchema):
     """修改部门请求（未传字段不改）。"""
 
+    code: str | None = Field(default=None, min_length=1, max_length=64, description="部门编码（可改）")
     name: str | None = Field(default=None, min_length=1, max_length=128, description="部门名称")
     sort: int | None = Field(default=None, description="同级排序")
     status: str | None = Field(default=None, description="状态（enabled / disabled）")

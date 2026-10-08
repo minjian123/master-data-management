@@ -72,6 +72,9 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="8">
+                    <el-form-item label="部门编码" required><el-input v-model="form.code" placeholder="如 DEPT0001（租户内唯一）"></el-input></el-form-item>
+                  </el-col>
+                  <el-col :span="8">
                     <el-form-item label="名称"><el-input v-model="form.name" placeholder="部门名称"></el-input></el-form-item>
                   </el-col>
                   <el-col :span="8">
@@ -107,6 +110,7 @@
     <!-- ④ 新增子部门 el-dialog（480px） -->
     <el-dialog v-model="newDlg.visible" :title="newDlg.title" width="480">
       <el-form label-position="top">
+        <el-form-item label="部门编码" required><el-input v-model="newDlg.code" placeholder="如 DEPT0007（租户内唯一）"></el-input></el-form-item>
         <el-form-item label="名称" required><el-input v-model="newDlg.name" placeholder="部门名称"></el-input></el-form-item>
         <el-form-item label="排序"><el-input-number v-model="newDlg.sort" :min="0"></el-input-number></el-form-item>
         <el-form-item label="状态">
@@ -144,13 +148,13 @@
     template: document.getElementById('app').outerHTML.replace(/<div id="app">/, '<div>').replace(/<\/div>\s*$/, ''),
     setup: function () {
       var treeData = ref([
-        { id: 1, label: 'BMS 总部', status: 'enabled', sort: 0, ancestors: '/', userPost: '5 人 / 2 个岗位', role: '普通角色', children: [
-          { id: 2, label: '技术部', status: 'enabled', sort: 1, ancestors: '/1/2/', userPost: '12 人 / 3 个岗位', role: '普通角色', children: [
-            { id: 21, label: '开发组', status: 'enabled', sort: 1, ancestors: '/1/2/21/', userPost: '8 人 / 1 个岗位', role: '普通角色' },
-            { id: 22, label: '测试组', status: 'enabled', sort: 2, ancestors: '/1/2/22/', userPost: '4 人 / 1 个岗位', role: '普通角色' }
+        { id: 1, code: 'DEPT0001', label: 'BMS 总部', status: 'enabled', sort: 0, ancestors: '/', userPost: '5 人 / 2 个岗位', role: '普通角色', children: [
+          { id: 2, code: 'DEPT0002', label: '技术部', status: 'enabled', sort: 1, ancestors: '/1/2/', userPost: '12 人 / 3 个岗位', role: '普通角色', children: [
+            { id: 21, code: 'DEPT0003', label: '开发组', status: 'enabled', sort: 1, ancestors: '/1/2/21/', userPost: '8 人 / 1 个岗位', role: '普通角色' },
+            { id: 22, code: 'DEPT0004', label: '测试组', status: 'enabled', sort: 2, ancestors: '/1/2/22/', userPost: '4 人 / 1 个岗位', role: '普通角色' }
           ]},
-          { id: 3, label: '财务部', status: 'enabled', sort: 2, ancestors: '/1/3/', userPost: '6 人 / 1 个岗位', role: '普通角色' },
-          { id: 4, label: '人事部', status: 'disabled', sort: 3, ancestors: '/1/4/', userPost: '3 人 / 1 个岗位', role: '普通角色' }
+          { id: 3, code: 'DEPT0005', label: '财务部', status: 'enabled', sort: 2, ancestors: '/1/3/', userPost: '6 人 / 1 个岗位', role: '普通角色' },
+          { id: 4, code: 'DEPT0006', label: '人事部', status: 'disabled', sort: 3, ancestors: '/1/4/', userPost: '3 人 / 1 个岗位', role: '普通角色' }
         ]}
       ]);
       function findNode(id, list) {
@@ -176,7 +180,7 @@
       var dirty = ref(false);
       var syncing = false;
       var embed = location.search.indexOf('embed=1') >= 0;
-      var form = reactive({ parentId: 1, name: '', sort: 1, status: 'enabled' });
+      var form = reactive({ parentId: 1, code: '', name: '', sort: 1, status: 'enabled' });
       var parentOptions = computed(function () {
         return flatList.value.filter(function (n) { return n.id !== curDept.id; });
       });
@@ -191,7 +195,7 @@
         formKey: 'dept',
         formLabel: '部门表单'
       });
-      var newDlg = reactive({ visible: false, title: '', name: '', sort: 1, status: 'enabled' });
+      var newDlg = reactive({ visible: false, title: '', code: '', name: '', sort: 1, status: 'enabled' });
       var roleDrawer = reactive({ visible: false, title: '', roles: { ordinary: true, approve: false } });
 
       // 系统信息组件（iframe）通信：load 后发送数据；高度按组件内容自适应（组件上报，不撑满）
@@ -227,7 +231,7 @@
         toastMsg('已选中：' + data.label);
       }
       function pickDept(d) {
-        return { parentId: d.parentId || 1, name: d.label, sort: d.sort, status: d.status };
+        return { parentId: d.parentId || 1, code: d.code || '', name: d.label, sort: d.sort, status: d.status };
       }
       // 详情表单分态
       function setEditing(on) {
@@ -245,12 +249,14 @@
         if (editing.value && !syncing) dirty.value = true;
       });
       function saveDetail() {
+        if (!form.code.trim()) { toastMsg('部门编码必填', 'error'); return; }
         if (!form.name.trim()) { toastMsg('名称必填', 'error'); return; }
         var node = findNode(curDept.id, treeData.value);
+        node.code = form.code.trim();
         node.label = form.name.trim();
         node.sort = form.sort;
         node.status = form.status;
-        Object.assign(curDept, { label: node.label, sort: form.sort, status: form.status });
+        Object.assign(curDept, { code: node.code, label: node.label, sort: form.sort, status: form.status });
         editing.value = false; dirty.value = false;
         toastMsg('保存成功，列表已自动刷新', 'success');
       }
@@ -274,18 +280,20 @@
       // 新增子部门
       function openNewDlg() {
         newDlg.title = '新增子部门（' + curDept.label + '下）';
-        newDlg.name = ''; newDlg.sort = 1; newDlg.status = 'enabled';
+        newDlg.code = ''; newDlg.name = ''; newDlg.sort = 1; newDlg.status = 'enabled';
         newDlg.visible = true;
       }
       function saveNew() {
+        var c = newDlg.code.trim();
         var n = newDlg.name.trim();
+        if (!c) { toastMsg('部门编码必填', 'error'); return; }
         if (!n) { toastMsg('名称必填', 'error'); return; }
         var parent = findNode(curDept.id, treeData.value);
         if (!parent.children) parent.children = [];
-        parent.children.push({ id: Date.now(), label: n, status: newDlg.status, sort: newDlg.sort, ancestors: parent.ancestors + parent.id + '/', userPost: '0 人 / 0 个岗位', role: '普通角色' });
+        parent.children.push({ id: Date.now(), code: c, label: n, status: newDlg.status, sort: newDlg.sort, ancestors: parent.ancestors + parent.id + '/', userPost: '0 人 / 0 个岗位', role: '普通角色' });
         reCollect();
         newDlg.visible = false;
-        toastMsg('部门已创建（ancestors 链自动维护）', 'success');
+        toastMsg('部门已创建（部门编码租户内唯一、ancestors 链自动维护）', 'success');
       }
       // 移动 / 停用启用
       function moveDept() {

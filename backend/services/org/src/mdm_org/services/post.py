@@ -150,7 +150,7 @@ class PostService(BaseFrameworkObject):
         """新建岗位（岗位码格式 + 唯一校验、归属部门存在且启用）。
 
         Args:
-            code: 岗位码（创建后不可改）。
+            code: 岗位码（格式受 `org.post_code_pattern` 约束、租户内唯一）。
             name: 岗位名称。
             dept_id: 归属部门 id。
             sort: 排序。
@@ -179,16 +179,18 @@ class PostService(BaseFrameworkObject):
         self,
         *,
         post_id: int,
+        code: str | None = None,
         name: str | None = None,
         dept_id: int | None = None,
         sort: int | None = None,
         status: str | None = None,
         version: int | None = None,
     ) -> OrgPost:
-        """修改岗位（`code` 不可改；`version` 乐观锁比对）。
+        """修改岗位（含岗位码；`version` 乐观锁比对）。
 
         Args:
             post_id: 岗位 id。
+            code: 新岗位码；None 不改（格式 + 唯一校验、自身同值豁免）。
             name: 新名称；None 不改。
             dept_id: 新归属部门；None 不改。
             sort: 新排序；None 不改。
@@ -200,6 +202,8 @@ class PostService(BaseFrameworkObject):
 
         Raises:
             OrgPostNotFoundError: 岗位不存在（330031）。
+            OrgPostCodeFormatError: 岗位码不符合格式约束（330036）。
+            OrgPostCodeExistsError: 岗位码与其它岗位重复（330032）。
             OrgPostDeptUnavailableError: 归属部门不存在或已停用（330033）。
             ConcurrentConflictError: 乐观锁冲突。
         """
@@ -207,6 +211,12 @@ class PostService(BaseFrameworkObject):
             post = await self.require_post(post_id)
             if version is not None and version != post.version:
                 raise ConcurrentConflictError(f"乐观锁冲突：期望版本 {version}，当前版本 {post.version}")
+            if code is not None and code != post.code:
+                await self._assert_code_format(code)
+                duplicate_code = await self._posts.get_by_code(code)
+                if duplicate_code is not None and duplicate_code.id != post.id:
+                    raise OrgPostCodeExistsError(f"岗位 code 已存在：{code}")
+                post.code = code
             if dept_id is not None and dept_id != post.dept_id:
                 dept = await self._depts.get(dept_id)
                 if dept is None or dept.status != STATUS_ENABLED:

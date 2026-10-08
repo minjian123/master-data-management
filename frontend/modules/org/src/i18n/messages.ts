@@ -45,6 +45,7 @@ export const ORG_MESSAGES_ZH_CN: Record<string, string> = {
   'mdmOrg.dept.form.edit': '编辑部门',
   'mdmOrg.dept.form.name': '部门名称',
   'mdmOrg.dept.form.code': '部门编码',
+  'mdmOrg.dept.form.codeHint': '租户内唯一，可修改（字母 / 数字 / 下划线 / 连字符）',
   'mdmOrg.dept.form.parent': '上级部门',
   'mdmOrg.dept.form.sort': '排序',
   'mdmOrg.dept.form.status': '状态',

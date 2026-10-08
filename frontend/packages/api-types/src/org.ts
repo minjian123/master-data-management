@@ -111,7 +111,8 @@ export interface paths {
          * Create Dept
          * @description 新建部门。
          *
-         *     需要 org:create 权限；同父部门名称唯一；支持幂等键。
+         *     需要 org:create 权限；部门编码必填且租户内唯一（格式受 `org.dept_code_pattern` 约束）；
+         *     同父部门名称唯一；支持幂等键。
          */
         post: operations["create_dept_api_v1_org_depts_post"];
         delete?: never;
@@ -136,9 +137,9 @@ export interface paths {
         get: operations["get_dept_api_v1_org_depts__dept_id__get"];
         /**
          * Update Dept
-         * @description 修改部门（名称 / 排序 / 状态）。
+         * @description 修改部门（编码 / 名称 / 排序 / 状态）。
          *
-         *     需要 org:update 权限；`version` 提供时做乐观锁比对（冲突转统一并发冲突）。
+         *     需要 org:update 权限；编码可改（格式与唯一校验、自身同值豁免）；`version` 提供时做乐观锁比对（冲突转统一并发冲突）。
          */
         put: operations["update_dept_api_v1_org_depts__dept_id__put"];
         post?: never;
@@ -264,9 +265,9 @@ export interface paths {
         get: operations["get_post_api_v1_org_posts__post_id__get"];
         /**
          * Update Post
-         * @description 修改岗位（`code` 不可改）。
+         * @description 修改岗位（含岗位码）。
          *
-         *     需要 org:update 权限；`version` 提供时做乐观锁比对。
+         *     需要 org:update 权限；岗位码可改（格式与唯一校验、自身同值豁免）；`version` 提供时做乐观锁比对。
          */
         put: operations["update_post_api_v1_org_posts__post_id__put"];
         post?: never;
@@ -907,6 +908,11 @@ export interface components {
          */
         DeptCreateRequest: {
             /**
+             * Code
+             * @description 部门编码（租户内唯一；格式受 org.dept_code_pattern 约束）
+             */
+            code: string;
+            /**
              * Name
              * @description 部门名称（同父唯一）
              */
@@ -930,6 +936,8 @@ export interface components {
         DeptItem: {
             /** Ancestors */
             ancestors: string;
+            /** Code */
+            code: string;
             /** Id */
             id: string;
             /** Name */
@@ -982,6 +990,8 @@ export interface components {
             ancestors: string;
             /** Children */
             children?: components["schemas"]["DeptTreeNode"][];
+            /** Code */
+            code: string;
             /** Id */
             id: string;
             /** Name */
@@ -998,6 +1008,11 @@ export interface components {
          * @description 修改部门请求（未传字段不改）。
          */
         DeptUpdateRequest: {
+            /**
+             * Code
+             * @description 部门编码（可改）
+             */
+            code?: string | null;
             /**
              * Name
              * @description 部门名称
@@ -1042,6 +1057,11 @@ export interface components {
              * @description 子部门（嵌套树）
              */
             children?: components["schemas"]["OrgDept"][];
+            /**
+             * Code
+             * @description 部门编码（租户内唯一）
+             */
+            code: string;
             /**
              * Id
              * @description 部门 ID
@@ -1230,7 +1250,7 @@ export interface components {
         PostCreateRequest: {
             /**
              * Code
-             * @description 岗位码（租户内唯一；创建后不可改）
+             * @description 岗位码（租户内唯一；格式受 org.post_code_pattern 约束）
              */
             code: string;
             /**
@@ -1278,9 +1298,14 @@ export interface components {
         };
         /**
          * PostUpdateRequest
-         * @description 修改岗位请求（未传字段不改；`code` 不可改）。
+         * @description 修改岗位请求（未传字段不改；`code` 可改）。
          */
         PostUpdateRequest: {
+            /**
+             * Code
+             * @description 岗位码（可改）
+             */
+            code?: string | null;
             /**
              * Dept Id
              * @description 归属部门 id

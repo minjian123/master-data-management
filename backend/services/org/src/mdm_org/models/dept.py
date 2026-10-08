@@ -15,16 +15,23 @@ STATUS_DISABLED = "disabled"
 
 
 class OrgDept(BaseModel):
-    """部门（`org_dept`）：父子树 + `ancestors` 路径（子树查询与 `@dept_subtree` 展开）。"""
+    """部门（`org_dept`）：父子树 + `ancestors` 路径（子树查询与 `@dept_subtree` 展开）；部门编码租户内唯一。
+
+    部门编码 `code` 必填、租户内唯一、**创建后可修改**（格式受 `org.dept_code_pattern` 约束）。
+    """
 
     __tablename__ = "org_dept"
     __table_args__ = (
+        UniqueConstraint("code", "deleted_at", name="uq_org_dept_code_deleted_at"),
         UniqueConstraint("parent_id", "name", "deleted_at", name="uq_org_dept_parent_name_deleted_at"),
         Index("idx_org_dept_parent_id", "parent_id"),
         Index("idx_org_dept_status", "status"),
         Index("idx_org_dept_ancestors", "ancestors"),
     )
 
+    code: Mapped[str] = mapped_column(
+        String(64), comment="部门编码（租户内唯一；格式受 org.dept_code_pattern 约束；可修改）"
+    )
     parent_id: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True, comment="父部门 id（逻辑外键 → 本表 id，同库）；根部门为空"
     )

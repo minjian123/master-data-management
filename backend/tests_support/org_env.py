@@ -48,6 +48,7 @@ DEPT_MAX_CHILDREN_KEY = "org.dept_max_children"
 """同级子部门数上限参数键。"""
 
 POST_CODE_PATTERN_KEY = "org.post_code_pattern"
+DEPT_CODE_PATTERN_KEY = "org.dept_code_pattern"
 """岗位码格式参数键。"""
 
 POST_MAX_PER_USER_KEY = "org.post_max_per_user"
@@ -384,6 +385,7 @@ def make_config(
     max_depth: int | None = None,
     max_children: int | None = None,
     post_pattern: str | None = None,
+    dept_pattern: str | None = None,
     max_per_user: int | None = None,
     max_filter_ids: int | None = None,
     user_roles_ttl: int | None = None,
@@ -394,6 +396,7 @@ def make_config(
         max_depth: 部门树最大深度。
         max_children: 同级子部门数上限。
         post_pattern: 岗位码格式。
+        dept_pattern: 部门编码格式。
         max_per_user: 单用户岗位数上限。
         max_filter_ids: 出口部门过滤候选集上限。
         user_roles_ttl: 按用户解析角色结果缓存 TTL（秒）。
@@ -408,6 +411,8 @@ def make_config(
         values.set(DEPT_MAX_CHILDREN_KEY, str(max_children))
     if post_pattern is not None:
         values.set(POST_CODE_PATTERN_KEY, post_pattern)
+    if dept_pattern is not None:
+        values.set(DEPT_CODE_PATTERN_KEY, dept_pattern)
     if max_per_user is not None:
         values.set(POST_MAX_PER_USER_KEY, str(max_per_user))
     if max_filter_ids is not None:
@@ -543,11 +548,11 @@ async def seed_org_tree(session: AsyncSession) -> ConcurrentStableDict[str, int]
     depts = make_dept_service(session, uow, outbox)
     posts = make_post_service(session, uow, outbox)
     user_posts = make_user_post_service(session, uow, outbox)
-    root = await depts.create_dept(name="研发中心", parent_id=None, sort=1)
+    root = await depts.create_dept(code="rd", name="研发中心", parent_id=None, sort=1)
     root_id = root.id
-    child = await depts.create_dept(name="平台组", parent_id=root_id, sort=1)
+    child = await depts.create_dept(code="rd-platform", name="平台组", parent_id=root_id, sort=1)
     child_id = child.id
-    other = await depts.create_dept(name="市场部", parent_id=None, sort=2)
+    other = await depts.create_dept(code="mkt", name="市场部", parent_id=None, sort=2)
     other_id = other.id
     await commit(session)
     lead = await posts.create_post(code="dev_lead", name="开发主管", dept_id=root_id, sort=1)

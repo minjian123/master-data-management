@@ -52,7 +52,7 @@ async def test_post_create_unique_format_and_dept_guard() -> None:
     """新建岗位：归属部门须存在且启用（330033）、编码唯一（330032）、格式受约束（330036）。"""
     session, posts, depts, _role_posts, engine = await _env()
     try:
-        dept = await depts.create_dept(name="研发中心", parent_id=None, sort=1)
+        dept = await depts.create_dept(code="rd", name="研发中心", parent_id=None, sort=1)
         dept_id = dept.id
         await org_env.commit(session)
 
@@ -89,7 +89,7 @@ async def test_post_update_version_conflict_and_list() -> None:
     """修改岗位：乐观锁冲突转统一并发冲突；列表分页与筛选可用。"""
     session, posts, depts, _role_posts, engine = await _env()
     try:
-        dept = await depts.create_dept(name="研发中心", parent_id=None, sort=1)
+        dept = await depts.create_dept(code="rd", name="研发中心", parent_id=None, sort=1)
         dept_id = dept.id
         await org_env.commit(session)
         post = await posts.create_post(code="dev", name="开发", dept_id=dept_id)
@@ -124,7 +124,7 @@ async def test_post_delete_reference_checks() -> None:
     uow = org_env.make_uow(session)
     outbox = org_env.make_outbox()
     try:
-        dept = await depts.create_dept(name="研发中心", parent_id=None, sort=1)
+        dept = await depts.create_dept(code="rd", name="研发中心", parent_id=None, sort=1)
         dept_id = dept.id
         await org_env.commit(session)
         post = await posts.create_post(code="dev", name="开发", dept_id=dept_id)
@@ -169,7 +169,7 @@ async def test_post_code_pattern_from_config() -> None:
     """岗位码格式经 `org.post_code_pattern` 读取（覆盖默认正则）。"""
     session, posts, depts, _role_posts, engine = await _env(post_pattern=r"^P-[0-9]{3}$")
     try:
-        dept = await depts.create_dept(name="研发中心", parent_id=None, sort=1)
+        dept = await depts.create_dept(code="rd", name="研发中心", parent_id=None, sort=1)
         dept_id = dept.id
         await org_env.commit(session)
         post = await posts.create_post(code="P-001", name="开发", dept_id=dept_id)
@@ -177,6 +177,46 @@ async def test_post_code_pattern_from_config() -> None:
         await org_env.commit(session)
         with pytest.raises(OrgPostCodeFormatError):
             await posts.create_post(code="dev", name="不符合配置格式", dept_id=dept_id)
+        await org_env.commit(session)
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.kiwi_id(2268)
+async def test_post_code_update_allowed() -> None:
+    """岗位码可改（原「创建后不可改」放开）：自身同值幂等 / 改码生效 / 重复 330032 / 格式非法 330036。"""
+    session, posts, depts, _role_posts, engine = await _env()
+    try:
+        dept = await depts.create_dept(code="rd", name="研发中心", parent_id=None, sort=1)
+        dept_id = dept.id
+        await org_env.commit(session)
+        post = await posts.create_post(code="dev", name="开发", dept_id=dept_id)
+        post_id = post.id
+        await org_env.commit(session)
+        other = await posts.create_post(code="qa", name="测试", dept_id=dept_id)
+        other_id = other.id
+        await org_env.commit(session)
+
+        same = await posts.update_post(post_id=post_id, code="dev")
+        assert same.code == "dev"
+        await org_env.commit(session)
+
+        renamed = await posts.update_post(post_id=post_id, code="engineer")
+        assert renamed.code == "engineer"
+        await org_env.commit(session)
+
+        with pytest.raises(OrgPostCodeExistsError) as duplicate:
+            await posts.update_post(post_id=post_id, code="qa")
+        assert duplicate.value.code == 330032
+        await org_env.commit(session)
+
+        with pytest.raises(OrgPostCodeFormatError) as bad:
+            await posts.update_post(post_id=post_id, code="不合法")
+        assert bad.value.code == 330036
+        await org_env.commit(session)
+
+        untouched = await posts.require_post(other_id)
+        assert untouched.code == "qa"
         await org_env.commit(session)
     finally:
         await engine.dispose()

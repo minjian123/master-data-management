@@ -367,6 +367,7 @@ def _node(row: OrgDeptModel) -> OrgDept:
     return OrgDept(
         id=row.id,
         parent_id=row.parent_id,
+        code=row.code,
         name=row.name,
         sort=row.sort,
         status=row.status,

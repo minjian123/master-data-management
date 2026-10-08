@@ -539,6 +539,13 @@
       "DeptCreateRequest": {
         "description": "新建部门请求。",
         "properties": {
+          "code": {
+            "description": "部门编码（租户内唯一；格式受 org.dept_code_pattern 约束）",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
           "name": {
             "description": "部门名称（同父唯一）",
             "maxLength": 128,
@@ -566,6 +573,7 @@
           }
         },
         "required": [
+          "code",
           "name"
         ],
         "title": "DeptCreateRequest",
@@ -576,6 +584,10 @@
         "properties": {
           "ancestors": {
             "title": "Ancestors",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
             "type": "string"
           },
           "id": {
@@ -608,6 +620,7 @@
         },
         "required": [
           "id",
+          "code",
           "name",
           "ancestors",
           "sort",
@@ -689,6 +702,10 @@
             "title": "Children",
             "type": "array"
           },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -719,6 +736,7 @@
         },
         "required": [
           "id",
+          "code",
           "name",
           "ancestors",
           "sort",
@@ -730,6 +748,20 @@
       "DeptUpdateRequest": {
         "description": "修改部门请求（未传字段不改）。",
         "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "部门编码（可改）",
+            "title": "Code"
+          },
           "name": {
             "anyOf": [
               {
@@ -822,6 +854,11 @@
             "title": "Children",
             "type": "array"
           },
+          "code": {
+            "description": "部门编码（租户内唯一）",
+            "title": "Code",
+            "type": "string"
+          },
           "id": {
             "description": "部门 ID",
             "title": "Id",
@@ -859,6 +896,7 @@
         },
         "required": [
           "id",
+          "code",
           "name"
         ],
         "title": "OrgDept",
@@ -1084,7 +1122,7 @@
         "description": "新建岗位请求。",
         "properties": {
           "code": {
-            "description": "岗位码（租户内唯一；创建后不可改）",
+            "description": "岗位码（租户内唯一；格式受 org.post_code_pattern 约束）",
             "maxLength": 64,
             "minLength": 1,
             "title": "Code",
@@ -1171,8 +1209,22 @@
         "type": "object"
       },
       "PostUpdateRequest": {
-        "description": "修改岗位请求（未传字段不改；`code` 不可改）。",
+        "description": "修改岗位请求（未传字段不改；`code` 可改）。",
         "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "岗位码（可改）",
+            "title": "Code"
+          },
           "dept_id": {
             "anyOf": [
               {
@@ -2023,7 +2075,7 @@
         ]
       },
       "post": {
-        "description": "新建部门。\n\n需要 org:create 权限；同父部门名称唯一；支持幂等键。",
+        "description": "新建部门。\n\n需要 org:create 权限；部门编码必填且租户内唯一（格式受 `org.dept_code_pattern` 约束）；\n同父部门名称唯一；支持幂等键。",
         "operationId": "create_dept_api_v1_org_depts_post",
         "parameters": [
           {
@@ -2317,7 +2369,7 @@
         ]
       },
       "put": {
-        "description": "修改部门（名称 / 排序 / 状态）。\n\n需要 org:update 权限；`version` 提供时做乐观锁比对（冲突转统一并发冲突）。",
+        "description": "修改部门（编码 / 名称 / 排序 / 状态）。\n\n需要 org:update 权限；编码可改（格式与唯一校验、自身同值豁免）；`version` 提供时做乐观锁比对（冲突转统一并发冲突）。",
         "operationId": "update_dept_api_v1_org_depts__dept_id__put",
         "parameters": [
           {
@@ -3199,7 +3251,7 @@
         ]
       },
       "put": {
-        "description": "修改岗位（`code` 不可改）。\n\n需要 org:update 权限；`version` 提供时做乐观锁比对。",
+        "description": "修改岗位（含岗位码）。\n\n需要 org:update 权限；岗位码可改（格式与唯一校验、自身同值豁免）；`version` 提供时做乐观锁比对。",
         "operationId": "update_post_api_v1_org_posts__post_id__put",
         "parameters": [
           {

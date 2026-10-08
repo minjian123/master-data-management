@@ -32,7 +32,7 @@ async def _seed(session: AsyncSession) -> tuple[int, int, int]:
     outbox = org_env.make_outbox()
     depts = org_env.make_dept_service(session, uow, outbox)
     posts = org_env.make_post_service(session, uow, outbox)
-    dept = await depts.create_dept(name="研发中心", parent_id=None, sort=1)
+    dept = await depts.create_dept(code="rd", name="研发中心", parent_id=None, sort=1)
     dept_id = dept.id
     await org_env.commit(session)
     post_a = await posts.create_post(code="dev", name="开发", dept_id=dept_id)
@@ -172,7 +172,7 @@ async def test_dept_subtree_users_aggregation() -> None:
         posts = org_env.make_post_service(session, uow, outbox)
         user_posts = org_env.make_user_post_service(session, uow, outbox)
 
-        sub = await depts.create_dept(name="平台组", parent_id=dept_id, sort=1)
+        sub = await depts.create_dept(code="rd-platform", name="平台组", parent_id=dept_id, sort=1)
         sub_id = sub.id
         await org_env.commit(session)
         sub_post = await posts.create_post(code="infra", name="基础架构", dept_id=sub_id)

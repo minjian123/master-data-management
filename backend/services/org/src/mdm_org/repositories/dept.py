@@ -17,6 +17,18 @@ class DeptRepository(BaseDbRepository[OrgDept]):
         """刷新会话（服务层同事务内改 ORM 属性后调用）。"""
         await self._session.flush()
 
+    async def get_by_code(self, code: str) -> OrgDept | None:
+        """按部门编码取部门（租户内唯一检查）。
+
+        Args:
+            code: 部门编码。
+
+        Returns:
+            OrgDept | None: 部门；不存在返回 None。
+        """
+        statement = self._select().where(self._column("code") == code)
+        return (await self._session.execute(statement)).scalar_one_or_none()
+
     async def list_all(self, *, status: str | None = None) -> ConcurrentStableList[OrgDept]:
         """取部门全量（树构建用；按 `sort` 与 `id` 排序）。
 

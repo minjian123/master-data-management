@@ -184,12 +184,13 @@ async def update_post(
     outbox: OutboxDep,
     audit: AuditDep,
 ) -> ApiResponse[PostItem]:
-    """修改岗位（`code` 不可改）。
+    """修改岗位（含岗位码）。
 
-    需要 org:update 权限；`version` 提供时做乐观锁比对。
+    需要 org:update 权限；岗位码可改（格式与唯一校验、自身同值豁免）；`version` 提供时做乐观锁比对。
     """
     post = await _service(uow, config, outbox).update_post(
         post_id=post_id,
+        code=req.code,
         name=req.name,
         dept_id=req.dept_id,
         sort=req.sort,

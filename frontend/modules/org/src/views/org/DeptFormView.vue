@@ -21,7 +21,8 @@ const { t } = useOrgI18n()
 const deptId = computed(() => (route.params.id === undefined ? '' : String(route.params.id)))
 
 /** 表单模型（`status` 为普通字符串：值来自契约响应，非字面量联合）。 */
-const form = ref<{ name: string; parentId: string; sort: number; status: string }>({
+const form = ref<{ code: string; name: string; parentId: string; sort: number; status: string }>({
+  code: '',
   name: '',
   parentId: '',
   sort: 0,
@@ -50,6 +51,7 @@ async function load(): Promise<void> {
     if (deptId.value !== '') {
       const detail = await fetchDept(deptId.value)
       form.value = {
+        code: detail.code,
         name: detail.name,
         parentId: detail.parent_id === null || detail.parent_id === undefined ? '' : String(detail.parent_id),
         sort: detail.sort,
@@ -69,9 +71,19 @@ async function save(): Promise<void> {
   saving.value = true
   try {
     if (deptId.value === '') {
-      await createDept({ name: form.value.name, parent_id: toIdParam(form.value.parentId), sort: form.value.sort })
+      await createDept({
+        code: form.value.code,
+        name: form.value.name,
+        parent_id: toIdParam(form.value.parentId),
+        sort: form.value.sort,
+      })
     } else {
-      await updateDept(deptId.value, { name: form.value.name, sort: form.value.sort, status: form.value.status })
+      await updateDept(deptId.value, {
+        code: form.value.code,
+        name: form.value.name,
+        sort: form.value.sort,
+        status: form.value.status,
+      })
     }
     ElMessage.success(t('mdmOrg.common.save'))
     await router.push({ name: 'MdmOrgDeptList' })
@@ -94,6 +106,9 @@ onMounted(load)
   <page-container :title="deptId === '' ? t('mdmOrg.dept.form.create') : t('mdmOrg.dept.form.edit')">
     <section-container>
       <el-form label-width="120px" data-test="dept-form">
+        <el-form-item :label="t('mdmOrg.dept.form.code')" required>
+          <el-input v-model="form.code" :placeholder="t('mdmOrg.dept.form.codeHint')" data-test="dept-form-code" />
+        </el-form-item>
         <el-form-item :label="t('mdmOrg.dept.form.name')">
           <el-input v-model="form.name" data-test="dept-form-name" />
         </el-form-item>

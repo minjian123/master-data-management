@@ -74,6 +74,7 @@ async function save(): Promise<void> {
       })
     } else {
       await updatePost(postId.value, {
+        code: form.value.code,
         name: form.value.name,
         dept_id: toIdParam(form.value.deptId),
         sort: form.value.sort,
@@ -102,7 +103,7 @@ onMounted(load)
     <section-container>
       <el-form label-width="120px" data-test="post-form">
         <el-form-item :label="t('mdmOrg.post.form.code')">
-          <el-input v-model="form.code" :disabled="postId !== ''" data-test="post-form-code" />
+          <el-input v-model="form.code" data-test="post-form-code" />
         </el-form-item>
         <el-form-item :label="t('mdmOrg.post.form.name')">
           <el-input v-model="form.name" data-test="post-form-name" />

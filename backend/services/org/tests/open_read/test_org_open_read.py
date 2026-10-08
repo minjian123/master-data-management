@@ -62,7 +62,7 @@ async def test_users_dept_filter_derivation_empty_candidate_and_cap() -> None:
 
 @pytest.mark.kiwi_id(2256)
 async def test_posts_and_dept_tree_with_data_scope() -> None:
-    """岗位取数与部门树：部门含子级过滤、关键字 / 状态过滤；数据范围限定外的部门不可见 / 不入树。"""
+    """岗位取数与部门树：部门含子级过滤、关键字 / 状态过滤；数据范围限定外的部门不可见 / 不入树；树节点带部门编码。"""
     session, engine = await org_env.make_session()
     try:
         key = await org_env.seed_org_tree(session)
@@ -87,15 +87,18 @@ async def test_posts_and_dept_tree_with_data_scope() -> None:
         assert [item.code for item in page.list] == ["dev_lead", "dev"]
         await org_env.commit(session)
 
-        # 部门树：范围外部门不入树；仍在范围的子部门父节点缺省时上提为根（树自根可达）
+        # 部门树：范围外部门不入树；仍在范围的子部门父节点缺省时上提为根（树自根可达）；节点带部门编码
         tree = list(await scoped.dept_tree())
         assert [node.name for node in tree] == ["研发中心"]
+        assert [node.code for node in tree] == ["rd"]
         assert [child.name for child in tree[0].children] == ["平台组"]
+        assert [child.code for child in tree[0].children] == ["rd-platform"]
         await org_env.commit(session)
 
-        # 不限定时全量树（按 sort / id 序）
+        # 不限定时全量树（按 sort / id 序）；出口契约携带部门编码
         plain = org_env.make_data_source(session, user_source=source)
         assert [node.name for node in await plain.dept_tree()] == ["研发中心", "市场部"]
+        assert [node.code for node in await plain.dept_tree()] == ["rd", "mkt"]
         filtered = await plain.dept_tree(status="enabled")
         assert [node.name for node in filtered] == ["研发中心", "市场部"]
         await org_env.commit(session)

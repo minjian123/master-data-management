@@ -11,6 +11,9 @@ DEPT_MAX_CHILDREN_KEY = "org.dept_max_children"
 POST_CODE_PATTERN_KEY = "org.post_code_pattern"
 """岗位码格式（正则；默认 `^[A-Za-z][A-Za-z0-9_]{0,31}$`）。"""
 
+DEPT_CODE_PATTERN_KEY = "org.dept_code_pattern"
+"""部门编码格式（正则；默认 `^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`）。"""
+
 POST_MAX_PER_USER_KEY = "org.post_max_per_user"
 """单用户可分配岗位数上限（默认 10）。"""
 
@@ -23,6 +26,7 @@ USER_ROLES_CACHE_TTL_KEY = "org.user_roles_cache_ttl"
 DEFAULT_DEPT_TREE_MAX_DEPTH = 10
 DEFAULT_DEPT_MAX_CHILDREN = 500
 DEFAULT_POST_CODE_PATTERN = r"^[A-Za-z][A-Za-z0-9_]{0,31}$"
+DEFAULT_DEPT_CODE_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
 DEFAULT_POST_MAX_PER_USER = 10
 DEFAULT_DATA_SOURCE_MAX_FILTER_IDS = 1000
 DEFAULT_USER_ROLES_CACHE_TTL = 30

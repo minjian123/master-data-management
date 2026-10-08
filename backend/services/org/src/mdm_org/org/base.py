@@ -80,6 +80,7 @@ class OrgDept(BaseSchema):
 
     id: int = Field(description="部门 ID")
     parent_id: int | None = Field(default=None, description="父部门 ID（None＝根）")
+    code: str = Field(description="部门编码（租户内唯一）")
     name: str = Field(description="部门名称")
     sort: int = Field(default=0, description="排序值")
     status: str = Field(default="enabled", description="状态（enabled / disabled）")
