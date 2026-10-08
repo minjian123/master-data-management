@@ -68,12 +68,18 @@ export default defineConfig(({ mode }) => {
       vue(),
       // 产物元数据（版本发现：发布与护栏据此校验「清单 = 产物 = 源码」）
       createModuleMetaPlugin({ name: MODULE_NAME, version: MODULE_VERSION, contractVersion: CONTRACT_VERSION }),
-      federation({
-        name: MODULE_NAME,
-        filename: REMOTE_ENTRY_FILE,
-        exposes: { [EXPOSE_KEY]: './src/index.ts' },
-        shared: SHARED_DEPENDENCIES,
-      }),
+      // **独立预览目标不启用 Module Federation**：该目标下框架依赖本地提供、不走共享域
+      // （`shared` 的 `import: false` 在无宿主时无从解析，会致运行期缺实现——2026-10-08 实测白屏后修正）。
+      ...(isStandaloneBuild
+        ? []
+        : [
+            federation({
+              name: MODULE_NAME,
+              filename: REMOTE_ENTRY_FILE,
+              exposes: { [EXPOSE_KEY]: './src/index.ts' },
+              shared: SHARED_DEPENDENCIES,
+            }),
+          ]),
     ],
     build: {
       // MF 依赖顶层 await 与动态导入；无历史浏览器包袱，取 esnext
