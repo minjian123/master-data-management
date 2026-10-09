@@ -221,6 +221,88 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/org/internal/role-depts/{role_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Internal Assign Role Depts
+         * @description 内部全量覆盖角色部门（服务身份 `platform`；角色侧无主要项语义）。
+         */
+        put: operations["internal_assign_role_depts_api_v1_org_internal_role_depts__role_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/internal/role-posts/{role_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Internal Assign Role Posts
+         * @description 内部全量覆盖角色岗位（服务身份 `platform`；角色侧无主要项语义）。
+         */
+        put: operations["internal_assign_role_posts_api_v1_org_internal_role_posts__role_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/internal/user-depts/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Internal Assign User Depts
+         * @description 内部全量覆盖用户部门 + 主要部门（服务身份 `platform`）。
+         */
+        put: operations["internal_assign_user_depts_api_v1_org_internal_user_depts__user_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/internal/user-posts/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Internal Assign User Posts
+         * @description 内部全量覆盖用户岗位 + 主要岗位（服务身份 `platform`）。
+         *
+         *     与公开面同源：上限 / 不存在 / 主项归属校验、事件与失效代一致；支持幂等键；响应回生效后集合与主要项。
+         */
+        put: operations["internal_assign_user_posts_api_v1_org_internal_user_posts__user_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/org/posts": {
         parameters: {
             query?: never;
@@ -1156,6 +1238,60 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * InternalRoleDeptRequest
+         * @description 内部全量覆盖角色部门（角色侧无主要项语义）。
+         */
+        InternalRoleDeptRequest: {
+            /**
+             * Dept Ids
+             * @description 目标部门 id 清单（全量覆盖）
+             */
+            dept_ids?: number[];
+        };
+        /**
+         * InternalRolePostRequest
+         * @description 内部全量覆盖角色岗位（角色侧无主要项语义）。
+         */
+        InternalRolePostRequest: {
+            /**
+             * Post Ids
+             * @description 目标岗位 id 清单（全量覆盖）
+             */
+            post_ids?: number[];
+        };
+        /**
+         * InternalUserDeptRequest
+         * @description 内部全量覆盖用户部门（含主要部门）。
+         */
+        InternalUserDeptRequest: {
+            /**
+             * Dept Ids
+             * @description 目标部门 id 清单（全量覆盖）
+             */
+            dept_ids?: number[];
+            /**
+             * Primary Dept Id
+             * @description 主要部门 id；不传 / null 表示清除
+             */
+            primary_dept_id?: number | null;
+        };
+        /**
+         * InternalUserPostRequest
+         * @description 内部全量覆盖用户岗位（含主要岗位）。
+         */
+        InternalUserPostRequest: {
+            /**
+             * Post Ids
+             * @description 目标岗位 id 清单（全量覆盖）
+             */
+            post_ids?: number[];
+            /**
+             * Primary Post Id
+             * @description 主要岗位 id；不传 / null 表示清除
+             */
+            primary_post_id?: number | null;
         };
         /**
          * OrgDept
@@ -2408,6 +2544,342 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiResponse_DeptUserIds_"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 无权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 资源不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description 限流 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 服务异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    internal_assign_role_depts_api_v1_org_internal_role_depts__role_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 业务幂等键（同键重复提交返回同结果） */
+                "Idempotency-Key"?: string | null;
+                Authorization?: string | null;
+            };
+            path: {
+                role_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalRoleDeptRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_RoleDeptIds_"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 无权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 资源不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description 限流 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 服务异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    internal_assign_role_posts_api_v1_org_internal_role_posts__role_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 业务幂等键（同键重复提交返回同结果） */
+                "Idempotency-Key"?: string | null;
+                Authorization?: string | null;
+            };
+            path: {
+                role_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalRolePostRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_RolePostIds_"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 无权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 资源不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description 限流 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 服务异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    internal_assign_user_depts_api_v1_org_internal_user_depts__user_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 业务幂等键（同键重复提交返回同结果） */
+                "Idempotency-Key"?: string | null;
+                Authorization?: string | null;
+            };
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalUserDeptRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_UserDeptIds_"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 无权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 资源不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description 限流 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 服务异常 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    internal_assign_user_posts_api_v1_org_internal_user_posts__user_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 业务幂等键（同键重复提交返回同结果） */
+                "Idempotency-Key"?: string | null;
+                Authorization?: string | null;
+            };
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalUserPostRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_UserPostIds_"];
                 };
             };
             /** @description 未认证 */
