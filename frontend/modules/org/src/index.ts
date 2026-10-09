@@ -61,7 +61,7 @@ export const orgModule = defineModule({
           area: 'sys.user.detail.tabs',
           component: () => import('./components/slots/UserPostsPanel.vue'),
           order: 20,
-          title: '用户分配岗位',
+          title: '岗位分配',
           perm: 'org:update',
         },
         {
@@ -69,7 +69,7 @@ export const orgModule = defineModule({
           area: 'sys.user.detail.tabs',
           component: () => import('./components/slots/UserDeptsPanel.vue'),
           order: 30,
-          title: '用户分配部门',
+          title: '部门分配',
           perm: 'org:update',
         },
         {

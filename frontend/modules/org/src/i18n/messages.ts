@@ -85,8 +85,8 @@ export const ORG_MESSAGES_ZH_CN: Record<string, string> = {
   'mdmOrg.post.users.title': '岗位用户（只读）',
   'mdmOrg.post.delete.confirm': '确认删除该岗位？存在用户 / 角色分配时将被拒绝。',
 
-  'mdmOrg.slot.userPosts.title': '用户分配岗位',
-  'mdmOrg.slot.userDepts.title': '用户分配部门',
+  'mdmOrg.slot.userPosts.title': '岗位分配',
+  'mdmOrg.slot.userDepts.title': '部门分配',
   'mdmOrg.slot.userPosts.chain': '主体链：用户 → 岗位 → 角色；分配岗位后，用户经该岗位获得岗位绑定的角色权限。',
   'mdmOrg.slot.rolePosts.title': '岗位分配',
   'mdmOrg.slot.roleDepts.title': '部门分配',

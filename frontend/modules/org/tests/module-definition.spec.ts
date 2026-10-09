@@ -40,7 +40,7 @@ describe('mdm 组织域模块定义（01_04 · Kiwi 2261）', () => {
     }
   })
 
-  it('区域项：四个具名插槽插件（用户分配岗位 / 用户分配部门 / 岗位分配 / 部门分配）键位与挂接位正确', () => {
+  it('区域项：四个具名插槽插件（用户侧 岗位分配 / 部门分配；角色侧 岗位分配 / 部门分配）键位与挂接位正确', () => {
     const regions = registration.regions ?? []
     expect(regions.map((region) => region.key)).toEqual([
       'mdm-org:user-posts',

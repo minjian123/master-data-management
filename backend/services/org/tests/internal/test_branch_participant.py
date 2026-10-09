@@ -106,7 +106,7 @@ async def test_branch_execute_rejected_when_provider_disabled(service_app: FastA
 
     response = await client.post(
         "/api/v1/txn/branches",
-        json={"xid": "1|b1", "db_key": "tenant_demo", "op": USER_DEPTS_OP, "args": {}},
+        json={"xid": "1|b1", "db_key": "tenant_demo", "ops": [{"op": USER_DEPTS_OP, "args": {}}]},
         headers={"Authorization": "Bearer stub"},
     )
 

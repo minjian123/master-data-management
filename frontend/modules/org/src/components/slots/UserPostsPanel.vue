@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 插件：用户分配岗位（挂宿主「用户详情」页签 `sys.user.detail.tabs`）。
+// 插件：岗位分配（用户侧；挂宿主「用户分配」页签内的 `sys.user.detail.tabs`）。
 //
 // **上下文通道＝路由参数**：宿主页把作用实体标识放路由参数（`/sys/users/:id`），
 // 插件经模块持有的宿主注入 `router`（只读）读取——宿主页不感知插件、插件不 import 宿主页。

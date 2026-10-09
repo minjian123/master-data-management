@@ -57,7 +57,7 @@ function hostStub(): { api: ModuleApi; scope: ScopeSpy } {
 }
 
 /**
- * 以具名插槽上下文挂载「用户分配岗位」插件。
+ * 以具名插槽上下文挂载「岗位分配（用户侧）」插件。
  *
  * @param context 插槽上下文（`userId` / `registerSubmitter` 等）。
  * @returns 挂载结果。
