@@ -27,10 +27,15 @@ import type {
   RoleDeptIds,
   RolePostAssignRequest,
   RolePostIds,
+  UserDeptAssignRequest,
+  UserDeptIds,
+  UserDeptPrimaryRequest,
   UserPostAssignRequest,
   UserPostIds,
+  UserPostPrimaryRequest,
 } from '../domain'
 import { requiredHostApi } from '../runtime'
+import { toIdParam } from '../domain'
 
 /** 产品键（与平台侧产品登记同源）。 */
 export const ORG_PRODUCT = 'mdm'
@@ -303,4 +308,62 @@ export function assignRoleDepts(roleId: string, body: RoleDeptAssignRequest): Pr
  */
 export function unassignRoleDept(roleId: string, deptId: string): Promise<RoleDeptIds> {
   return scope().del<RoleDeptIds>(`/role-depts/${roleId}/${deptId}`)
+}
+
+/* --------------------------------- 用户 · 部门多分配与主要项 ---------------- */
+
+/**
+ * 用户已分配部门（含主要部门）。
+ *
+ * @param userId 用户标识。
+ * @returns 已分配部门 id 清单与主要部门 id。
+ */
+export function fetchUserDeptIds(userId: string): Promise<UserDeptIds> {
+  return scope().get<UserDeptIds>(`/user-depts/${userId}`)
+}
+
+/**
+ * 全量覆盖分配用户部门（diff 后增删单事务；幂等）。
+ *
+ * @param userId 用户标识。
+ * @param body 目标部门 id 清单（全量覆盖）。
+ * @returns 分配后的部门 id 清单与主要部门 id。
+ */
+export function assignUserDepts(userId: string, body: UserDeptAssignRequest): Promise<UserDeptIds> {
+  return scope().put<UserDeptIds>(`/user-depts/${userId}`, body)
+}
+
+/**
+ * 单条解绑用户部门（契约保留端点；UI 侧走全量覆盖，此处供运维 / 兼容调用）。
+ *
+ * @param userId 用户标识。
+ * @param deptId 部门标识。
+ * @returns 解绑后的部门 id 清单与主要部门 id。
+ */
+export function unassignUserDept(userId: string, deptId: string): Promise<UserDeptIds> {
+  return scope().del<UserDeptIds>(`/user-depts/${userId}/${deptId}`)
+}
+
+/**
+ * 置位 / 清除用户主要部门（独立端点；同事务互斥置位；幂等）。
+ *
+ * @param userId 用户标识。
+ * @param primaryDeptId 主要部门标识（空串 = 清除）。
+ * @returns 部门 id 清单与主要部门 id。
+ */
+export function setPrimaryUserDept(userId: string, primaryDeptId: string): Promise<UserDeptIds> {
+  const body: UserDeptPrimaryRequest = { dept_id: toIdParam(primaryDeptId) }
+  return scope().put<UserDeptIds>(`/user-depts/${userId}/primary`, body)
+}
+
+/**
+ * 置位 / 清除用户主要岗位（独立端点；同事务互斥置位；幂等）。
+ *
+ * @param userId 用户标识。
+ * @param primaryPostId 主要岗位标识（空串 = 清除）。
+ * @returns 岗位 id 清单与主要岗位 id。
+ */
+export function setPrimaryUserPost(userId: string, primaryPostId: string): Promise<UserPostIds> {
+  const body: UserPostPrimaryRequest = { post_id: toIdParam(primaryPostId) }
+  return scope().put<UserPostIds>(`/user-posts/${userId}/primary`, body)
 }

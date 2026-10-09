@@ -1,17 +1,21 @@
 <script setup lang="ts">
-// 分配面板骨架（三个具名插槽插件共用）：**已分配列表 + 单条解绑 + 弹窗分配（全量覆盖）+ 即时提交**。
+// 分配面板骨架（四个具名插槽插件共用）：**已分配列表 + 主要项单选 + 弹窗分配（全量覆盖）+ 跟随宿主保存**。
 //
-// 交互口径（承组织域插件原型）：① 分配经**弹窗**（候选由父组件在 `#picker` 插槽内渲染，支持部门筛选 / 树多选）；
-// ② 点「保存并提交」按勾选结果**整体覆盖**该对象现有分配并**立即生效**（不随宿主页工具栏保存）；
-// ③ 单条**解绑**带二次确认、立即生效；④ 降级：上下文缺失 / 无权限 / 请求能力未注入 → 不请求、给出明确提示。
+// 交互口径（2026-10-09 定稿）：
+// ① 分配经**弹窗**（候选由父组件在 `#picker` 插槽内渲染，支持部门筛选 / 树多选）；
+// ② 弹窗内勾选与主要项选择**只改进草稿**（不立即请求）；**确定**仅关闭弹窗；
+// ③ 宿主提供提交器通道（`hostBound`）⇒ 由宿主记录页签「保存」统一提交，面板显示**未保存标记**；
+//    宿主未提供 ⇒ 旧口径兜底：**确定即自提交**（全量覆盖、立即生效），不回归可用性；
+// ④ 移除「解绑」列：移除分配＝在弹窗内取消勾选后提交（草稿语义天然覆盖）；
+// ⑤ 降级：上下文缺失 / 无权限 / 请求能力未注入 → 不请求、给出明确提示。
 import { EmptyState, SectionContainer } from '@bms/ui-ep'
-import { ElButton, ElDialog, ElMessage, ElMessageBox, ElTable, ElTableColumn } from 'element-plus'
-import { onMounted, ref, watch } from 'vue'
+import { ElButton, ElDialog, ElRadio, ElTable, ElTableColumn } from 'element-plus'
+import { ref, watch } from 'vue'
 
 import { useOrgI18n } from '../../composables/useOrgI18n'
 import { orgRuntime } from '../../runtime'
 
-/** 已分配项（列表展示与解绑对象）。 */
+/** 已分配项（列表展示对象）。 */
 export interface AssignedRow {
   /** 标识（字符串口径，避免雪花 id 精度丢失）。 */
   id: string
@@ -24,16 +28,24 @@ export interface AssignedRow {
 const props = defineProps<{
   /** 面板标题文案键。 */
   titleKey: string
-  /** 作用实体标识（宿主页提供：路由参数或显式上下文）。 */
+  /** 作用实体标识（宿主页提供：显式上下文优先、路由参数兜底）。 */
   contextId: string
   /** 上下文缺失提示文案键。 */
   contextAbsentKey?: string
   /** 目标类型文案（如「岗位」「部门」）。 */
   targetLabel: string
-  /** 已分配项（父组件载入后传入）。 */
+  /** 已分配项（父组件载入后传入；服务端已保存口径）。 */
   assignedRows: AssignedRow[]
-  /** 弹窗内已勾选标识（`v-model:picked`）。 */
+  /** 弹窗内草稿勾选标识（`v-model:picked`）。 */
   picked: string[]
+  /** 草稿主要项标识（空串＝未设；`showPrimary` 为真时生效）。 */
+  primary?: string
+  /** 是否含未提交改动（草稿差异；父组件传入）。 */
+  dirty?: boolean
+  /** 宿主是否提供提交器通道（真 ⇒ 跟随宿主保存；假 ⇒ 确定即自提交兜底）。 */
+  hostBound?: boolean
+  /** 是否呈现主要项单选列（该面板具备主要项语义时为真）。 */
+  showPrimary?: boolean
   /** 候选载入中。 */
   loading?: boolean
   /** 提交中。 */
@@ -43,12 +55,12 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  /** 勾选集合变化。 */
+  /** 草稿勾选集合变化。 */
   'update:picked': [ids: string[]]
-  /** 提交全量分配（父组件执行写操作）。 */
+  /** 草稿主要项变化。 */
+  'update:primary': [id: string]
+  /** 自提交兜底（宿主无通道时点「确定」触发；父组件执行写操作）。 */
   submit: [ids: string[]]
-  /** 单条解绑（父组件执行写操作）。 */
-  unassign: [id: string]
   /** 重新载入（父组件实现）。 */
   reload: []
 }>()
@@ -58,48 +70,30 @@ const runtime = orgRuntime()
 
 /** 分配弹窗可见性。 */
 const pickerVisible = ref(false)
-/** 解绑中标识（行内 loading）。 */
-const unassigning = ref('')
 
-/** 打开分配弹窗（勾选初值＝当前已分配）。 */
+/** 打开分配弹窗（勾选初值＝当前草稿；未设主要项且已分配非空时默认首项）。 */
 function openPicker(): void {
-  emit('update:picked', props.assignedRows.map((row) => row.id))
+  emit('update:picked', [...props.picked])
+  if (props.showPrimary === true && (props.primary ?? '') === '' && props.assignedRows.length > 0) {
+    emit('update:primary', props.assignedRows[0]!.id)
+  }
   pickerVisible.value = true
 }
 
-/** 取消分配弹窗。 */
+/** 关闭分配弹窗（不改草稿）。 */
 function closePicker(): void {
   pickerVisible.value = false
 }
 
-/** 保存并提交（全量覆盖；立即生效，不随宿主页工具栏保存）。 */
-function submit(): void {
-  emit('submit', [...props.picked])
-  pickerVisible.value = false
-  ElMessage.success(t('mdmOrg.slot.submitted'))
-}
-
 /**
- * 单条解绑（二次确认；立即生效）。
+ * 确定（关闭弹窗）。
  *
- * @param row 已分配项。
+ * 宿主有提交器通道 ⇒ 改动留在草稿，由宿主工具栏保存统一提交；
+ * 无通道 ⇒ 自提交兜底（全量覆盖、立即生效）。
  */
-async function unassign(row: AssignedRow): Promise<void> {
-  await ElMessageBox.confirm(
-    t('mdmOrg.slot.unassignConfirm', { name: row.label }),
-    t('mdmOrg.common.confirm'),
-    {
-      confirmButtonText: t('mdmOrg.common.confirm'),
-      cancelButtonText: t('mdmOrg.common.cancel'),
-      type: 'warning',
-    },
-  )
-  unassigning.value = row.id
-  try {
-    emit('unassign', row.id)
-  } finally {
-    unassigning.value = ''
-  }
+function confirm(): void {
+  pickerVisible.value = false
+  if (props.hostBound !== true) emit('submit', [...props.picked])
 }
 
 // 上下文切换（宿主记录页签换实体）：关闭弹窗、清空本地态
@@ -109,10 +103,6 @@ watch(
     pickerVisible.value = false
   },
 )
-
-onMounted(() => {
-  if (props.contextId !== '') emit('reload')
-})
 </script>
 
 <template>
@@ -134,10 +124,17 @@ onMounted(() => {
         <span class="mdm-org-assign__summary" data-test="assign-summary">
           {{ t('mdmOrg.slot.assigned', { count: assignedRows.length }) }}
         </span>
+        <span v-if="dirty === true" class="mdm-org-assign__dirty" data-test="assign-dirty">
+          {{ t('mdmOrg.slot.dirty') }}
+        </span>
         <span v-if="!runtime.canUpdate" class="mdm-org-assign__hint" data-test="assign-no-permission">
           {{ t('mdmOrg.slot.noPermission') }}
         </span>
       </div>
+
+      <p v-if="hostBound !== true" class="mdm-org-assign__hint" data-test="assign-self-submit">
+        {{ t('mdmOrg.slot.selfSubmitHint') }}
+      </p>
 
       <p v-if="loading === true" class="mdm-org-assign__hint" data-test="assign-loading">
         {{ t('mdmOrg.common.loading') }}
@@ -151,22 +148,22 @@ onMounted(() => {
       />
 
       <el-table v-else :data="assignedRows" row-key="id" size="small" data-test="assigned-table">
-        <el-table-column prop="label" :label="targetLabel" min-width="160" />
-        <el-table-column prop="description" :label="t('mdmOrg.slot.column.note')" min-width="160" />
-        <el-table-column :label="t('mdmOrg.slot.column.actions')" width="110" align="right">
+        <el-table-column v-if="showPrimary === true" :label="t('mdmOrg.slot.column.primary')" width="100" align="center">
           <template #default="{ row }">
-            <el-button
-              v-if="runtime.canUpdate"
-              link
-              type="danger"
-              :loading="unassigning === (row as AssignedRow).id"
-              :data-test="`assign-unbind-${(row as AssignedRow).id}`"
-              @click="unassign(row as AssignedRow)"
+            <el-radio
+              :model-value="primary ?? ''"
+              :value="(row as AssignedRow).id"
+              :disabled="!runtime.canUpdate"
+              :label="(row as AssignedRow).id"
+              :data-test="`assign-primary-${(row as AssignedRow).id}`"
+              @change="emit('update:primary', (row as AssignedRow).id)"
             >
-              {{ t('mdmOrg.common.remove') }}
-            </el-button>
+              <span />
+            </el-radio>
           </template>
         </el-table-column>
+        <el-table-column prop="label" :label="targetLabel" min-width="160" />
+        <el-table-column prop="description" :label="t('mdmOrg.slot.column.note')" min-width="160" />
       </el-table>
 
       <p v-if="(errorText ?? '') !== ''" class="mdm-org-assign__error" data-test="assign-error">{{ errorText }}</p>
@@ -186,10 +183,10 @@ onMounted(() => {
             v-if="runtime.canUpdate"
             type="primary"
             :loading="submitting === true"
-            data-test="assign-dialog-submit"
-            @click="submit"
+            data-test="assign-dialog-confirm"
+            @click="confirm"
           >
-            {{ t('mdmOrg.slot.saveAndSubmit') }}
+            {{ hostBound === true ? t('mdmOrg.common.confirm') : t('mdmOrg.slot.saveAndSubmit') }}
           </el-button>
         </template>
       </el-dialog>
@@ -208,6 +205,11 @@ onMounted(() => {
 .mdm-org-assign__summary,
 .mdm-org-assign__hint {
   color: var(--bms-color-text-secondary);
+  font-size: var(--bms-font-size-sm);
+}
+
+.mdm-org-assign__dirty {
+  color: var(--bms-color-warning);
   font-size: var(--bms-font-size-sm);
 }
 

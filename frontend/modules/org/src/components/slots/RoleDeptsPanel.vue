@@ -8,9 +8,9 @@ import { useModuleSlotField } from '@bms/ui-ep'
 import { onMounted, ref, watch } from 'vue'
 
 import { useOrgI18n } from '../../composables/useOrgI18n'
-import { useAssignment, type AssignedLabel } from '../../composables/useAssignment'
+import { useAssignment, type AssignedLabel, type HostSubmitterRegistrar } from '../../composables/useAssignment'
 import { flattenDeptTree, toDeptTreeData, toIdParamList, type DeptTreeNode, type DeptTreeOption } from '../../domain'
-import { assignRoleDepts, fetchDeptTree, fetchRoleDeptIds, unassignRoleDept } from '../../services/org-service'
+import { assignRoleDepts, fetchDeptTree, fetchRoleDeptIds } from '../../services/org-service'
 
 import AssignPanel from './AssignPanel.vue'
 
@@ -18,6 +18,7 @@ const { t } = useOrgI18n()
 
 /** 角色标识（宿主页显式上下文注入）。 */
 const roleId = useModuleSlotField<string>('roleId')
+const registrar = useModuleSlotField<HostSubmitterRegistrar>('registerSubmitter')
 const contextId = ref(roleId.value ?? '')
 
 /** 部门名称索引（已分配项回显）。 */
@@ -41,10 +42,7 @@ const assignment = useAssignment(contextId, {
   async submit(id, ids) {
     await assignRoleDepts(id, { dept_ids: toIdParamList(ids) })
   },
-  async unassign(id, deptId) {
-    await unassignRoleDept(id, deptId)
-  },
-})
+}, { registrar })
 
 /**
  * 树勾选变化（精确匹配：只取勾选节点本身，不含半选父级）。
@@ -95,9 +93,10 @@ defineExpose({ syncTreeChecked })
       :loading="assignment.loading.value"
       :submitting="assignment.submitting.value"
       :error-text="assignment.errorText.value"
+      :dirty="assignment.dirty.value"
+      :host-bound="assignment.hostBound.value"
       @update:picked="assignment.picked.value = $event"
-      @submit="assignment.save($event)"
-      @unassign="assignment.unbind($event)"
+      @submit="assignment.applyDraft()"
       @reload="reload"
     >
       <template #picker>

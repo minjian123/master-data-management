@@ -21,6 +21,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { applyHostContext } from '../src/runtime'
 import {
   assignRoleDepts,
+  assignUserDepts,
   assignRolePosts,
   assignUserPosts,
   createDept,
@@ -37,13 +38,17 @@ import {
   fetchPostUserIds,
   fetchRoleDeptIds,
   fetchRolePostIds,
+  fetchUserDeptIds,
   fetchUserPostIds,
   moveDept,
   unassignRoleDept,
+  unassignUserDept,
   unassignRolePost,
   unassignUserPost,
   updateDept,
   updatePost,
+  setPrimaryUserDept,
+  setPrimaryUserPost,
 } from '../src/services/org-service'
 
 /** 仓根（本测试位于 `modules/org/tests`）。 */
@@ -143,6 +148,12 @@ async function driveAllServices(): Promise<void> {
   await fetchUserPostIds('u-1')
   await assignUserPosts('u-1', { post_ids: [1] })
   await unassignUserPost('u-1', 'p-1')
+  await setPrimaryUserPost('u-1', '')
+
+  await fetchUserDeptIds('u-1')
+  await assignUserDepts('u-1', { dept_ids: [1] })
+  await unassignUserDept('u-1', 'd-1')
+  await setPrimaryUserDept('u-1', 'd-1')
 
   await fetchRolePostIds('r-1')
   await assignRolePosts('r-1', { post_ids: [1] })

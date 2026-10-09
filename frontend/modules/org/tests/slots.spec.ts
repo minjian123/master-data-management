@@ -2,7 +2,7 @@
 /**
  * 具名插槽插件用例（mdm 01_04）：三条上下文通道、弹窗分配（全量覆盖）与降级口径——
  * ① 路由参数（用户详情页）② 显式上下文注入（角色分配页签）③ 缺失即不请求 / 权限不足只读；
- * ④ 分配经弹窗「保存并提交」、单条解绑入口齐备。
+ * ④ 分配经弹窗改动**进草稿**：宿主提供提交器通道时随宿主保存，无通道时「确定」即自提交；解绑入口已移除。
  */
 
 import type { ModuleApi, ModuleApiScope } from '@bms/core'
@@ -107,7 +107,7 @@ describe('mdm 组织域模块 · 具名插槽插件（01_04 · Kiwi 2261）', ()
     expect(wrapper.find('[data-test="assign-open"]').exists()).toBe(true)
   })
 
-  it('弹窗分配：打开弹窗勾选候选并「保存并提交」按全量覆盖写回', async () => {
+  it('弹窗分配：勾选改动进草稿，无宿主通道时「确定」即自提交（全量覆盖）', async () => {
     const { api, scope } = hostStub()
     applyHostContext({ api, router: { currentRoute: { value: { params: { id: 'u-1' } } } } })
     const wrapper = mount(UserPostsPanel)
@@ -117,19 +117,27 @@ describe('mdm 组织域模块 · 具名插槽插件（01_04 · Kiwi 2261）', ()
     await flushPromises()
     expect(wrapper.find('[data-test="slot-user-posts-candidates"]').text()).toContain('工程师')
 
-    await wrapper.find('[data-test="assign-dialog-submit"]').trigger('click')
+    // 取消勾选已分配项 ⇒ 产生草稿差异（未提交前不写库）
+    await wrapper.find('[data-test="slot-user-posts-candidates"] input[type="checkbox"]').setValue(false)
+    await flushPromises()
+    expect(scope.put).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-test="assign-dirty"]').exists()).toBe(true)
+
+    await wrapper.find('[data-test="assign-dialog-confirm"]').trigger('click')
     await flushPromises()
 
-    expect(scope.put).toHaveBeenCalledWith('/user-posts/u-1', { post_ids: ['p-1'] })
+    expect(scope.put).toHaveBeenCalledWith('/user-posts/u-1', { post_ids: [] })
   })
 
-  it('单条解绑入口齐备（写侧经服务层，二次确认后立即生效）', async () => {
+  it('解绑入口已移除：移除分配经弹窗取消勾选（草稿语义）；无宿主通道给出自提交提示', async () => {
     const { api } = hostStub()
     applyHostContext({ api, router: { currentRoute: { value: { params: { id: 'u-1' } } } } })
     const wrapper = mount(UserPostsPanel)
     await flushPromises()
 
-    expect(wrapper.find('[data-test="assign-unbind-p-1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="assign-unbind-p-1"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="assigned-table"]').text()).not.toContain('操作')
+    expect(wrapper.find('[data-test="assign-self-submit"]').exists()).toBe(true)
   })
 
   it('显式上下文通道（角色分配页签）：注入 roleId 后载入已分配岗位', async () => {

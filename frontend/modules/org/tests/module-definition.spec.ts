@@ -1,6 +1,6 @@
 // kiwi_id: 2261
 /**
- * 模块专属断言（mdm 01_04）：清单身份与版本注入 / 路由与菜单 meta / 区域项（三个具名插槽插件）/
+ * 模块专属断言（mdm 01_04）：清单身份与版本注入 / 路由与菜单 meta / 区域项（四个具名插槽插件）/
  * 文案包键位 / 契约版本与平台同源。
  */
 
@@ -40,21 +40,25 @@ describe('mdm 组织域模块定义（01_04 · Kiwi 2261）', () => {
     }
   })
 
-  it('区域项：三个具名插槽插件（用户分配岗位 / 岗位分配 / 部门分配）键位与挂接位正确', () => {
+  it('区域项：四个具名插槽插件（用户分配岗位 / 用户分配部门 / 岗位分配 / 部门分配）键位与挂接位正确', () => {
     const regions = registration.regions ?? []
     expect(regions.map((region) => region.key)).toEqual([
       'mdm-org:user-posts',
+      'mdm-org:user-depts',
       'mdm-org:role-posts',
       'mdm-org:role-depts',
     ])
     expect(regions.map((region) => region.area)).toEqual([
       'sys.user.detail.tabs',
+      'sys.user.detail.tabs',
       'sys.role.detail.assign',
       'sys.role.detail.assign',
     ])
-    // 次序：角色分配页签下岗位 20 / 部门 30；权限码同源 `org:update`
-    expect(regions[1]?.order).toBe(20)
-    expect(regions[2]?.order).toBe(30)
+    // 次序：用户详情页签下岗位 20 / 部门 30；角色分配页签下岗位 20 / 部门 30；权限码同源 `org:update`
+    expect(regions[0]?.order).toBe(20)
+    expect(regions[1]?.order).toBe(30)
+    expect(regions[2]?.order).toBe(20)
+    expect(regions[3]?.order).toBe(30)
     for (const region of regions) {
       expect(region.perm).toBe('org:update')
       expect(region.component).toBeDefined()

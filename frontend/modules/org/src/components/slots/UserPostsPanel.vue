@@ -5,10 +5,11 @@
 // 插件经模块持有的宿主注入 `router`（只读）读取——宿主页不感知插件、插件不 import 宿主页。
 // 分配经**弹窗**（部门筛选 + 岗位多选）、**全量覆盖**、**即时提交**；单条解绑带二次确认（见 AssignPanel）。
 import { ElCheckbox, ElOption, ElSelect } from 'element-plus'
+import { useModuleSlotField } from '@bms/ui-ep'
 import { onMounted, ref, watch } from 'vue'
 
 import { useOrgI18n } from '../../composables/useOrgI18n'
-import { useAssignment, type AssignedLabel } from '../../composables/useAssignment'
+import { useAssignment, type AssignedLabel, type HostSubmitterRegistrar } from '../../composables/useAssignment'
 import { flattenDeptTree, toIdParamList, type DeptTreeNode, type DomainOption } from '../../domain'
 import { hostRouteParam, isApiAbsent } from '../../runtime'
 import {
@@ -16,7 +17,7 @@ import {
   fetchDeptTree,
   fetchPostPage,
   fetchUserPostIds,
-  unassignUserPost,
+  setPrimaryUserPost,
 } from '../../services/org-service'
 
 import AssignPanel from './AssignPanel.vue'
@@ -24,7 +25,9 @@ import AssignPanel from './AssignPanel.vue'
 const { t } = useOrgI18n()
 
 /** 作用实体标识（用户 id；路由参数通道）。 */
-const userId = ref(hostRouteParam('id'))
+const userIdField = useModuleSlotField<string>('userId')
+const registrar = useModuleSlotField<HostSubmitterRegistrar>('registerSubmitter')
+const userId = ref(userIdField.value ?? hostRouteParam('id'))
 
 /** 岗位名称索引（已分配项回显；与弹窗筛选解耦）。 */
 const postNames = ref(new Map<string, AssignedLabel>())
@@ -43,15 +46,19 @@ const assignment = useAssignment(userId, {
       index.set(String(post.id), { id: String(post.id), label: post.name, description: post.code })
     }
     postNames.value = index
-    return { ids: (current.post_ids ?? []).map((postId) => String(postId)), labels: [...index.values()] }
+    return {
+      ids: (current.post_ids ?? []).map((postId) => String(postId)),
+      labels: [...index.values()],
+      primary: current.primary_post_id ?? '',
+    }
   },
   async submit(id, ids) {
     await assignUserPosts(id, { post_ids: toIdParamList(ids) })
   },
-  async unassign(id, postId) {
-    await unassignUserPost(id, postId)
+  async submitPrimary(id, primaryId) {
+    await setPrimaryUserPost(id, primaryId ?? '')
   },
-})
+}, { registrar })
 
 /** 载入候选岗位（按部门筛选）；失败即降级提示（不抛出）。 */
 async function loadOptions(): Promise<void> {
@@ -84,12 +91,17 @@ async function reload(): Promise<void> {
   await Promise.all([assignment.reload(), loadOptions(), loadDeptOptions()])
 }
 
+watch(userIdField, (value) => {
+  userId.value = value ?? hostRouteParam('id')
+  void reload()
+})
+
 watch(deptFilter, () => {
   void loadOptions()
 })
 
 onMounted(() => {
-  userId.value = hostRouteParam('id')
+  userId.value = userIdField.value ?? hostRouteParam('id')
   void reload()
 })
 </script>
@@ -105,9 +117,13 @@ onMounted(() => {
       :loading="assignment.loading.value"
       :submitting="assignment.submitting.value"
       :error-text="assignment.errorText.value"
+      :primary="assignment.primary.value"
+      :show-primary="true"
+      :dirty="assignment.dirty.value"
+      :host-bound="assignment.hostBound.value"
       @update:picked="assignment.picked.value = $event"
-      @submit="assignment.save($event)"
-      @unassign="assignment.unbind($event)"
+      @update:primary="assignment.primary.value = $event"
+      @submit="assignment.applyDraft()"
       @reload="reload"
     >
       <template #picker>

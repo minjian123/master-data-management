@@ -42,8 +42,12 @@ export type PostRoleIds = Schemas['PostRoleIds']
 
 /** 用户-岗位（按用户）标识集合。 */
 export type UserPostIds = Schemas['UserPostIds']
+export type UserDeptIds = Schemas['UserDeptIds']
+export type UserDeptAssignRequest = Schemas['UserDeptAssignRequest']
+export type UserDeptPrimaryRequest = Schemas['UserDeptPrimaryRequest']
 /** 用户-岗位全量分配请求体。 */
 export type UserPostAssignRequest = Schemas['UserPostAssignRequest']
+export type UserPostPrimaryRequest = Schemas['UserPostPrimaryRequest']
 /** 角色-岗位（按角色）标识集合。 */
 export type RolePostIds = Schemas['RolePostIds']
 /** 角色-岗位全量分配请求体。 */

@@ -65,6 +65,14 @@ export const orgModule = defineModule({
           perm: 'org:update',
         },
         {
+          key: 'mdm-org:user-depts',
+          area: 'sys.user.detail.tabs',
+          component: () => import('./components/slots/UserDeptsPanel.vue'),
+          order: 30,
+          title: '用户分配部门',
+          perm: 'org:update',
+        },
+        {
           key: 'mdm-org:role-posts',
           area: 'sys.role.detail.assign',
           component: () => import('./components/slots/RolePostsPanel.vue'),
