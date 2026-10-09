@@ -36,15 +36,8 @@ export interface HostSubmitterEntry {
   isDirty: () => boolean
 }
 
-/** 宿主提交器注册通道（经插槽上下文字段 `registerSubmitter` 注入；缺失即无通道）。 */
-export interface HostSubmitterRegistrar {
-  /**
-   * 登记插件提交器。
-   *
-   * @param entry 提交器（提交回调 + 脏标记）。
-   */
-  registerSubmitter: (entry: HostSubmitterEntry) => void
-}
+/** 宿主提交器注册通道（插槽上下文字段 `registerSubmitter` 的**值即该函数本身**；缺失即无通道）。 */
+export type HostSubmitterRegistrar = (entry: HostSubmitterEntry) => void
 
 /** 分配数据面（插件按自身端点注入）。 */
 export interface AssignmentPorts {
@@ -208,7 +201,7 @@ export function useAssignment(
   watch(
     () => registrar?.value,
     (target) => {
-      target?.registerSubmitter({ submit: applyDraft, isDirty: () => dirty.value })
+      target?.({ submit: applyDraft, isDirty: () => dirty.value })
     },
     { immediate: true },
   )

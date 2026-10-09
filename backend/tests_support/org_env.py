@@ -47,6 +47,7 @@ DEPT_TREE_MAX_DEPTH_KEY = "org.dept_tree_max_depth"
 """部门树最大深度参数键。"""
 
 DEPT_MAX_CHILDREN_KEY = "org.dept_max_children"
+DEPT_MAX_PER_USER_KEY = "org.dept_max_per_user"
 """同级子部门数上限参数键。"""
 
 POST_CODE_PATTERN_KEY = "org.post_code_pattern"
@@ -388,6 +389,7 @@ def make_config(
     post_pattern: str | None = None,
     dept_pattern: str | None = None,
     max_per_user: int | None = None,
+    dept_max_per_user: int | None = None,
     max_filter_ids: int | None = None,
     user_roles_ttl: int | None = None,
 ) -> BaseConfigSource:
@@ -399,6 +401,7 @@ def make_config(
         post_pattern: 岗位码格式。
         dept_pattern: 部门编码格式。
         max_per_user: 单用户岗位数上限。
+        dept_max_per_user: 单用户部门数上限。
         max_filter_ids: 出口部门过滤候选集上限。
         user_roles_ttl: 按用户解析角色结果缓存 TTL（秒）。
 
@@ -416,6 +419,8 @@ def make_config(
         values.set(DEPT_CODE_PATTERN_KEY, dept_pattern)
     if max_per_user is not None:
         values.set(POST_MAX_PER_USER_KEY, str(max_per_user))
+    if dept_max_per_user is not None:
+        values.set(DEPT_MAX_PER_USER_KEY, str(dept_max_per_user))
     if max_filter_ids is not None:
         values.set(DATA_SOURCE_MAX_FILTER_IDS_KEY, str(max_filter_ids))
     if user_roles_ttl is not None:
