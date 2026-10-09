@@ -9,6 +9,7 @@
 
 from bms_core.api.base import BaseRouter, mount_service_routers
 from bms_core.core.concurrent import ConcurrentStableList
+from bms_core.transaction.api import build_branch_router
 
 from mdm_org.api import dept, internal, open_read, post, role_dept, role_post, user_dept, user_post
 
@@ -23,6 +24,8 @@ api_router = mount_service_routers(
             role_dept.router,
             open_read.router,
             internal.router,
+            # 跨服务事务参与端点（`/txn/branches*`；谁挂端点谁参与，嵌套子任务 `_03`）
+            build_branch_router(),
         ]
     )
 )

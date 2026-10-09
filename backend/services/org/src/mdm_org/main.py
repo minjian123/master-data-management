@@ -9,18 +9,21 @@
 
 from bms_core.application import BaseServiceApplicationFactory
 from bms_core.core.concurrent import ConcurrentStableList
+from bms_core.core.config import Settings
 from bms_core.services.module_registry import ModuleRecord
 from bms_core.services.table_registry import TableRecord
-from fastapi import APIRouter
+from fastapi import APIRouter, FastAPI
 
 from mdm_org import CONTRACT_VERSION, SERVICE_NAME, SERVICE_TITLE, __version__
 from mdm_org.api.router import api_router
 from mdm_org.events import register_product_event_contracts
+from mdm_org.services.branch_handlers import build_branch_handlers
 from services.module_registry import MDM_SERVICE_RECORDS
 from services.table_registry import MDM_TABLE_RECORDS
 
 PRODUCT_KEY = "mdm"
 """产品标识（mdm 主数据管理；与应用工厂声明、平台侧登记行一致）。"""
+
 
 # 事件契约登记（进程级默认注册表；幂等）：启动期事件契约校验与契约快照共用
 # （`[event].contract_mode` 缺省 enforce，未登记契约拒发 10010）
@@ -70,3 +73,17 @@ class ApplicationFactory(BaseServiceApplicationFactory):
             ConcurrentStableList[APIRouter]: 业务聚合路由。
         """
         return ConcurrentStableList([api_router])
+
+    def configure_service(self, app: FastAPI, settings: Settings) -> None:
+        """注入组织域专属 state：**XA 分支处理器登记表**（参与方能力）。
+
+        四组分配 `op`（`org.{user-posts,user-depts,role-posts,role-depts}.assign`）映射到本域
+        **已有服务层方法**（不复制业务逻辑）；`[transaction_manager].provider` 缺省为空 ⇒ 参与方为
+        占位实现，分支协议动作**明确拒绝**（`10013` / 503），不静默降级。
+
+        Args:
+            app: 应用实例。
+            settings: 应用配置（本钩子不使用，保持基类签名）。
+        """
+        del settings
+        app.state.branch_handlers = build_branch_handlers(app)

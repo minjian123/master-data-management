@@ -109,7 +109,7 @@ wheels = [
 [[package]]
 name = "bms-core"
 version = "0.1.0"
-source = { git = "http://192.168.0.107:8080/bms/bms.git?subdirectory=backend%2Flibs%2Fbms_core&rev=3bada862e5e33b5d14e441246488f72aed3bec45#3bada862e5e33b5d14e441246488f72aed3bec45" }
+source = { git = "http://192.168.0.107:8080/bms/bms.git?subdirectory=backend%2Flibs%2Fbms_core&rev=b4794b2319c2dcbc21d92d85d260cb74f0ef10de#b4794b2319c2dcbc21d92d85d260cb74f0ef10de" }
 dependencies = [
     { name = "aiomysql" },
     { name = "aiosqlite" },
@@ -733,7 +733,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bms-core", git = "http://192.168.0.107:8080/bms/bms.git?subdirectory=backend%2Flibs%2Fbms_core&rev=3bada862e5e33b5d14e441246488f72aed3bec45" },
+    { name = "bms-core", git = "http://192.168.0.107:8080/bms/bms.git?subdirectory=backend%2Flibs%2Fbms_core&rev=b4794b2319c2dcbc21d92d85d260cb74f0ef10de" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
