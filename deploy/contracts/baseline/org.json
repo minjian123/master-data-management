@@ -417,6 +417,32 @@
         "title": "ApiResponse[RolePostIds]",
         "type": "object"
       },
+      "ApiResponse_UserDeptIds_": {
+        "properties": {
+          "code": {
+            "default": 0,
+            "title": "Code",
+            "type": "integer"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserDeptIds"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "default": "ok",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "title": "ApiResponse[UserDeptIds]",
+        "type": "object"
+      },
       "ApiResponse_UserPostIds_": {
         "properties": {
           "code": {
@@ -539,6 +565,13 @@
       "DeptCreateRequest": {
         "description": "新建部门请求。",
         "properties": {
+          "code": {
+            "description": "部门编码（租户内唯一；格式受 org.dept_code_pattern 约束）",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
           "name": {
             "description": "部门名称（同父唯一）",
             "maxLength": 128,
@@ -566,6 +599,7 @@
           }
         },
         "required": [
+          "code",
           "name"
         ],
         "title": "DeptCreateRequest",
@@ -576,6 +610,10 @@
         "properties": {
           "ancestors": {
             "title": "Ancestors",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
             "type": "string"
           },
           "id": {
@@ -608,6 +646,7 @@
         },
         "required": [
           "id",
+          "code",
           "name",
           "ancestors",
           "sort",
@@ -689,6 +728,10 @@
             "title": "Children",
             "type": "array"
           },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -719,6 +762,7 @@
         },
         "required": [
           "id",
+          "code",
           "name",
           "ancestors",
           "sort",
@@ -730,6 +774,20 @@
       "DeptUpdateRequest": {
         "description": "修改部门请求（未传字段不改）。",
         "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "部门编码（可改）",
+            "title": "Code"
+          },
           "name": {
             "anyOf": [
               {
@@ -822,6 +880,11 @@
             "title": "Children",
             "type": "array"
           },
+          "code": {
+            "description": "部门编码（租户内唯一）",
+            "title": "Code",
+            "type": "string"
+          },
           "id": {
             "description": "部门 ID",
             "title": "Id",
@@ -859,6 +922,7 @@
         },
         "required": [
           "id",
+          "code",
           "name"
         ],
         "title": "OrgDept",
@@ -999,18 +1063,6 @@
             "description": "头像地址",
             "title": "Avatar"
           },
-          "dept_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "归属部门 ID",
-            "title": "Dept Id"
-          },
           "email": {
             "anyOf": [
               {
@@ -1084,7 +1136,7 @@
         "description": "新建岗位请求。",
         "properties": {
           "code": {
-            "description": "岗位码（租户内唯一；创建后不可改）",
+            "description": "岗位码（租户内唯一；格式受 org.post_code_pattern 约束）",
             "maxLength": 64,
             "minLength": 1,
             "title": "Code",
@@ -1171,8 +1223,22 @@
         "type": "object"
       },
       "PostUpdateRequest": {
-        "description": "修改岗位请求（未传字段不改；`code` 不可改）。",
+        "description": "修改岗位请求（未传字段不改；`code` 可改）。",
         "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "岗位码（可改）",
+            "title": "Code"
+          },
           "dept_id": {
             "anyOf": [
               {
@@ -1311,6 +1377,66 @@
         "title": "RolePostIds",
         "type": "object"
       },
+      "UserDeptAssignRequest": {
+        "description": "全量覆盖分配用户部门请求（diff 后增删）。",
+        "properties": {
+          "dept_ids": {
+            "description": "目标部门 id 清单（全量覆盖）",
+            "items": {
+              "type": "integer"
+            },
+            "title": "Dept Ids",
+            "type": "array"
+          }
+        },
+        "title": "UserDeptAssignRequest",
+        "type": "object"
+      },
+      "UserDeptIds": {
+        "description": "用户已分配部门 id 清单与主要部门。",
+        "properties": {
+          "dept_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Dept Ids",
+            "type": "array"
+          },
+          "primary_dept_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "主要部门 id（未设置时为空）",
+            "title": "Primary Dept Id"
+          }
+        },
+        "title": "UserDeptIds",
+        "type": "object"
+      },
+      "UserDeptPrimaryRequest": {
+        "description": "主要部门置位请求（不传 / `null` 表示清除主要标记）。",
+        "properties": {
+          "dept_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "主要部门 id；不传 / null 表示清除",
+            "title": "Dept Id"
+          }
+        },
+        "title": "UserDeptPrimaryRequest",
+        "type": "object"
+      },
       "UserPostAssignRequest": {
         "description": "全量覆盖分配用户岗位请求（diff 后增删）。",
         "properties": {
@@ -1327,7 +1453,7 @@
         "type": "object"
       },
       "UserPostIds": {
-        "description": "用户已分配岗位 id 清单。",
+        "description": "用户已分配岗位 id 清单与主要岗位。",
         "properties": {
           "post_ids": {
             "items": {
@@ -1335,9 +1461,40 @@
             },
             "title": "Post Ids",
             "type": "array"
+          },
+          "primary_post_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "主要岗位 id（未设置时为空）",
+            "title": "Primary Post Id"
           }
         },
         "title": "UserPostIds",
+        "type": "object"
+      },
+      "UserPostPrimaryRequest": {
+        "description": "主要岗位置位请求（不传 / `null` 表示清除主要标记）。",
+        "properties": {
+          "post_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "主要岗位 id；不传 / null 表示清除",
+            "title": "Post Id"
+          }
+        },
+        "title": "UserPostPrimaryRequest",
         "type": "object"
       },
       "ValidationError": {
@@ -1717,7 +1874,7 @@
     },
     "/api/v1/org/data-source/users": {
       "get": {
-        "description": "组织数据源 · 用户（关键字 / 部门 / 含子级 / 状态 / 分页）。\n\n部门过滤为**过渡口径**（映射为「该部门含子树下岗位、且用户已分配该岗位」的候选集），\n待 bms 需求 07-2 落 `sys_user.dept_id` 后切换为平台字段过滤。",
+        "description": "组织数据源 · 用户（关键字 / 部门 / 含子级 / 状态 / 分页）。\n\n部门过滤口径：映射为「该部门含子树下岗位、且用户已分配该岗位」的候选集——\n用户归属部门归本域 `org_user_dept`（2026-10-09 起），**不经平台字段**（`sys_user` 不落组织字段）。",
         "operationId": "list_users_api_v1_org_data_source_users_get",
         "parameters": [
           {
@@ -2023,7 +2180,7 @@
         ]
       },
       "post": {
-        "description": "新建部门。\n\n需要 org:create 权限；同父部门名称唯一；支持幂等键。",
+        "description": "新建部门。\n\n需要 org:create 权限；部门编码必填且租户内唯一（格式受 `org.dept_code_pattern` 约束）；\n同父部门名称唯一；支持幂等键。",
         "operationId": "create_dept_api_v1_org_depts_post",
         "parameters": [
           {
@@ -2317,7 +2474,7 @@
         ]
       },
       "put": {
-        "description": "修改部门（名称 / 排序 / 状态）。\n\n需要 org:update 权限；`version` 提供时做乐观锁比对（冲突转统一并发冲突）。",
+        "description": "修改部门（编码 / 名称 / 排序 / 状态）。\n\n需要 org:update 权限；编码可改（格式与唯一校验、自身同值豁免）；`version` 提供时做乐观锁比对（冲突转统一并发冲突）。",
         "operationId": "update_dept_api_v1_org_depts__dept_id__put",
         "parameters": [
           {
@@ -3199,7 +3356,7 @@
         ]
       },
       "put": {
-        "description": "修改岗位（`code` 不可改）。\n\n需要 org:update 权限；`version` 提供时做乐观锁比对。",
+        "description": "修改岗位（含岗位码）。\n\n需要 org:update 权限；岗位码可改（格式与唯一校验、自身同值豁免）；`version` 提供时做乐观锁比对。",
         "operationId": "update_post_api_v1_org_posts__post_id__put",
         "parameters": [
           {
@@ -4222,6 +4379,423 @@
         ]
       }
     },
+    "/api/v1/org/user-depts/{user_id}": {
+      "get": {
+        "description": "按用户查已分配部门（含主要部门）。\n\n需要 org:query 权限；供 bms 用户管理页具名插槽插件回显。",
+        "operationId": "list_user_depts_api_v1_org_user_depts__user_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_UserDeptIds_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "未认证"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "无权限"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "资源不存在"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "限流"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "服务异常"
+          }
+        },
+        "summary": "List User Depts",
+        "tags": [
+          "org-user-depts"
+        ]
+      },
+      "put": {
+        "description": "全量覆盖分配用户部门（diff 后增删单事务）。\n\n需要 org:update 权限；单用户部门数受上限约束（330112）；被移除项若为主要部门则同事务清空标记；支持幂等键。",
+        "operationId": "assign_user_depts_api_v1_org_user_depts__user_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "幂等键（可选）",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "幂等键（可选）",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserDeptAssignRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_UserDeptIds_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "未认证"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "无权限"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "资源不存在"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "限流"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "服务异常"
+          }
+        },
+        "summary": "Assign User Depts",
+        "tags": [
+          "org-user-depts"
+        ]
+      }
+    },
+    "/api/v1/org/user-depts/{user_id}/primary": {
+      "put": {
+        "description": "置位 / 清除主要部门（同事务互斥置位）。\n\n需要 org:update 权限；`dept_id` 为空表示清除；置位目标须已分配，否则 330113；\n主要部门不参与角色解析（解析按全部已分配部门）。",
+        "operationId": "set_primary_dept_api_v1_org_user_depts__user_id__primary_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserDeptPrimaryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_UserDeptIds_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "未认证"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "无权限"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "资源不存在"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "限流"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "服务异常"
+          }
+        },
+        "summary": "Set Primary Dept",
+        "tags": [
+          "org-user-depts"
+        ]
+      }
+    },
+    "/api/v1/org/user-depts/{user_id}/{dept_id}": {
+      "delete": {
+        "description": "解绑单个用户-部门。\n\n需要 org:update 权限；关联不存在抛 330111；若被解绑项为主要部门则标记随之清空。",
+        "operationId": "unassign_user_dept_api_v1_org_user_depts__user_id___dept_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "dept_id",
+            "required": true,
+            "schema": {
+              "title": "Dept Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_UserDeptIds_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "未认证"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "无权限"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "资源不存在"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "限流"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "服务异常"
+          }
+        },
+        "summary": "Unassign User Dept",
+        "tags": [
+          "org-user-depts"
+        ]
+      }
+    },
     "/api/v1/org/user-posts": {
       "get": {
         "description": "按用户查已分配岗位。\n\n需要 org:query 权限；供 bms 用户管理页具名插槽插件回显。",
@@ -4431,6 +5005,109 @@
           }
         },
         "summary": "Assign User Posts",
+        "tags": [
+          "org-user-posts"
+        ]
+      }
+    },
+    "/api/v1/org/user-posts/{user_id}/primary": {
+      "put": {
+        "description": "置位 / 清除主要岗位（同事务互斥置位）。\n\n需要 org:update 权限；`post_id` 为空表示清除；置位目标须已分配，否则 330113；\n主要岗位不参与角色解析（解析按全部已分配岗位）。",
+        "operationId": "set_primary_post_api_v1_org_user_posts__user_id__primary_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPostPrimaryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_UserPostIds_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "未认证"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "无权限"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "资源不存在"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "限流"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            },
+            "description": "服务异常"
+          }
+        },
+        "summary": "Set Primary Post",
         "tags": [
           "org-user-posts"
         ]

@@ -32,12 +32,14 @@ from mdm_org.repositories.dept import DeptRepository
 from mdm_org.repositories.post import PostRepository
 from mdm_org.repositories.role_dept import RoleDeptRepository
 from mdm_org.repositories.role_post import RolePostRepository
+from mdm_org.repositories.user_dept import UserDeptRepository
 from mdm_org.repositories.user_post import UserPostRepository
 from mdm_org.services.dept import DeptService
 from mdm_org.services.open_read import OpenReadService
 from mdm_org.services.post import PostService
 from mdm_org.services.role_dept import RoleDeptService
 from mdm_org.services.role_post import RolePostService
+from mdm_org.services.user_dept import UserDeptService
 from mdm_org.services.user_post import UserPostService
 from services.table_registry import register as register_product_tables
 
@@ -277,7 +279,6 @@ def _internal_row(user: OrgUser) -> ConcurrentStableDict[str, object]:
             "status": user.status,
             "phone": user.phone,
             "email": user.email,
-            "dept_id": user.dept_id,
         }
     )
 
@@ -504,6 +505,32 @@ def make_user_post_service(
     )
 
 
+def make_user_dept_service(
+    session: AsyncSession,
+    uow: DbUnitOfWork,
+    outbox: SqlOutboxStore,
+    config: BaseConfigSource | None = None,
+) -> UserDeptService:
+    """装配用户-部门分配服务。
+
+    Args:
+        session: 请求级会话。
+        uow: 工作单元。
+        outbox: 发件箱存储。
+        config: 系统参数（缺省 Null）。
+
+    Returns:
+        UserDeptService: 服务实例。
+    """
+    return UserDeptService(
+        UserDeptRepository(session),
+        DeptRepository(session),
+        uow,
+        config if config is not None else NullConfigSource(),
+        outbox,
+    )
+
+
 def make_role_post_service(session: AsyncSession, uow: DbUnitOfWork, outbox: SqlOutboxStore) -> RolePostService:
     """装配角色-岗位分配服务。
 
@@ -718,7 +745,7 @@ def make_open_read_service(
     return OpenReadService(
         data_source=make_data_source(session, user_source=source, config=config, dept_scope=dept_scope),
         resolver=make_resolver(session, user_source=source),
-        user_source=source,
+        user_depts=UserDeptRepository(session),
         user_posts=UserPostRepository(session),
         role_posts=RolePostRepository(session),
         role_depts=RoleDeptRepository(session),

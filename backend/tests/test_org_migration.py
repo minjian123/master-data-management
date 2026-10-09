@@ -17,7 +17,8 @@ from services.table_registry import register
 
 _CHAIN = "org:tenant"
 
-_ORG_TABLES = ("org_dept", "org_post", "org_user_post", "org_role_post", "org_role_dept")
+_ORG_TABLES = ("org_dept", "org_post", "org_user_post", "org_user_dept", "org_role_post", "org_role_dept")
+_ORG_TABLES_BASE = ("org_dept", "org_post", "org_user_post", "org_role_post", "org_role_dept")
 _INFRA_TABLES = ("sys_outbox", "sys_event_consumed", "sys_event_dead_letter")
 
 
@@ -94,11 +95,11 @@ def _sync_table_names(url: str) -> set[str]:
 
 @pytest.mark.kiwi_id(2255)
 def test_org_tenant_chain_registered() -> None:
-    """链注册：`org:tenant` 有脚本、链头为 `0003_dept_code`、表集含五表 + 基础设施三表。"""
+    """链注册：`org:tenant` 有脚本、链头为 `0004_user_dept_and_primary`、表集含六表 + 基础设施三表。"""
     register()
     chain = resolve_chain(_CHAIN)
     assert has_revisions(chain)
-    assert head_revision(chain) == "0003_dept_code"
+    assert head_revision(chain) == "0004_user_dept_and_primary"
     tables = chain_tables("org", "tenant")
     assert all(name in tables for name in (*_ORG_TABLES, *_INFRA_TABLES))
 
@@ -124,7 +125,7 @@ async def test_org_tenant_migration_upgrades_with_zero_drift(tmp_path: Path) -> 
 
 @pytest.mark.kiwi_id(2255)
 def test_org_tenant_migration_downgrades(tmp_path: Path) -> None:
-    """降级：回退到 `0001_org_tables` 后基础设施三表移除、业务五表保留。"""
+    """降级：回退到 `0001_org_tables` 后基础设施三表与 `org_user_dept`（0004 建）移除、首建五表保留。"""
     register()
     url = f"sqlite+aiosqlite:///{tmp_path / 'org.db'}"
     _upgrade(url)
@@ -132,7 +133,8 @@ def test_org_tenant_migration_downgrades(tmp_path: Path) -> None:
 
     names = _sync_table_names(url)
 
-    assert all(name in names for name in _ORG_TABLES)
+    assert all(name in names for name in _ORG_TABLES_BASE)
+    assert "org_user_dept" not in names
     assert not any(name in names for name in _INFRA_TABLES)
 
 

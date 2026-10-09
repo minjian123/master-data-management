@@ -2,7 +2,7 @@
 
 from bms_core.core.concurrent import ConcurrentStableList, ConcurrentStableSet
 from bms_core.repositories.base_db_repository import BaseDbRepository
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 
 from mdm_org.models.user_post import OrgUserPost
 
@@ -95,3 +95,16 @@ class UserPostRepository(BaseDbRepository[OrgUserPost]):
             select(func.count()).select_from(self.model).where(*self._scope_where(), self._column("post_id") == post_id)
         )
         return int((await self._session.execute(statement)).scalar_one())
+
+    async def clear_primary(self, user_id: int) -> None:
+        """清空该用户的主要岗位标记（置位前调用；未标记行无操作）。
+
+        Args:
+            user_id: 用户 id。
+        """
+        statement = (
+            update(self.model)
+            .where(*self._scope_where(), self._column("user_id") == user_id, self._column("is_primary").is_(True))
+            .values(is_primary=False)
+        )
+        await self._session.execute(statement)

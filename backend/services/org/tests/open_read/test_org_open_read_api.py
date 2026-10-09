@@ -128,7 +128,8 @@ async def test_exit_endpoints_wrap_contract_shapes(service_app: FastAPI, client:
         user_items = users_resp.json()["data"]["list"]
         # 雪花 id 在响应中按字符串序列化（前端按字符串消费）
         assert [int(item["id"]) for item in user_items] == [2001]
-        assert user_items[0]["nickname"] == "张三" and user_items[0]["dept_id"] is None
+        assert user_items[0]["nickname"] == "张三"
+        assert "dept_id" not in user_items[0], "用户归属部门归 mdm `org_user_dept`，出口不再带该字段"
 
         roles = await client.get(f"{EXIT_BASE}/user-roles", params={"user_id": 2001})
         assert roles.json()["data"] == {"role_ids": []}
@@ -182,7 +183,7 @@ async def test_resolve_names_wraps_items_and_validates_params(service_app: FastA
 
 @pytest.mark.kiwi_id(2256)
 async def test_user_dimension_degrades_when_platform_unreachable(service_app: FastAPI, client: AsyncClient) -> None:
-    """用户来源不可达：用户维度出口 330101（业务失败，HTTP 200）；组织维度出口不受影响。"""
+    """用户来源不可达：用户维度出口 330101（业务失败，HTTP 200）；组织维度与按用户解析角色不受影响。"""
     session, engine = await org_env.make_session()
     try:
         await org_env.seed_org_tree(session)
@@ -191,8 +192,9 @@ async def test_user_dimension_degrades_when_platform_unreachable(service_app: Fa
         resp = await client.get(f"{EXIT_BASE}/data-source/users")
         assert resp.status_code == 200 and resp.json()["code"] == 330101
 
+        # 按用户解析角色不再依赖平台用户来源（部门链取本域 `org_user_dept`）→ 正常返回
         roles = await client.get(f"{EXIT_BASE}/user-roles", params={"user_id": 2001})
-        assert roles.json()["code"] == 330101
+        assert roles.json()["code"] == 0 and roles.json()["data"]["role_ids"] == []
 
         posts = await client.get(f"{EXIT_BASE}/data-source/posts", params={"keyword": "dev"})
         assert posts.json()["code"] == 0
@@ -310,14 +312,14 @@ async def test_data_scope_predicate_parsing() -> None:
 
 @pytest.mark.kiwi_id(2256)
 async def test_platform_user_source_maps_rows_and_fails_closed() -> None:
-    """用户来源实现：只读行归一（`name` → 昵称 / 联系方式 / 归属部门 / 头像恒空）；不可达 / 非 2xx /
-    业务失败 / 返回契约非法一律 330101（fail-closed，不静默降级为空）。"""
+    """用户来源实现：只读行归一（`name` → 昵称 / 联系方式 / 头像恒空；**部门不再取自平台**）；不可达 /
+    非 2xx / 业务失败 / 返回契约非法一律 330101（fail-closed，不静默降级为空）。"""
     users = ConcurrentStableList([org_env.user(2001, nickname="张三", phone="13800000001", dept_id=7)])
     source = PlatformOrgUserSource(org_env.StubPlatformClient(users))
 
     page = await source.query("张", status="enabled")
     assert [item.id for item in page.list] == [2001]
-    assert page.list[0].nickname == "张三" and page.list[0].dept_id == 7 and page.list[0].avatar is None
+    assert page.list[0].nickname == "张三" and page.list[0].avatar is None
     assert page.total == 1 and page.page == 1 and page.size == 20
     assert [item.id for item in await source.by_ids(org_env.ids(2001, 2002))] == [2001]
     assert list(await source.by_ids(org_env.ids())) == []
@@ -357,7 +359,7 @@ async def test_platform_user_source_maps_rows_and_fails_closed() -> None:
                             {
                                 "list": [
                                     ConcurrentStableDict(
-                                        {"id": 1, "username": "u1", "name": "缺列", "status": "enabled", "dept_id": "7"}
+                                        {"id": "1", "username": "u1", "name": "非法 id", "status": "enabled"}
                                     )
                                 ]
                             }

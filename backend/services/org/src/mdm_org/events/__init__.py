@@ -13,6 +13,7 @@ from mdm_org.events.contracts import (
     POST_CHANGED_EVENT,
     ROLE_DEPT_CHANGED_EVENT,
     ROLE_POST_CHANGED_EVENT,
+    USER_DEPT_CHANGED_EVENT,
     USER_POST_CHANGED_EVENT,
     register_org_event_contracts,
 )
@@ -23,6 +24,7 @@ __all__ = [
     "POST_CHANGED_EVENT",
     "ROLE_DEPT_CHANGED_EVENT",
     "ROLE_POST_CHANGED_EVENT",
+    "USER_DEPT_CHANGED_EVENT",
     "USER_POST_CHANGED_EVENT",
     "register_org_event_contracts",
     "register_product_event_contracts",

@@ -28,11 +28,14 @@ ROLE_POST_CHANGED_EVENT = "org.role_post.changed"
 ROLE_DEPT_CHANGED_EVENT = "org.role_dept.changed"
 """角色-部门分配变更事件（供权限版本失效）。"""
 
+USER_DEPT_CHANGED_EVENT = "org.user_dept.changed"
+"""用户-部门分配变更事件（全量覆盖 / 解绑 / 主要部门置位或清除 / 用户删除清理）。"""
+
 _STRING_REQUIRED = EventFieldSpec(type="string", required=True)
 """必填字符串字段（雪花 ID 出参字符串化）。"""
 
 _CHANGED_TYPE = EventFieldSpec(type="string", required=False)
-"""变更类型（created / updated / moved / deleted / assigned / unassigned）。"""
+"""变更类型（created / updated / moved / deleted / assigned / unassigned / primary）。"""
 
 ORG_EVENT_CONTRACTS: tuple[EventContract, ...] = (
     EventContract(
@@ -64,6 +67,13 @@ ORG_EVENT_CONTRACTS: tuple[EventContract, ...] = (
         description="角色-部门分配变更后（供 bms 权限版本失效）",
         fields=ConcurrentStableDict(
             {"role_id": _STRING_REQUIRED, "dept_id": _STRING_REQUIRED, "changed_type": _CHANGED_TYPE}
+        ),
+    ),
+    EventContract(
+        event_type=USER_DEPT_CHANGED_EVENT,
+        description="用户-部门分配变更后（全量覆盖 / 解绑 / 主要部门置位或清除 / 用户删除清理）",
+        fields=ConcurrentStableDict(
+            {"user_id": _STRING_REQUIRED, "dept_id": _STRING_REQUIRED, "changed_type": _CHANGED_TYPE}
         ),
     ),
 )

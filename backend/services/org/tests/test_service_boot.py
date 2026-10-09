@@ -58,7 +58,7 @@ async def test_routes_mount_under_service_namespace(service_app: FastAPI) -> Non
 
 @pytest.mark.kiwi_id(2253)
 def test_asgi_and_models_skeleton() -> None:
-    """入口骨架：ASGI 模块级应用可构造；服务包模型模块清单随 01_02 落表登记（五表模块）。"""
+    """入口骨架：ASGI 模块级应用可构造；服务包模型模块清单随 01_02 落表登记（六表模块）。"""
     from mdm_org import asgi
     from mdm_org.models import MODEL_MODULES
 
@@ -67,6 +67,7 @@ def test_asgi_and_models_skeleton() -> None:
         "mdm_org.models.dept",
         "mdm_org.models.post",
         "mdm_org.models.user_post",
+        "mdm_org.models.user_dept",
         "mdm_org.models.role_post",
         "mdm_org.models.role_dept",
     )

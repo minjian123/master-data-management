@@ -16,6 +16,7 @@ from mdm_org.errors import (
     OrgPostNotFoundError,
     OrgUserPostLimitExceededError,
     OrgUserPostNotFoundError,
+    OrgUserPrimaryNotAssignedError,
 )
 from mdm_org.events import USER_POST_CHANGED_EVENT
 from mdm_org.repositories.post import PostRepository
@@ -26,6 +27,9 @@ CHANGE_ASSIGNED = "assigned"
 
 CHANGE_UNASSIGNED = "unassigned"
 """变更类型：解绑。"""
+
+CHANGE_PRIMARY = "primary"
+"""变更类型：主要岗位置位 / 清除。"""
 
 
 class UserPostService(BaseFrameworkObject):
@@ -74,6 +78,20 @@ class UserPostService(BaseFrameworkObject):
         """
         return ConcurrentStableList(link.post_id for link in await self._user_posts.list_by_user(user_id))
 
+    async def primary_post_id(self, user_id: int) -> int | None:
+        """取该用户的主要岗位 id（未置位返回 None）。
+
+        Args:
+            user_id: 用户 id。
+
+        Returns:
+            int | None: 主要岗位 id。
+        """
+        for link in await self._user_posts.list_by_user(user_id):
+            if link.is_primary:
+                return link.post_id
+        return None
+
     async def assign_user_posts(
         self, *, user_id: int, post_ids: ConcurrentStableList[int]
     ) -> ConcurrentStableList[int]:
@@ -104,14 +122,45 @@ class UserPostService(BaseFrameworkObject):
             target_set = ConcurrentStableSet(target)
             for link in existing:
                 if link.post_id not in target_set:
+                    link.is_primary = False
                     await self._user_posts.soft_delete(link.id)
                     await self._publish(user_id, link.post_id, CHANGE_UNASSIGNED)
             existing_ids = ConcurrentStableSet(link.post_id for link in existing)
             for post_id in target:
                 if post_id not in existing_ids:
-                    await self._user_posts.create(user_id=user_id, post_id=post_id)
+                    await self._user_posts.create(user_id=user_id, post_id=post_id, is_primary=False)
                     await self._publish(user_id, post_id, CHANGE_ASSIGNED)
+            await self._user_posts.flush()
         return target
+
+    async def set_primary_post(self, *, user_id: int, post_id: int | None) -> None:
+        """置位 / 清除主要岗位（同事务互斥置位：先清该用户既有主要项，再置位目标项）。
+
+        Args:
+            user_id: 用户 id。
+            post_id: 目标岗位 id；None 表示清除主要标记。
+
+        Raises:
+            OrgUserPrimaryNotAssignedError: 置位目标不在该用户已分配集合内（330113）。
+        """
+        async with self._uow.begin():
+            if post_id is None:
+                current = await self._user_posts.list_by_user(user_id)
+                primary = next((link for link in current if link.is_primary), None)
+                if primary is None:
+                    return
+                target_post = primary.post_id
+                await self._user_posts.clear_primary(user_id)
+                await self._user_posts.flush()
+                await self._publish(user_id, target_post, CHANGE_PRIMARY)
+                return
+            link = await self._user_posts.get_active(user_id=user_id, post_id=post_id)
+            if link is None:
+                raise OrgUserPrimaryNotAssignedError(f"主要岗位置位目标未分配：user={user_id}, post={post_id}")
+            await self._user_posts.clear_primary(user_id)
+            link.is_primary = True
+            await self._user_posts.flush()
+            await self._publish(user_id, post_id, CHANGE_PRIMARY)
 
     async def unassign_user_post(self, *, user_id: int, post_id: int) -> None:
         """解绑单个用户-岗位（软删除）。
@@ -127,7 +176,9 @@ class UserPostService(BaseFrameworkObject):
             link = await self._user_posts.get_active(user_id=user_id, post_id=post_id)
             if link is None:
                 raise OrgUserPostNotFoundError(f"用户-岗位关联不存在：user={user_id}, post={post_id}")
+            link.is_primary = False
             await self._user_posts.soft_delete(link.id)
+            await self._user_posts.flush()
             await self._publish(user_id, post_id, CHANGE_UNASSIGNED)
 
     async def purge_user(self, user_id: int) -> int:
@@ -142,8 +193,10 @@ class UserPostService(BaseFrameworkObject):
         async with self._uow.begin():
             links = await self._user_posts.list_by_user(user_id)
             for link in links:
+                link.is_primary = False
                 await self._user_posts.soft_delete(link.id)
                 await self._publish(user_id, link.post_id, CHANGE_UNASSIGNED)
+            await self._user_posts.flush()
         return len(links)
 
     async def _publish(self, user_id: int, post_id: int, changed_type: str) -> None:

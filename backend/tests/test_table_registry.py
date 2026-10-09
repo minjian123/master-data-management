@@ -29,8 +29,15 @@ def _reset_injected_records() -> Iterator[None]:  # pyright: ignore[reportUnused
 
 @pytest.mark.kiwi_id(2255)
 def test_mdm_table_records_shape() -> None:
-    """mdm 自持清单：五表、归属 `org`、租户库、状态启用（与数据库设计登记一致）。"""
-    assert table_names() == ("org_dept", "org_post", "org_user_post", "org_role_post", "org_role_dept")
+    """mdm 自持清单：六表、归属 `org`、租户库、状态启用（与数据库设计登记一致）。"""
+    assert table_names() == (
+        "org_dept",
+        "org_post",
+        "org_user_post",
+        "org_user_dept",
+        "org_role_post",
+        "org_role_dept",
+    )
     for record in MDM_TABLE_RECORDS:
         assert record.owner == "org"
         assert record.datasource == Datasource.TENANT
@@ -45,9 +52,9 @@ def test_register_injects_into_chain_and_view() -> None:
 
     register()
 
-    assert len(injected_table_records()) == 5
+    assert len(injected_table_records()) == 6
     assert table_owner("org_dept") == "org"
-    assert len(table_ownership_view()) == len(TABLE_OWNERSHIP) + 5
+    assert len(table_ownership_view()) == len(TABLE_OWNERSHIP) + 6
     tenant_chain = chain_tables("org", Datasource.TENANT)
     assert all(name in tenant_chain for name in table_names())
     assert ConcurrentStableSet({"sys_outbox", "sys_event_consumed", "sys_event_dead_letter"}) <= tenant_chain
@@ -63,6 +70,6 @@ def test_register_is_idempotent() -> None:
     """重复注册无副作用（同值去重，视图条目数不叠加）。"""
     register()
     register()
-    assert len(injected_table_records()) == 5
-    assert len(table_ownership_view()) == len(TABLE_OWNERSHIP) + 5
+    assert len(injected_table_records()) == 6
+    assert len(table_ownership_view()) == len(TABLE_OWNERSHIP) + 6
     assert ConcurrentStableList(MDM_TABLE_RECORDS) == injected_table_records()

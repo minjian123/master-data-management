@@ -8,6 +8,7 @@ MODEL_MODULES: tuple[str, ...] = (
     "mdm_org.models.dept",
     "mdm_org.models.post",
     "mdm_org.models.user_post",
+    "mdm_org.models.user_dept",
     "mdm_org.models.role_post",
     "mdm_org.models.role_dept",
 )

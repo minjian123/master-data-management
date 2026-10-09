@@ -1,4 +1,4 @@
-"""用户-岗位分配路由（`/api/v1/org/user-posts`）：插件写入口（全量覆盖 / 解绑）。"""
+"""用户-部门分配路由（`/api/v1/org/user-depts`）：插件写入口（全量覆盖 / 解绑 / 主要部门置位）。"""
 
 from typing import Annotated, cast
 
@@ -25,16 +25,16 @@ from bms_core.permission.base import require_permission
 from bms_core.schemas.common import ApiResponse
 from fastapi import Depends, Header
 
-from mdm_org.repositories.post import PostRepository
-from mdm_org.repositories.user_post import UserPostRepository
-from mdm_org.schemas.user_post import UserPostAssignRequest, UserPostIds, UserPostPrimaryRequest
+from mdm_org.repositories.dept import DeptRepository
+from mdm_org.repositories.user_dept import UserDeptRepository
+from mdm_org.schemas.user_dept import UserDeptAssignRequest, UserDeptIds, UserDeptPrimaryRequest
 from mdm_org.services.open_read import bump_user_roles_generation
-from mdm_org.services.user_post import UserPostService
+from mdm_org.services.user_dept import UserDeptService
 
 router = BaseRouter(
-    key="org_user_posts",
-    prefix="/org/user-posts",
-    tags=["org-user-posts"],
+    key="org_user_depts",
+    prefix="/org/user-depts",
+    tags=["org-user-depts"],
     dependencies=[Depends(require_auth)],
 )
 
@@ -50,8 +50,8 @@ _REQUIRE_QUERY = Depends(require_permission("org:query"))
 _REQUIRE_UPDATE = Depends(require_permission("org:update"))
 
 
-def _service(uow: UnitOfWork, config: BaseConfigSource, outbox: BaseOutboxStore) -> UserPostService:
-    """组装用户-岗位分配服务。
+def _service(uow: UnitOfWork, config: BaseConfigSource, outbox: BaseOutboxStore) -> UserDeptService:
+    """组装用户-部门分配服务。
 
     Args:
         uow: 工作单元。
@@ -59,44 +59,58 @@ def _service(uow: UnitOfWork, config: BaseConfigSource, outbox: BaseOutboxStore)
         outbox: 发件箱存储。
 
     Returns:
-        UserPostService: 分配服务。
+        UserDeptService: 分配服务。
     """
     session = cast("DbSession", uow.session)
-    return UserPostService(UserPostRepository(session), PostRepository(session), uow, config, outbox)
+    return UserDeptService(UserDeptRepository(session), DeptRepository(session), uow, config, outbox)
 
 
 def _audit(capturer: AuditCapturer, user_id: int) -> None:
-    """审计占位：记录一次用户-岗位分配写操作。
+    """审计占位：记录一次用户-部门分配写操作。
 
     Args:
         capturer: 审计捕获基座。
         user_id: 用户 id。
     """
     capturer.capture(
-        table="org_user_post", model_id=user_id, changes=ConcurrentStableList(), actor=current_user_id.get()
+        table="org_user_dept", model_id=user_id, changes=ConcurrentStableList(), actor=current_user_id.get()
     )
 
 
-@router.get("", dependencies=[_REQUIRE_QUERY])
-async def list_user_posts(
+async def _ids(service: UserDeptService, user_id: int) -> UserDeptIds:
+    """组装「已分配部门 + 主要部门」响应。
+
+    Args:
+        service: 分配服务。
+        user_id: 用户 id。
+
+    Returns:
+        UserDeptIds: 响应体。
+    """
+    return UserDeptIds(
+        dept_ids=await service.list_user_depts(user_id),
+        primary_dept_id=await service.primary_dept_id(user_id),
+    )
+
+
+@router.get("/{user_id}", dependencies=[_REQUIRE_QUERY])
+async def list_user_depts(
     user_id: int,
     uow: UowDep,
     config: ConfigDep,
     outbox: OutboxDep,
-) -> ApiResponse[UserPostIds]:
-    """按用户查已分配岗位。
+) -> ApiResponse[UserDeptIds]:
+    """按用户查已分配部门（含主要部门）。
 
     需要 org:query 权限；供 bms 用户管理页具名插槽插件回显。
     """
-    service = _service(uow, config, outbox)
-    post_ids = await service.list_user_posts(user_id)
-    return ApiResponse.ok(UserPostIds(post_ids=post_ids, primary_post_id=await service.primary_post_id(user_id)))
+    return ApiResponse.ok(await _ids(_service(uow, config, outbox), user_id))
 
 
 @router.put("/{user_id}", dependencies=[_REQUIRE_UPDATE])
-async def assign_user_posts(
+async def assign_user_depts(
     user_id: int,
-    req: UserPostAssignRequest,
+    req: UserDeptAssignRequest,
     uow: UowDep,
     config: ConfigDep,
     outbox: OutboxDep,
@@ -104,19 +118,19 @@ async def assign_user_posts(
     audit: AuditDep,
     idempotency: IdempotencyDep,
     idempotency_key: IdempotencyKeyHeader = None,
-) -> ApiResponse[UserPostIds]:
-    """全量覆盖分配用户岗位（diff 后增删单事务）。
+) -> ApiResponse[UserDeptIds]:
+    """全量覆盖分配用户部门（diff 后增删单事务）。
 
-    需要 org:update 权限；单用户岗位数受上限约束（330072）；支持幂等键。
+    需要 org:update 权限；单用户部门数受上限约束（330112）；被移除项若为主要部门则同事务清空标记；支持幂等键。
     """
     key = build_idempotency_key(key=idempotency_key, tenant=current_tenant_id_str()) if idempotency_key else ""
     if key and not await idempotency.begin(key):
         payload = await idempotency.load(key)
         if payload is not None:
-            return ApiResponse.ok(UserPostIds.model_validate(payload))
+            return ApiResponse.ok(UserDeptIds.model_validate(payload))
     service = _service(uow, config, outbox)
-    post_ids = await service.assign_user_posts(user_id=user_id, post_ids=req.post_ids)
-    result = UserPostIds(post_ids=post_ids, primary_post_id=await service.primary_post_id(user_id))
+    await service.assign_user_depts(user_id=user_id, dept_ids=req.dept_ids)
+    result = await _ids(service, user_id)
     _audit(audit, user_id)
     await bump_user_roles_generation(cache, current_tenant_id_str())
     if key:
@@ -124,46 +138,46 @@ async def assign_user_posts(
     return ApiResponse.ok(result)
 
 
-@router.delete("/{user_id}/{post_id}", dependencies=[_REQUIRE_UPDATE])
-async def unassign_user_post(
+@router.delete("/{user_id}/{dept_id}", dependencies=[_REQUIRE_UPDATE])
+async def unassign_user_dept(
     user_id: int,
-    post_id: int,
+    dept_id: int,
     uow: UowDep,
     config: ConfigDep,
     outbox: OutboxDep,
     cache: CacheDep,
     audit: AuditDep,
-) -> ApiResponse[UserPostIds]:
-    """解绑单个用户-岗位。
+) -> ApiResponse[UserDeptIds]:
+    """解绑单个用户-部门。
 
-    需要 org:update 权限；关联不存在抛 330071。
+    需要 org:update 权限；关联不存在抛 330111；若被解绑项为主要部门则标记随之清空。
     """
     service = _service(uow, config, outbox)
-    await service.unassign_user_post(user_id=user_id, post_id=post_id)
-    post_ids = await service.list_user_posts(user_id)
+    await service.unassign_user_dept(user_id=user_id, dept_id=dept_id)
+    result = await _ids(service, user_id)
     _audit(audit, user_id)
     await bump_user_roles_generation(cache, current_tenant_id_str())
-    return ApiResponse.ok(UserPostIds(post_ids=post_ids, primary_post_id=await service.primary_post_id(user_id)))
+    return ApiResponse.ok(result)
 
 
 @router.put("/{user_id}/primary", dependencies=[_REQUIRE_UPDATE])
-async def set_primary_post(
+async def set_primary_dept(
     user_id: int,
-    req: UserPostPrimaryRequest,
+    req: UserDeptPrimaryRequest,
     uow: UowDep,
     config: ConfigDep,
     outbox: OutboxDep,
     cache: CacheDep,
     audit: AuditDep,
-) -> ApiResponse[UserPostIds]:
-    """置位 / 清除主要岗位（同事务互斥置位）。
+) -> ApiResponse[UserDeptIds]:
+    """置位 / 清除主要部门（同事务互斥置位）。
 
-    需要 org:update 权限；`post_id` 为空表示清除；置位目标须已分配，否则 330113；
-    主要岗位不参与角色解析（解析按全部已分配岗位）。
+    需要 org:update 权限；`dept_id` 为空表示清除；置位目标须已分配，否则 330113；
+    主要部门不参与角色解析（解析按全部已分配部门）。
     """
     service = _service(uow, config, outbox)
-    await service.set_primary_post(user_id=user_id, post_id=req.post_id)
-    post_ids = await service.list_user_posts(user_id)
+    await service.set_primary_dept(user_id=user_id, dept_id=req.dept_id)
+    result = await _ids(service, user_id)
     _audit(audit, user_id)
     await bump_user_roles_generation(cache, current_tenant_id_str())
-    return ApiResponse.ok(UserPostIds(post_ids=post_ids, primary_post_id=await service.primary_post_id(user_id)))
+    return ApiResponse.ok(result)

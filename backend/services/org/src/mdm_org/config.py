@@ -17,6 +17,9 @@ DEPT_CODE_PATTERN_KEY = "org.dept_code_pattern"
 POST_MAX_PER_USER_KEY = "org.post_max_per_user"
 """单用户可分配岗位数上限（默认 10）。"""
 
+DEPT_MAX_PER_USER_KEY = "org.dept_max_per_user"
+"""单用户可分配部门数上限（默认 10）。"""
+
 DATA_SOURCE_MAX_FILTER_IDS_KEY = "org.data_source_max_filter_ids"
 """组织只读出口「部门过滤候选集」规模上限（默认 1000）。"""
 
@@ -28,6 +31,7 @@ DEFAULT_DEPT_MAX_CHILDREN = 500
 DEFAULT_POST_CODE_PATTERN = r"^[A-Za-z][A-Za-z0-9_]{0,31}$"
 DEFAULT_DEPT_CODE_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
 DEFAULT_POST_MAX_PER_USER = 10
+DEFAULT_DEPT_MAX_PER_USER = 10
 DEFAULT_DATA_SOURCE_MAX_FILTER_IDS = 1000
 DEFAULT_USER_ROLES_CACHE_TTL = 30
 

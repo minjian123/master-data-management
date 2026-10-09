@@ -47,6 +47,7 @@ from mdm_org.repositories.dept import DeptRepository
 from mdm_org.repositories.post import PostRepository
 from mdm_org.repositories.role_dept import RoleDeptRepository
 from mdm_org.repositories.role_post import RolePostRepository
+from mdm_org.repositories.user_dept import UserDeptRepository
 from mdm_org.repositories.user_post import UserPostRepository
 from mdm_org.schemas.open_read import OrgDeptTree, OrgNameRefs, OrgUserRoles
 from mdm_org.services.open_read import OpenReadService
@@ -145,8 +146,8 @@ async def list_users(
 ) -> ApiResponse[BasePageResponse[OrgUser]]:
     """组织数据源 · 用户（关键字 / 部门 / 含子级 / 状态 / 分页）。
 
-    部门过滤为**过渡口径**（映射为「该部门含子树下岗位、且用户已分配该岗位」的候选集），
-    待 bms 需求 07-2 落 `sys_user.dept_id` 后切换为平台字段过滤。
+    部门过滤口径：映射为「该部门含子树下岗位、且用户已分配该岗位」的候选集——
+    用户归属部门归本域 `org_user_dept`（2026-10-09 起），**不经平台字段**（`sys_user` 不落组织字段）。
     """
     service = _service(scope, uow, config, cache, client)
     return ApiResponse.ok(
@@ -268,7 +269,7 @@ def _service(
             dept_scope=scope,
         ),
         resolver=DbOrgNameResolver(depts=depts, posts=posts, users=users),
-        user_source=users,
+        user_depts=UserDeptRepository(session),
         user_posts=user_posts,
         role_posts=RolePostRepository(session),
         role_depts=RoleDeptRepository(session),

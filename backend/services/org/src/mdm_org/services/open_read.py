@@ -1,14 +1,15 @@
 """组织只读出口服务：出口编排（数据源 / 名称回显 / 按用户解析角色）+ 结果缓存与失效代。
 
 - 数据源与回显**只做编排**：真实取数在 `mdm_org/org/default.py`（数据范围由装配侧注入 `dept_scope`）；
-- **按用户解析角色**：岗位链（`org_user_post` → `org_role_post`，本域库）∪ 部门链（用户归属部门 →
-  `org_role_dept` 精确匹配，**不含子树**）；并集去重、插入序稳定；**不返回用户直接角色**
-  （`sys_user_role` 归 platform，由消费方合并）；
+- **按用户解析角色**：岗位链（`org_user_post` → `org_role_post`，本域库）∪ 部门链（**用户已分配部门**
+  的全部（`org_user_dept`，**不按主要项过滤**）→ `org_role_dept` 精确匹配，**不含子树**）；并集去重、
+  插入序稳定；**不返回用户直接角色**（`sys_user_role` 归 platform，由消费方合并）；
 - **缓存**：结果按租户 + 用户短时缓存（TTL 经 `org.user_roles_cache_ttl`，≤0 即不缓存），缓存键内嵌
   **租户级失效代**；写侧（角色-岗位 / 角色-部门 / 用户-岗位 分配或解绑）经
   `bump_user_roles_generation` 推进失效代 → 旧键立即不可达、由 TTL 自然回收；
-- **降级口径**：用户归属部门取自用户来源端口，来源不可达即**整体 fail-closed**（330101）——
-  不接受「少了部门链」的部分结果（避免权限少算被静默）。
+- **降级口径（2026-10-09 修订）**：部门链改取本域 `org_user_dept`（**不再经平台用户来源**），故按用户解析
+  角色不再受平台可达性影响；出口其余面（数据源 `users` / 名称回显 `user`）在用户来源不可达时仍**整体
+  fail-closed**（330101），不接受「少了数据」的部分结果。
 """
 
 from collections.abc import Iterable, Mapping
@@ -27,7 +28,6 @@ from mdm_org.org.base import (
     DEFAULT_ORG_PAGE_SIZE,
     BaseOrgDataSource,
     BaseOrgNameResolver,
-    BaseOrgUserSource,
     OrgDept,
     OrgNameRef,
     OrgPost,
@@ -35,6 +35,7 @@ from mdm_org.org.base import (
 )
 from mdm_org.repositories.role_dept import RoleDeptRepository
 from mdm_org.repositories.role_post import RolePostRepository
+from mdm_org.repositories.user_dept import UserDeptRepository
 from mdm_org.repositories.user_post import UserPostRepository
 
 USER_ROLES_GEN_KEY = "org:user_roles:gen"
@@ -55,7 +56,7 @@ class OpenReadService(BaseFrameworkObject):
         *,
         data_source: BaseOrgDataSource,
         resolver: BaseOrgNameResolver,
-        user_source: BaseOrgUserSource,
+        user_depts: UserDeptRepository,
         user_posts: UserPostRepository,
         role_posts: RolePostRepository,
         role_depts: RoleDeptRepository,
@@ -67,7 +68,7 @@ class OpenReadService(BaseFrameworkObject):
         Args:
             data_source: 组织数据源（组织数据源三取数）。
             resolver: 名称回显。
-            user_source: 用户来源端口（部门链取用户归属部门）。
+            user_depts: 用户-部门关联仓储（部门链起点）。
             user_posts: 用户-岗位关联仓储（岗位链起点）。
             role_posts: 角色-岗位分配仓储（岗位链终点）。
             role_depts: 角色-部门分配仓储（部门链终点）。
@@ -76,7 +77,7 @@ class OpenReadService(BaseFrameworkObject):
         """
         self._data_source = data_source
         self._resolver = resolver
-        self._user_source = user_source
+        self._user_depts = user_depts
         self._user_posts = user_posts
         self._role_posts = role_posts
         self._role_depts = role_depts
@@ -235,45 +236,24 @@ class OpenReadService(BaseFrameworkObject):
 
         Returns:
             ConcurrentStableList[int]: 角色 id 集合。
-
-        Raises:
-            OrgSourceUnavailableError: 用户来源不可达 / 未装配（330101）。
         """
         role_ids: ConcurrentStableList[int] = ConcurrentStableList()
         post_ids = ConcurrentStableList(link.post_id for link in await self._user_posts.list_by_user(user_id))
         for link in await self._role_posts.list_by_posts(post_ids):
             if link.role_id not in role_ids:
                 role_ids.add(link.role_id)
-        dept_id = await self._user_dept(user_id)
-        if dept_id is not None:
+        dept_ids = ConcurrentStableList(link.dept_id for link in await self._user_depts.list_by_user(user_id))
+        for dept_id in dept_ids:
             for link in await self._role_depts.list_by_dept(dept_id):
                 if link.role_id not in role_ids:
                     role_ids.add(link.role_id)
         return role_ids
 
-    async def _user_dept(self, user_id: int) -> int | None:
-        """取用户归属部门（经用户来源端口；用户不存在或字段未落地返回 None）。
-
-        Args:
-            user_id: 用户 id。
-
-        Returns:
-            int | None: 归属部门 id。
-
-        Raises:
-            OrgSourceUnavailableError: 用户来源不可达 / 未装配（330101）。
-        """
-        users = await self._user_source.by_ids(ConcurrentStableList([user_id]))
-        for user in users:
-            if user.id == user_id:
-                return user.dept_id
-        return None
-
 
 async def bump_user_roles_generation(cache: CacheRegion, tenant: str | None) -> None:
     """推进按用户解析角色缓存的失效代（**写侧失效**：同租户全量失效、旧键由 TTL 回收）。
 
-    写侧（角色-岗位 / 角色-部门 / 用户-岗位 分配或解绑）成功后调用；粒度粗但正确性最好，
+    写侧（角色-岗位 / 角色-部门 / 用户-岗位 / 用户-部门 分配、解绑或主要项变更）成功后调用；粒度粗但正确性最好，
     且多副本经共享缓存（生产 Redis）一致。
 
     Args:

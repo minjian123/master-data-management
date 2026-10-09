@@ -79,6 +79,15 @@ class OrgErrorCode(IntEnum):
     ORG_SOURCE_UNAVAILABLE = 330101
     """用户来源不可达 / 未装配（组织只读出口的用户维度取数通道）。"""
 
+    USER_DEPT_NOT_FOUND = 330111
+    """用户-部门关联不存在。"""
+
+    USER_DEPT_LIMIT_EXCEEDED = 330112
+    """单用户部门数超出上限。"""
+
+    USER_PRIMARY_NOT_ASSIGNED = 330113
+    """主要项置位目标不在该用户已分配集合内。"""
+
 
 class OrgError(BizError):
     """组织域异常基类（段位基；子类预置码位与 HTTP 状态）。"""
@@ -234,3 +243,22 @@ class OrgSourceUnavailableError(OrgError):
     """用户来源不可达 / 未装配（330101；用户维度出口明确降级，不静默返回旧值）。"""
 
     code_: ClassVar[int] = OrgErrorCode.ORG_SOURCE_UNAVAILABLE
+
+
+class OrgUserDeptNotFoundError(OrgError):
+    """用户-部门关联不存在（330111）。"""
+
+    code_: ClassVar[int] = OrgErrorCode.USER_DEPT_NOT_FOUND
+    http_status_: ClassVar[int] = 404
+
+
+class OrgUserDeptLimitExceededError(OrgError):
+    """单用户部门数超出上限（330112）。"""
+
+    code_: ClassVar[int] = OrgErrorCode.USER_DEPT_LIMIT_EXCEEDED
+
+
+class OrgUserPrimaryNotAssignedError(OrgError):
+    """主要项置位目标不在该用户已分配集合内（330113）。"""
+
+    code_: ClassVar[int] = OrgErrorCode.USER_PRIMARY_NOT_ASSIGNED

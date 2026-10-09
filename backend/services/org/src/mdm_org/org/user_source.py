@@ -198,8 +198,9 @@ def _page(data: ConcurrentStableDict[str, object], *, page: int, size: int) -> B
 def _to_user(item: object) -> OrgUser:
     """把平台用户只读行映射为 `OrgUser`。
 
-    平台只读行字段：`id` / `username` / `name` / `status` / `phone` / `email` / `dept_id`；
+    平台只读行字段：`id` / `username` / `name` / `status` / `phone` / `email`；
     其中 `name` 对映契约的 `nickname`，`avatar` 平台契约暂未提供（恒空，随用户完整域补）。
+    用户归属部门**不再取自平台**（`sys_user` 不落组织字段）——部门关系归本域 `org_user_dept`。
 
     Args:
         item: 平台返回的单行。
@@ -219,14 +220,10 @@ def _to_user(item: object) -> OrgUser:
     user_id = row.get("id")
     if not isinstance(user_id, int):
         raise OrgSourceUnavailableError(f"{_INTERFACE}返回契约非法：id 非整数")
-    dept_id = row.get("dept_id")
-    if dept_id is not None and not isinstance(dept_id, int):
-        raise OrgSourceUnavailableError(f"{_INTERFACE}返回契约非法：dept_id 非整数或空")
     return OrgUser(
         id=user_id,
         username=_text(row.get("username")),
         nickname=_text(row.get("name")),
-        dept_id=dept_id,
         status=_text(row.get("status")) or "enabled",
         avatar=None,
         phone=_optional_text(row.get("phone")),

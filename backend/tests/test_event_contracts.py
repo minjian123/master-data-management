@@ -1,4 +1,4 @@
-"""组织域事件契约（Kiwi 2255）：5 条契约形态 / 注入幂等 / 快照零漂移与兼容校验。"""
+"""组织域事件契约（Kiwi 2255）：6 条契约形态 / 注入幂等 / 快照零漂移与兼容校验。"""
 
 from pathlib import Path
 
@@ -14,12 +14,13 @@ _EXPECTED_TYPES = (
     "org.user_post.changed",
     "org.role_post.changed",
     "org.role_dept.changed",
+    "org.user_dept.changed",
 )
 
 
 @pytest.mark.kiwi_id(2255)
 def test_org_event_contracts_shape() -> None:
-    """契约形态：5 条、事件域名 `org`、载荷字段为小写下划线且不含信封保留键。"""
+    """契约形态：6 条、事件域名 `org`、载荷字段为小写下划线且不含信封保留键。"""
     assert tuple(contract.event_type for contract in ORG_EVENT_CONTRACTS) == _EXPECTED_TYPES
     for contract in ORG_EVENT_CONTRACTS:
         assert contract.domain == "org"

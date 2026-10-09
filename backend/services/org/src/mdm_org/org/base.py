@@ -57,7 +57,6 @@ class OrgUser(BaseSchema):
     id: int = Field(description="用户 ID")
     username: str = Field(description="用户名")
     nickname: str = Field(default="", description="昵称")
-    dept_id: int | None = Field(default=None, description="归属部门 ID")
     status: str = Field(default="enabled", description="状态（enabled / disabled）")
     avatar: str | None = Field(default=None, description="头像地址")
     phone: str | None = Field(default=None, description="手机号（默认脱敏）")

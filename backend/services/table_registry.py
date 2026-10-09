@@ -32,6 +32,12 @@ MDM_TABLE_RECORDS: tuple[TableRecord, ...] = (
         note="用户-岗位关联",
     ),
     TableRecord(
+        table_name="org_user_dept",
+        owner="org",
+        datasource=Datasource.TENANT,
+        note="用户-部门关联（含主要部门标记）",
+    ),
+    TableRecord(
         table_name="org_role_post",
         owner="org",
         datasource=Datasource.TENANT,
