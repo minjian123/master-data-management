@@ -2,8 +2,9 @@
 
 - `DbOrgDataSource`：`posts` / `dept_tree` 取**本域库**（`org_post` / `org_dept`）；`users` 取**用户来源
   端口**（平台用户只读出口）。部门过滤（`dept_id` / `include_children`）按部门祖先链展开子树；
-  **`users` 的部门过滤为过渡口径**——映射为「该部门（含子树）下的岗位、且用户已分配该岗位」的候选
-  用户集合，再交由用户来源在集合内筛选（`sys_user.dept_id` 落地后切换为平台字段过滤）。
+  **`users` 的部门过滤为本域最终口径**——映射为「该部门（含子树）下的岗位、且用户已分配该岗位」的
+  候选用户集合，再交由用户来源在集合内筛选（语义＝「用户在该部门有岗位」）；**平台 `sys_user.dept_id`
+  通道整体不引入**（2026-10-09：`sys_user` 不落组织字段，用户-部门关系归本域 `org_user_dept`）。
 - `DbOrgNameResolver`：`post` / `dept` 取本域库、`user` 取用户来源；单批 IN 查询，避免 N+1；
   未命中 id 在结果中占位（`exists=False` / `status=disabled`）。
 - **数据范围强制接入**：`dept_scope` 由装配侧（依赖提供者）读取基座 `DataScope.read_predicate()` 后注入，
@@ -80,7 +81,7 @@ class DbOrgDataSource(BaseOrgDataSource):
         page: int = 1,
         size: int = DEFAULT_ORG_PAGE_SIZE,
     ) -> BasePageResponse[OrgUser]:
-        """查询用户（经用户来源端口；部门过滤为过渡口径，见模块说明）。
+        """查询用户（经用户来源端口；部门过滤为本域最终口径，见模块说明）。
 
         Args:
             keyword: 关键字；None 不过滤。
