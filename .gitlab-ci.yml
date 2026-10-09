@@ -27,12 +27,68 @@ stages:
 default:
   tags: [mdm]
   image: python:3.14-slim
+  # 流水线级串行闸门：本流水线持锁期间，每次作业启动刷新锁（否则长流水线会被等待方误判为陈旧）
+  before_script:
+    - |
+      LOCK="${CI_QUEUE_LOCK_DIR:-/cache/.ci-queue-lock}"
+      if [ -f "$LOCK/owner" ] && [ "$(cat "$LOCK/owner" 2>/dev/null)" = "${CI_PROJECT_PATH}#${CI_PIPELINE_ID}" ]; then
+        touch "$LOCK/at" 2>/dev/null || true
+      fi
 
 variables:
   # 内网加速源（与 bms 侧 CI 同口径）；uv 以 copy 硬链接模式装入工作区 venv（跨挂载点安全）
   PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
   UV_DEFAULT_INDEX: https://pypi.tuna.tsinghua.edu.cn/simple
   UV_LINK_MODE: copy
+  # 流水线级串行闸门（2026-10-09）：与 bms 仓**同键**（两仓共用 mjbk 上同一台 runner 的持久卷 `/cache`）
+  CI_QUEUE_LOCK_DIR: /cache/.ci-queue-lock
+  CI_QUEUE_STALE_SECONDS: "900"
+
+# ---- 流水线级串行闸门（2026-10-09）----
+# 口径与实现见 bms 仓 `.gitlab-ci.yml` 同名小节：mjbk 上仅一台 runner（实例级 id 2），bms 与 mdm 共用，
+# 默认两仓流水线并行会互相抢资源；GitLab 原生无「整条流水线互斥」开关（`resource_group` 是作业级且不跨
+# 项目），故用两仓**共用**的 runner 持久卷 `/cache` 作跨项目互斥锁（**键固定，两仓必须一致**）。
+ci-queue-acquire:
+  stage: .pre
+  script:
+    - |
+      LOCK="${CI_QUEUE_LOCK_DIR:-/cache/.ci-queue-lock}"
+      STALE="${CI_QUEUE_STALE_SECONDS:-900}"
+      ME="${CI_PROJECT_PATH}#${CI_PIPELINE_ID}"
+      WAITED=0
+      until mkdir "$LOCK" 2>/dev/null; do
+        OWNER="$(cat "$LOCK/owner" 2>/dev/null || echo '未知')"
+        AT="$(cat "$LOCK/at" 2>/dev/null || echo 0)"
+        AGE=$(( $(date +%s) - ${AT:-0} ))
+        if [ "$AGE" -ge "$STALE" ]; then
+          echo "[ci-queue] 锁陈旧（owner=${OWNER}，${AGE}s ≥ ${STALE}s 无刷新）⇒ 接管"
+          rm -rf "$LOCK"
+          continue
+        fi
+        if [ $(( WAITED % 60 )) -eq 0 ]; then
+          echo "[ci-queue] 等待上一条流水线结束：owner=${OWNER}，其持锁 ${AGE}s，本流水线已等 ${WAITED}s"
+        fi
+        WAITED=$(( WAITED + 15 ))
+        sleep 15
+      done
+      printf '%s' "$ME" > "$LOCK/owner"
+      date +%s > "$LOCK/at"
+      echo "[ci-queue] 已获得流水线锁：$ME"
+
+ci-queue-release:
+  stage: .post
+  when: always
+  interruptible: false
+  script:
+    - |
+      LOCK="${CI_QUEUE_LOCK_DIR:-/cache/.ci-queue-lock}"
+      ME="${CI_PROJECT_PATH}#${CI_PIPELINE_ID}"
+      if [ "$(cat "$LOCK/owner" 2>/dev/null)" = "$ME" ]; then
+        rm -rf "$LOCK"
+        echo "[ci-queue] 已释放流水线锁：$ME"
+      else
+        echo "[ci-queue] 锁不属于本流水线（owner=$(cat "$LOCK/owner" 2>/dev/null || echo '无')），跳过释放"
+      fi
 
 # ---- 门禁冒烟：所有流水线无条件必跑 ----
 gate-smoke:
