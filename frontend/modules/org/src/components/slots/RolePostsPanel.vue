@@ -12,12 +12,7 @@ import { useOrgI18n } from '../../composables/useOrgI18n'
 import { useAssignment, type AssignedLabel, type HostSubmitterRegistrar } from '../../composables/useAssignment'
 import { flattenDeptTree, toIdParamList, type DeptTreeNode, type DomainOption } from '../../domain'
 import { isApiAbsent } from '../../runtime'
-import {
-  assignRolePosts,
-  fetchDeptTree,
-  fetchPostPage,
-  fetchRolePostIds,
-} from '../../services/org-service'
+import { assignRolePosts, fetchDeptTree, fetchPostPage, fetchRolePostIds } from '../../services/org-service'
 
 import AssignPanel from './AssignPanel.vue'
 
@@ -37,20 +32,24 @@ const deptOptions = ref<DomainOption[]>([])
 /** 当前部门筛选（空串＝全部）。 */
 const deptFilter = ref('')
 
-const assignment = useAssignment(contextId, {
-  async loadAssigned(id) {
-    const [current, page] = await Promise.all([fetchRolePostIds(id), fetchPostPage({ page: 1, size: 200 })])
-    const index = new Map(postNames.value)
-    for (const post of page.list) {
-      index.set(String(post.id), { id: String(post.id), label: post.name, description: post.code })
-    }
-    postNames.value = index
-    return { ids: (current.post_ids ?? []).map((postId) => String(postId)), labels: [...index.values()] }
+const assignment = useAssignment(
+  contextId,
+  {
+    async loadAssigned(id) {
+      const [current, page] = await Promise.all([fetchRolePostIds(id), fetchPostPage({ page: 1, size: 200 })])
+      const index = new Map(postNames.value)
+      for (const post of page.list) {
+        index.set(String(post.id), { id: String(post.id), label: post.name, description: post.code })
+      }
+      postNames.value = index
+      return { ids: (current.post_ids ?? []).map((postId) => String(postId)), labels: [...index.values()] }
+    },
+    async submit(id, ids) {
+      await assignRolePosts(id, { post_ids: toIdParamList(ids) })
+    },
   },
-  async submit(id, ids) {
-    await assignRolePosts(id, { post_ids: toIdParamList(ids) })
-  },
-}, { registrar })
+  { registrar, segment: { key: 'role_posts', idsField: 'post_ids' } },
+)
 
 /** 载入候选岗位（按部门筛选）；失败即降级提示（不抛出）。 */
 async function loadOptions(): Promise<void> {

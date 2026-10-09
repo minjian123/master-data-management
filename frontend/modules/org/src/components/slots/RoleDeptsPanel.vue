@@ -28,21 +28,25 @@ const treeData = ref<DeptTreeOption[]>([])
 /** 树组件引用（勾选回填与取值）。 */
 const treeRef = ref<InstanceType<typeof ElTree>>()
 
-const assignment = useAssignment(contextId, {
-  async loadAssigned(id) {
-    const [current, tree] = await Promise.all([fetchRoleDeptIds(id), fetchDeptTree()])
-    const flat = flattenDeptTree((tree.items ?? []) as DeptTreeNode[])
-    const index = new Map<string, AssignedLabel>()
-    for (const item of flat) index.set(item.value, { id: item.value, label: item.label.replace(/\u3000/g, '') })
-    deptNames.value = index
-    treeData.value = toDeptTreeData((tree.items ?? []) as DeptTreeNode[])
-    const ids = (current.dept_ids ?? []).map((deptId) => String(deptId))
-    return { ids, labels: [...index.values()] }
+const assignment = useAssignment(
+  contextId,
+  {
+    async loadAssigned(id) {
+      const [current, tree] = await Promise.all([fetchRoleDeptIds(id), fetchDeptTree()])
+      const flat = flattenDeptTree((tree.items ?? []) as DeptTreeNode[])
+      const index = new Map<string, AssignedLabel>()
+      for (const item of flat) index.set(item.value, { id: item.value, label: item.label.replace(/\u3000/g, '') })
+      deptNames.value = index
+      treeData.value = toDeptTreeData((tree.items ?? []) as DeptTreeNode[])
+      const ids = (current.dept_ids ?? []).map((deptId) => String(deptId))
+      return { ids, labels: [...index.values()] }
+    },
+    async submit(id, ids) {
+      await assignRoleDepts(id, { dept_ids: toIdParamList(ids) })
+    },
   },
-  async submit(id, ids) {
-    await assignRoleDepts(id, { dept_ids: toIdParamList(ids) })
-  },
-}, { registrar })
+  { registrar, segment: { key: 'role_depts', idsField: 'dept_ids' } },
+)
 
 /**
  * 树勾选变化（精确匹配：只取勾选节点本身，不含半选父级）。

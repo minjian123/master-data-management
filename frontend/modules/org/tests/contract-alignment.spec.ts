@@ -205,11 +205,23 @@ describe('mdm 组织域模块 · 契约对齐（01_04 · Kiwi 2261）', () => {
     const management = Object.entries(CONTRACT.paths).filter(([path]) => {
       const relative = path.slice(PRODUCT_PREFIX.length)
       const excluded = path === '/' || path === '/healthz' || path === '/readyz'
-      return !excluded && !relative.startsWith('/data-source') && relative !== '/resolve-names' && relative !== '/user-roles'
+      // 排除出口（`/data-source*` / `/resolve-names` / `/user-roles`）、**宿主编排内部写通道**
+      // （`/internal/*`：仅服务身份可调，由 platform 编排发起）与**跨服务事务参与端点**
+      // （`/txn/branches*`：基座协议端点，由 TM / 调用方驱动）——三者均非模块前端调用面。
+      const infra = relative.startsWith('/internal/') || path.includes('/txn/')
+      return (
+        !excluded &&
+        !infra &&
+        !relative.startsWith('/data-source') &&
+        relative !== '/resolve-names' &&
+        relative !== '/user-roles'
+      )
     })
 
     const missing = management
-      .flatMap(([path, ops]) => Object.keys(ops).map((method) => `${method} ${toTemplate(path.slice(PRODUCT_PREFIX.length))}`))
+      .flatMap(([path, ops]) =>
+        Object.keys(ops).map((method) => `${method} ${toTemplate(path.slice(PRODUCT_PREFIX.length))}`),
+      )
       .filter((key) => !covered.has(key))
 
     expect(missing, `以下契约端点在模块服务层缺失：${missing.join('、')}`).toEqual([])

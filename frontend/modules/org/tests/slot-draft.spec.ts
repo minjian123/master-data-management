@@ -116,10 +116,17 @@ describe('mdm 组织域模块 · 草稿与宿主提交器通道（01_02-02 · Ki
     expect(wrapper.find('[data-test="assign-dirty"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="assign-self-submit"]').exists()).toBe(false)
 
-    await entries[0]?.submit()
+    // 宿主收集草稿：段名 + 全量集合；主要项已不在集合内 ⇒ 置空（避免「主要项越界」的非法载荷）
+    expect(entries[0]?.buildSegment()).toEqual({
+      key: 'user_posts',
+      value: { post_ids: [], primary_post_id: null },
+    })
+    expect(scope.put).not.toHaveBeenCalled()
+
+    await entries[0]?.reload()
     await flushPromises()
 
-    expect(scope.put).toHaveBeenCalledWith('/user-posts/u-1', { post_ids: [] })
+    expect(entries[0]?.isDirty()).toBe(false)
   })
 
   it('无宿主通道：给出自提交提示，「确定」即自提交（全量覆盖）', async () => {

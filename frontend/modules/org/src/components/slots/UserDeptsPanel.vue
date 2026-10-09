@@ -11,13 +11,7 @@ import { onMounted, ref, watch } from 'vue'
 
 import { useOrgI18n } from '../../composables/useOrgI18n'
 import { useAssignment, type AssignedLabel, type HostSubmitterRegistrar } from '../../composables/useAssignment'
-import {
-  flattenDeptTree,
-  toDeptTreeData,
-  toIdParamList,
-  type DeptTreeNode,
-  type DeptTreeOption,
-} from '../../domain'
+import { flattenDeptTree, toDeptTreeData, toIdParamList, type DeptTreeNode, type DeptTreeOption } from '../../domain'
 import { hostRouteParam } from '../../runtime'
 import { assignUserDepts, fetchDeptTree, fetchUserDeptIds, setPrimaryUserDept } from '../../services/org-service'
 
@@ -57,7 +51,10 @@ const assignment = useAssignment(
       await setPrimaryUserDept(id, primaryId ?? '')
     },
   },
-  { registrar },
+  {
+    registrar,
+    segment: { key: 'user_depts', idsField: 'dept_ids', primaryField: 'primary_dept_id' },
+  },
 )
 
 /**

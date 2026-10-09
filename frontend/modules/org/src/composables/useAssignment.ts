@@ -4,9 +4,10 @@
  * 统一「已分配列表载入 / **草稿编辑** / 主要项 / 降级文案」四件事；候选（岗位列表 / 部门树）由各插件自行渲染，
  * 因为四者的候选形态与筛选方式不同（岗位＝部门筛选 + 多选列表；部门＝树多选）。
  *
- * **提交口径（2026-10-09 定稿：跟随宿主保存）**：
- * - 宿主经插槽上下文提供 `registerSubmitter`（表单框架记录页签保存时回调插件）⇒ 改动**只进草稿**，
- *   由宿主工具栏「保存」统一提交（`isDirty()` 供宿主做脏标记 / 离开拦截）；
+ * **提交口径（2026-10-09 定稿：宿主收草稿）**：
+ * - 宿主经插槽上下文提供 `registerSubmitter`（表单框架记录页签保存时收集）⇒ 改动**只进草稿**，
+ *   由宿主工具栏「保存」把各插件 `buildSegment()` 的段载荷连同本体一次提交给编排端点
+ *   （`isDirty()` 供宿主做脏标记 / 离开拦截；提交成功后宿主调 `reload()`）；
  * - 宿主**未提供**该通道（如已交付的角色管理页）⇒ 保持**自提交兜底**（弹窗「确定」即立即覆盖），不回归可用性；
  * - 主要项：契约只回标识集合，置位走**独立端点**（提交器内两步：先全量覆盖、再置位 / 清除；两步均幂等）。
  */
@@ -28,16 +29,36 @@ export interface AssignedLabel {
   description?: string
 }
 
-/** 宿主提交器登记入参（表单框架记录页签：宿主保存时回调插件提交 / 取脏标记）。 */
+/** 分配段载荷（段名 + 全量值；宿主按段名装配进编排请求）。 */
+export interface HostSubmitterSegment {
+  /** 段名（与宿主编排端点字段一致，如 `user_posts` / `user_depts` / `role_posts` / `role_depts`）。 */
+  key: string
+  /** 段值（全量覆盖语义：集合 + 主要项）。 */
+  value: Record<string, unknown>
+}
+
+/** 宿主提交器登记入参（表单框架记录页签：宿主**收集草稿**并统一提交 / 取脏标记）。 */
 export interface HostSubmitterEntry {
-  /** 提交草稿（幂等；宿主工具栏保存时调用）。 */
-  submit: () => Promise<void>
   /** 是否含未提交改动（宿主脏标记 / 离开拦截）。 */
   isDirty: () => boolean
+  /** 构建本插件的分配段（**无改动返回 `null`**；宿主收集后随编排端点一次提交）。 */
+  buildSegment: () => HostSubmitterSegment | null
+  /** 提交成功后刷新（宿主在编排成功后调用）。 */
+  reload: () => Promise<void>
 }
 
 /** 宿主提交器注册通道（插槽上下文字段 `registerSubmitter` 的**值即该函数本身**；缺失即无通道）。 */
 export type HostSubmitterRegistrar = (entry: HostSubmitterEntry) => void
+
+/** 分配段规格（宿主收草稿时按此把草稿转成段载荷；未提供 ⇒ 不参与宿主收集，仅自提交兜底）。 */
+export interface AssignmentSegmentSpec {
+  /** 段名（与宿主编排端点字段一致）。 */
+  key: string
+  /** 集合字段名（如 `post_ids` / `dept_ids`）。 */
+  idsField: string
+  /** 主要项字段名（如 `primary_post_id`；无主要项语义时省略）。 */
+  primaryField?: string
+}
 
 /** 分配数据面（插件按自身端点注入）。 */
 export interface AssignmentPorts {
@@ -93,6 +114,8 @@ export interface UseAssignmentResult {
 export interface UseAssignmentOptions {
   /** 宿主提交器注册通道（响应式；缺失＝无通道 ⇒ 自提交兜底）。 */
   registrar?: ComputedRef<HostSubmitterRegistrar | undefined>
+  /** 分配段规格（宿主收草稿用；缺失 ⇒ `buildSegment` 恒返回 `null`）。 */
+  segment?: AssignmentSegmentSpec
 }
 
 /**
@@ -134,7 +157,9 @@ export function useAssignment(
   const registrar = options.registrar
   const hostBound = computed(() => registrar?.value !== undefined)
   const dirty = computed(
-    () => !sameSet(picked.value, assignedIds.value) || (ports.submitPrimary !== undefined && primary.value !== savedPrimary.value),
+    () =>
+      !sameSet(picked.value, assignedIds.value) ||
+      (ports.submitPrimary !== undefined && primary.value !== savedPrimary.value),
   )
 
   /**
@@ -197,11 +222,30 @@ export function useAssignment(
     }
   }
 
-  // 宿主提供通道 ⇒ 登记提交器（改动随宿主保存）；通道出现 / 消失均重新登记
+  /**
+   * 构建分配段（宿主收草稿用）。
+   *
+   * 无改动 / 未提供段规格 ⇒ `null`；主要项不在集合内即置空——避免产出「主要项越界」的非法载荷
+   * （服务侧同口径校验，越界即 `ParamError`）。
+   *
+   * @returns 分配段载荷或 `null`。
+   */
+  function buildSegment(): HostSubmitterSegment | null {
+    const spec = options.segment
+    if (spec === undefined || !dirty.value) return null
+    const ids = [...picked.value]
+    const value: Record<string, unknown> = { [spec.idsField]: ids }
+    if (spec.primaryField !== undefined) {
+      value[spec.primaryField] = primary.value !== '' && ids.includes(primary.value) ? primary.value : null
+    }
+    return { key: spec.key, value }
+  }
+
+  // 宿主提供通道 ⇒ 登记**草稿**提交器（宿主工具栏「保存」时收集并一次提交）；通道出现 / 消失均重新登记
   watch(
     () => registrar?.value,
     (target) => {
-      target?.({ submit: applyDraft, isDirty: () => dirty.value })
+      target?.({ isDirty: () => dirty.value, buildSegment, reload })
     },
     { immediate: true },
   )

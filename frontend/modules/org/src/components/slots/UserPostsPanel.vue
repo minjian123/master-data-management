@@ -38,27 +38,34 @@ const deptOptions = ref<DomainOption[]>([])
 /** 当前部门筛选（空串＝全部）。 */
 const deptFilter = ref('')
 
-const assignment = useAssignment(userId, {
-  async loadAssigned(id) {
-    const [current, page] = await Promise.all([fetchUserPostIds(id), fetchPostPage({ page: 1, size: 200 })])
-    const index = new Map(postNames.value)
-    for (const post of page.list) {
-      index.set(String(post.id), { id: String(post.id), label: post.name, description: post.code })
-    }
-    postNames.value = index
-    return {
-      ids: (current.post_ids ?? []).map((postId) => String(postId)),
-      labels: [...index.values()],
-      primary: current.primary_post_id ?? '',
-    }
+const assignment = useAssignment(
+  userId,
+  {
+    async loadAssigned(id) {
+      const [current, page] = await Promise.all([fetchUserPostIds(id), fetchPostPage({ page: 1, size: 200 })])
+      const index = new Map(postNames.value)
+      for (const post of page.list) {
+        index.set(String(post.id), { id: String(post.id), label: post.name, description: post.code })
+      }
+      postNames.value = index
+      return {
+        ids: (current.post_ids ?? []).map((postId) => String(postId)),
+        labels: [...index.values()],
+        primary: current.primary_post_id ?? '',
+      }
+    },
+    async submit(id, ids) {
+      await assignUserPosts(id, { post_ids: toIdParamList(ids) })
+    },
+    async submitPrimary(id, primaryId) {
+      await setPrimaryUserPost(id, primaryId ?? '')
+    },
   },
-  async submit(id, ids) {
-    await assignUserPosts(id, { post_ids: toIdParamList(ids) })
+  {
+    registrar,
+    segment: { key: 'user_posts', idsField: 'post_ids', primaryField: 'primary_post_id' },
   },
-  async submitPrimary(id, primaryId) {
-    await setPrimaryUserPost(id, primaryId ?? '')
-  },
-}, { registrar })
+)
 
 /** 载入候选岗位（按部门筛选）；失败即降级提示（不抛出）。 */
 async function loadOptions(): Promise<void> {

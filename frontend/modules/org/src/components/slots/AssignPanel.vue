@@ -148,7 +148,12 @@ watch(
       />
 
       <el-table v-else :data="assignedRows" row-key="id" size="small" data-test="assigned-table">
-        <el-table-column v-if="showPrimary === true" :label="t('mdmOrg.slot.column.primary')" width="100" align="center">
+        <el-table-column
+          v-if="showPrimary === true"
+          :label="t('mdmOrg.slot.column.primary')"
+          width="100"
+          align="center"
+        >
           <template #default="{ row }">
             <el-radio
               :model-value="primary ?? ''"
