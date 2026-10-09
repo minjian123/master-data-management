@@ -27,7 +27,12 @@
       <div class="host-bar">
         <span class="host-title">模拟宿主页 · 角色表单 · 角色分配</span>
         <el-tag size="small" type="info">审批角色</el-tag>
-        <span class="proto-hint">该页签非独立页面：作用对象由宿主显式上下文提供；插件只读</span>
+        <el-tag v-if="dirty" size="small" type="warning">未保存</el-tag>
+        <span class="ep-side" style="margin-left:auto">
+          <el-button size="small" type="primary" @click="hostSave">保存（宿主）</el-button>
+          <el-button size="small" @click="hostReset">取消</el-button>
+        </span>
+        <span class="proto-hint">该页签非独立页面：作用对象由宿主显式上下文提供；插件只读；**插件改动进草稿，随宿主「保存」统一提交**</span>
       </div>
 
       <el-tabs v-model="assignTab">
@@ -45,8 +50,8 @@
 
           <template v-else>
             <el-alert type="success" :closable="false" show-icon
-              title="数据归组织主数据域：分配与解绑即时提交（不随角色表单保存）"
-              description="按「用户归属部门」精确匹配授予角色——不含下级部门继承；用户归属由平台用户档案提供。"></el-alert>
+              title="跟随宿主「保存」：分配 / 解绑改动先进草稿，点宿主保存后统一提交"
+              description="数据归组织主数据域（与宿主角色本体分属两个服务）：保存由宿主编排——各服务本地事务 + 幂等键 + 失败反向补偿 + 一致性屏障校验，不引入 2PC / XA。按部门精确匹配授予角色，不含下级部门继承。"></el-alert>
 
             <div class="ep-toolbar" style="margin-top:12px">
               <el-button type="primary" @click="openAssign">分配部门</el-button>
@@ -61,16 +66,6 @@
             <el-table :data="assignedRows" border stripe style="width:100%">
               <el-table-column prop="name" label="部门" min-width="180"></el-table-column>
               <el-table-column prop="path" label="部门路径" min-width="240"></el-table-column>
-              <el-table-column label="状态" width="100">
-                <template #default="{ row }">
-                  <el-tag :type="row.status === 'enabled' ? 'success' : 'info'">{{ row.status === 'enabled' ? '启用' : '停用' }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="110">
-                <template #default="{ row }">
-                  <el-button link type="danger" @click="unbind(row)">解绑</el-button>
-                </template>
-              </el-table-column>
               <template #empty>
                 <el-empty description="该角色暂未分配部门">
                   <el-button size="small" type="primary" @click="openAssign">去分配</el-button>
@@ -80,6 +75,9 @@
 
             <p class="proto-hint" style="margin-top:8px">
               与「岗位分配」同为同一宿主页签下的两个功能块：<a href="03_岗位分配.html">前往岗位分配原型 →</a>
+            </p>
+            <p class="proto-hint" style="margin-top:4px">
+              <b>取消某条分配</b>：在「分配部门」弹窗中取消勾选即可（弹窗为<b>全量覆盖</b>语义）；列表不设操作列、不设「状态」列（候选树中停用部门不展示为可勾选）。
             </p>
           </template>
         </el-tab-pane>
@@ -93,10 +91,10 @@
           :props="{ label: 'name', children: 'children' }" :default-checked-keys="dlg.picked"></el-tree>
       </div>
       <el-alert type="warning" :closable="false" style="margin-top:12px"
-        title="部门分配按精确匹配生效：仅勾选的部门本身获得该角色，不含其下级部门（需逐级勾选）。"></el-alert>
+        title="部门分配按精确匹配生效：仅勾选的部门本身获得该角色，不含其下级部门（需逐级勾选）；确定后仅更新草稿，随宿主「保存」提交。"></el-alert>
       <template #footer>
         <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" @click="saveAssign">保存并提交</el-button>
+        <el-button type="primary" @click="saveAssign">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -129,7 +127,11 @@
         ] }
       ];
       var assignedIds = ref([3]);
+      var savedIds = ref([3]);
       var dlg = reactive({ visible: false, picked: [] });
+      var dirty = computed(function () {
+        return assignedIds.value.slice().sort().join(',') !== savedIds.value.slice().sort().join(',');
+      });
 
       function toastMsg(m, type) {
         var opts = { message: m };
@@ -165,15 +167,17 @@
         var keys = tree ? tree.getCheckedKeys() : dlg.picked.slice();
         assignedIds.value = keys.slice();
         dlg.visible = false;
-        toastMsg('已提交（即时生效）：审批角色 的部门分配已更新（精确匹配，不含下级）', 'success');
+        toastMsg('草稿已更新（尚未保存）：点宿主「保存」后生效（精确匹配，不含下级）', 'info');
       }
-      function unbind(row) {
-        confirmAction('解绑部门「' + row.name + '」？该部门下的用户将失去此角色。', function () {
-          assignedIds.value = assignedIds.value.filter(function (id) { return id !== row.id; });
-          toastMsg('已解绑（即时生效）', 'success');
-        }, '解绑');
+      function hostSave() {
+        savedIds.value = assignedIds.value.slice();
+        toastMsg('宿主保存完成：角色本体（platform）+ 部门分配（mdm）经编排提交，一致性屏障校验通过', 'success');
       }
-      return { assignTab, demoState, treeRef, deptTree, assignedIds, dlg, assignedRows, refresh, openAssign, saveAssign, unbind };
+      function hostReset() {
+        assignedIds.value = savedIds.value.slice();
+        toastMsg('已放弃未保存改动');
+      }
+      return { assignTab, demoState, treeRef, deptTree, assignedIds, dlg, dirty, assignedRows, refresh, openAssign, saveAssign, hostSave, hostReset };
     }
   });
   app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
