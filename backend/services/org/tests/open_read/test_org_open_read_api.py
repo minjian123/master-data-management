@@ -314,7 +314,7 @@ async def test_data_scope_predicate_parsing() -> None:
 async def test_platform_user_source_maps_rows_and_fails_closed() -> None:
     """用户来源实现：只读行归一（`name` → 昵称 / 联系方式 / 头像恒空；**部门不再取自平台**）；不可达 /
     非 2xx / 业务失败 / 返回契约非法一律 330101（fail-closed，不静默降级为空）。"""
-    users = ConcurrentStableList([org_env.user(2001, nickname="张三", phone="13800000001", dept_id=7)])
+    users = ConcurrentStableList([org_env.user(2001, nickname="张三", phone="13800000001")])
     source = PlatformOrgUserSource(org_env.StubPlatformClient(users))
 
     page = await source.query("张", status="enabled")

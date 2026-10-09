@@ -15,7 +15,7 @@ constraint-dependencies = ["sqlalchemy>=2.0,<2.1"]
 # 共享基座库（bms 仓 `backend/libs/bms_core`）：锁提交 SHA 保证构建可精确复现，
 # 并与「bms 侧 `org` 标识已释放（11_01）」强绑定；升级须同步改 rev（人工或接入 Renovate）。
 # 凭据：仓库为内网 GitLab（只读 clone 无需凭据）；CI 内以 git `insteadOf` 注入 CI_JOB_TOKEN。
-bms-core = { git = "http://192.168.0.107:8080/bms/bms.git", subdirectory = "backend/libs/bms_core", rev = "f77c326a7bf1e01750052cec71090c5bb59e386e" }
+bms-core = { git = "http://192.168.0.107:8080/bms/bms.git", subdirectory = "backend/libs/bms_core", rev = "3bada862e5e33b5d14e441246488f72aed3bec45" }
 
 [dependency-groups]
 dev = [

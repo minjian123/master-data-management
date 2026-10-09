@@ -627,7 +627,6 @@ def user(
     *,
     username: str | None = None,
     nickname: str = "",
-    dept_id: int | None = None,
     status: str = "enabled",
     phone: str | None = None,
     email: str | None = None,
@@ -638,7 +637,6 @@ def user(
         user_id: 用户 id。
         username: 用户名；None 取 `u{id}`。
         nickname: 昵称。
-        dept_id: 归属部门 id。
         status: 状态。
         phone: 手机号。
         email: 邮箱。
@@ -650,7 +648,6 @@ def user(
         id=user_id,
         username=username if username is not None else f"u{user_id}",
         nickname=nickname,
-        dept_id=dept_id,
         status=status,
         phone=phone,
         email=email,
