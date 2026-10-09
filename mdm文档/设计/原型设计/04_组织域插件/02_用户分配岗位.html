@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>原型 · 用户分配岗位</title>
+<title>原型 · 岗位分配（用户记录页）</title>
 <link rel="stylesheet" href="../../../../bms文档/设计/原型设计/资源/vendor/element-plus.css">
 <link rel="stylesheet" href="../../../../bms文档/设计/原型设计/资源/原型样式.css">
 <style>
@@ -19,16 +19,16 @@
 
 <div class="proto-bar">
   <span class="pb-crumb"><a href="01_设计说明.html">← 返回设计说明</a></span>
-  <span class="pb-name">组织域插件 · 用户分配岗位</span>
+  <span class="pb-name">组织域插件 · 岗位分配（用户记录页「用户分配」页签内子页签）</span>
 </div>
 
 <div class="proto-frame">
   <div id="app">
     <div class="host-shell">
       <div class="host-bar">
-        <span class="host-title">模拟宿主页 · 用户详情</span>
+        <span class="host-title">模拟宿主页 · 用户记录页 →「用户分配」页签</span>
         <el-tag size="small" type="info">张三 / zhangsan</el-tag>
-        <span class="proto-hint">宿主页提供作用对象标识；插件只读</span>
+        <span class="proto-hint">宿主提供作用对象标识；插件只读；本插件渲染在「用户分配」页签内的子页签（与 角色分配 / 用户分配部门 并列）</span>
       </div>
 
       <el-tabs v-model="activeTab">
@@ -41,7 +41,7 @@
           </el-descriptions>
         </el-tab-pane>
 
-        <el-tab-pane label="用户分配岗位" name="posts">
+        <el-tab-pane label="岗位分配" name="posts">
           <el-alert v-if="demoState === 'offline'" type="info" :closable="false"
             title="插件未加载：本页签整体不渲染，页面其余部分照常（不报错、不阻塞）"></el-alert>
 
@@ -68,6 +68,11 @@
               <el-table-column prop="code" label="岗位码" min-width="130"></el-table-column>
               <el-table-column prop="name" label="名称" min-width="130"></el-table-column>
               <el-table-column prop="dept" label="归属部门" min-width="120"></el-table-column>
+              <el-table-column label="主要" width="80">
+                <template #default="{ row }">
+                  <el-radio :model-value="primaryId" :value="row.id" @change="onPrimary(row)"></el-radio>
+                </template>
+              </el-table-column>
               <el-table-column label="状态" width="100">
                 <template #default="{ row }">
                   <el-tag :type="row.status === 'enabled' ? 'success' : 'info'">{{ row.status === 'enabled' ? '启用' : '停用' }}</el-tag>
@@ -87,6 +92,9 @@
 
             <p class="proto-hint" style="margin-top:8px">
               主体链：用户 → 岗位 → 角色；分配岗位后，用户经该岗位获得岗位绑定的角色权限。
+            </p>
+            <p class="proto-hint" style="margin-top:4px">
+              <b>「主要」</b>＝该用户所属岗位的默认归属（同用户<b>至多一个</b>）：点选即提交（<b>即时生效，不随宿主保存</b>），再次点选同一项即取消；分配集合变动致该条解绑时主要标记随之清空。<b>主要岗位不参与角色解析</b>（权限按全部已分配岗位计算）。
             </p>
           </template>
         </el-tab-pane>
@@ -141,6 +149,7 @@
         { id: 4, code: 'hr', name: '人事专员', dept: '人事部', status: 'enabled' }
       ]);
       var assignedIds = ref([1]);
+      var primaryId = ref(1);
       var dlg = reactive({ visible: false, dept: '', picked: [] });
 
       function toastMsg(m, type) {
@@ -173,10 +182,20 @@
       function unbind(row) {
         confirmAction('解绑岗位「' + row.name + '」？该用户将失去该岗位对应的角色权限。', function () {
           assignedIds.value = assignedIds.value.filter(function (id) { return id !== row.id; });
+          if (primaryId.value === row.id) { primaryId.value = null; }
           toastMsg('已解绑（即时生效）', 'success');
         }, '解绑');
       }
-      return { activeTab, demoState, posts, assignedIds, dlg, assignedRows, dlgOptions, onDeptChange, refresh, openAssign, saveAssign, unbind };
+      function onPrimary(row) {
+        if (primaryId.value === row.id) {
+          primaryId.value = null;
+          toastMsg('已取消主要岗位（即时生效）', 'success');
+          return;
+        }
+        primaryId.value = row.id;
+        toastMsg('已设为主要岗位：「' + row.name + '」（即时生效，原主要项自动取消）', 'success');
+      }
+      return { activeTab, demoState, posts, assignedIds, primaryId, dlg, assignedRows, dlgOptions, onDeptChange, refresh, openAssign, saveAssign, unbind, onPrimary };
     }
   });
   app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
