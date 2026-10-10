@@ -2,7 +2,7 @@
 
 ![Markdown](https://img.shields.io/badge/Markdown-文档-000000?logo=markdown&logoColor=white)
 ![BMS 产品服务](https://img.shields.io/badge/BMS产品服务-主数据管理-3B6FB6?logo=database&logoColor=white)
-![规划中](https://img.shields.io/badge/阶段-规划中-FFB020)
+![阶段一 已完成](https://img.shields.io/badge/阶段一-已完成-2F8F4F)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 </div>
@@ -25,10 +25,13 @@
 mdm/
 ├── README.md                 # 本文件
 ├── LICENSE                   # MIT 许可
+├── renovate.json             # Renovate 配置（CI 依赖自动升级已停用）
 ├── bms文档/                  # 符号链接 → ../bms/bms文档（基座权威源，并排引用）
-├── deploy/                   # 部署配置
+├── backend/                  # 后端工程（uv workspace：services/ 各主数据域服务）
+├── frontend/                 # 前端工程（pnpm workspace：modules/ 运行时模块 + packages/ 类型包）
+├── deploy/                   # 部署配置（Dockerfile / compose / contracts / events）
 │   └── .env.example          # 凭据模板
-├── ops/                      # 运维脚本（后续阶段填充）
+├── ops/                      # 运维脚本
 └── mdm文档/                  # 项目文档
     ├── 文档首页.md            # 全量导航
     ├── 规划/                 # 1篇：《mdm 主数据管理规划》
