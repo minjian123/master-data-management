@@ -1246,9 +1246,27 @@ export interface components {
         };
         /**
          * BranchExecuteRequest
-         * @description 分支执行请求（由发起方给出；`op` 映射参与方**已有服务层方法**）。
+         * @description 分支执行请求（由发起方给出；`ops` 按序在**同一分支**内执行）。
+         *
+         *     一个分支＝一条 XA 事务＝一条数据库连接，故分支内的全部操作必须一次请求提交；
+         *     调用方可把同库的多个写入合并进同一分支（如「用户-岗位 + 用户-部门」）。
          */
         BranchExecuteRequest: {
+            /** Db Key */
+            db_key: string;
+            /**
+             * Ops
+             * @description 分支操作清单（按序执行；非空）
+             */
+            ops?: components["schemas"]["BranchOpRequest"][];
+            /** Xid */
+            xid: string;
+        };
+        /**
+         * BranchOpRequest
+         * @description 分支内的单个业务操作（`op` 映射参与方**已有服务层方法**）。
+         */
+        BranchOpRequest: {
             /**
              * Args
              * @description 业务载荷（交给参与方已有服务层）
@@ -1256,12 +1274,8 @@ export interface components {
             args?: {
                 [key: string]: unknown;
             };
-            /** Db Key */
-            db_key: string;
             /** Op */
             op: string;
-            /** Xid */
-            xid: string;
         };
         /**
          * BranchRecoverView

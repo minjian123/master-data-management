@@ -229,7 +229,9 @@ mdm文档/用户文档/本地资源.md
 temp/
 
 # Node 依赖（根目录不装依赖；前端依赖在各前端项目自己的目录内）
-node_modules/
+# 不带尾斜杠：依赖经脚本外置后 node_modules 是**符号链接**，带斜杠的 `node_modules/` 只匹配
+# 目录、不匹配符号链接，会让外置态被 git 当成未跟踪项（bms 侧同用无斜杠口径）。
+node_modules
 
 # 前端工作区构建与运行产物（frontend/：模块产物 / 独立预览产物 / MF 缓存 / 覆盖率 / 体积报告）
 frontend/**/dist/

@@ -639,21 +639,19 @@
       },
       "BranchExecuteRequest": {
         "additionalProperties": false,
-        "description": "分支执行请求（由发起方给出；`op` 映射参与方**已有服务层方法**）。",
+        "description": "分支执行请求（由发起方给出；`ops` 按序在**同一分支**内执行）。\n\n一个分支＝一条 XA 事务＝一条数据库连接，故分支内的全部操作必须一次请求提交；\n调用方可把同库的多个写入合并进同一分支（如「用户-岗位 + 用户-部门」）。",
         "properties": {
-          "args": {
-            "additionalProperties": true,
-            "description": "业务载荷（交给参与方已有服务层）",
-            "title": "Args",
-            "type": "object"
-          },
           "db_key": {
             "title": "Db Key",
             "type": "string"
           },
-          "op": {
-            "title": "Op",
-            "type": "string"
+          "ops": {
+            "description": "分支操作清单（按序执行；非空）",
+            "items": {
+              "$ref": "#/components/schemas/BranchOpRequest"
+            },
+            "title": "Ops",
+            "type": "array"
           },
           "xid": {
             "title": "Xid",
@@ -662,10 +660,30 @@
         },
         "required": [
           "xid",
-          "db_key",
-          "op"
+          "db_key"
         ],
         "title": "BranchExecuteRequest",
+        "type": "object"
+      },
+      "BranchOpRequest": {
+        "additionalProperties": false,
+        "description": "分支内的单个业务操作（`op` 映射参与方**已有服务层方法**）。",
+        "properties": {
+          "args": {
+            "additionalProperties": true,
+            "description": "业务载荷（交给参与方已有服务层）",
+            "title": "Args",
+            "type": "object"
+          },
+          "op": {
+            "title": "Op",
+            "type": "string"
+          }
+        },
+        "required": [
+          "op"
+        ],
+        "title": "BranchOpRequest",
         "type": "object"
       },
       "BranchRecoverView": {
