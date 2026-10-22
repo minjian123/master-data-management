@@ -12,7 +12,7 @@
 | 覆盖模块 | 03-部门管理（组织架构树） |
 | 上游依据 | 《[概要设计 · 部门管理](../../概要设计/03_概要设计_部门管理.md)》、《[架构设计 · 总览](../../架构设计/01_架构设计_总览.md)》「域服务划分与数据边界」节 |
 | ORM 模型 | `mdm_org/models/dept.py::OrgDept`（继承 `BaseModel`） |
-| 状态 | 已落库（需求 `01-2` / 任务 `01_02`，2026-10-07；`code` 列随嵌套子任务 `02-01` 于 2026-10-08 新增） |
+| 状态 | 已落库（需求 `01-2` / 任务 `01_02`，2026-10-07；`code` 列随嵌套子任务 `02-01` 于 2026-10-08 新增；系统字段 `form_key` 随嵌套子任务 `02-04` 于 2026-10-22 补齐） |
 | 相关节点 | [数据库设计总览](../01_数据库设计_总览.md)、[org_post](org_post.md)、[org_role_dept](org_role_dept.md) |
 
 ## 2. 字段 <a id="fields"></a>
@@ -22,6 +22,7 @@
 | 字段 | 类型 | 可空 | 约束 / 默认 | 说明 |
 | --- | --- | --- | --- | --- |
 | `id` | BIGINT | 否 | 主键，雪花 ID | 主键 |
+| `form_key` | VARCHAR(64) | 否 | 与 `deleted_at` 复合唯一 | **系统字段**：表单标识（固定 `org_dept`；多表联合取数的表判别列，保存后不变） |
 | `code` | VARCHAR(64) | 否 | 与 `deleted_at` 复合唯一 | 部门编码（租户内唯一；格式受 `org.dept_code_pattern` 约束；创建后可修改） |
 | `parent_id` | BIGINT | 是 | — | 父部门 id（逻辑外键 → 本表 `id`，同库）；根部门为空 |
 | `ancestors` | VARCHAR(512) | 否 | 默认 `/` | 祖先 id 路径（如 `/1/5/9/`），供子树查询与 `@dept_subtree` 展开 |
@@ -39,6 +40,7 @@
 
 | 名称 | 类型 | 列 | 说明 |
 | --- | --- | --- | --- |
+| `uq_org_dept_form_key_deleted_at` | 唯一 | `(form_key, deleted_at)` | 系统字段口径的复合唯一（`form_key` 为每表常量，跨表全局唯一由构建期清单承担） |
 | `uq_org_dept_code_deleted_at` | 唯一 | `(code, deleted_at)` | 部门编码租户内唯一（软删除后可复用） |
 | `uq_org_dept_parent_name_deleted_at` | 唯一 | `(parent_id, name, deleted_at)` | 同父部门名称唯一（软删除后可复用） |
 | `idx_org_dept_parent_id` | 普通 | `parent_id` | 父子树遍历 |
@@ -61,5 +63,6 @@
 | --- | --- | --- | --- |
 | 2026-10-07 | v1 | 新建表结构（mdm 组织域，自 bms 概要设计 05 迁入） | minjian |
 | 2026-10-08 | v2 | 增 `code` 部门编码列（必填 / 租户内唯一 / 可改）与唯一约束 `uq_org_dept_code_deleted_at`；存量按 `id` 升序回填 `DEPT` + 定长序号（迁移 `0003_dept_code`） | minjian |
+| 2026-10-22 | v3 | 系统字段对齐：增 `form_key`（表单标识，固定 `org_dept`、保存后不变）与复合唯一 `uq_org_dept_form_key_deleted_at`；存量按 DDL 缺省回填（迁移 `0005_org_form_key`，任务 `01_02/_04`） | minjian |
 
 > 数据表设计 · 与 bms《数据库开发规范》「数据表文件规范」节配套

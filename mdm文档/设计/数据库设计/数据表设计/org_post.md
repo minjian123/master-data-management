@@ -12,7 +12,7 @@
 | 覆盖模块 | 02-岗位管理（岗位定义） |
 | 上游依据 | 《[概要设计 · 岗位管理](../../概要设计/02_概要设计_岗位管理.md)》、《[架构设计 · 总览](../../架构设计/01_架构设计_总览.md)》「域服务划分与数据边界」节 |
 | ORM 模型 | `mdm_org/models/post.py::OrgPost`（继承 `BaseModel`） |
-| 状态 | 已落库（需求 `01-2` / 任务 `01_02`，2026-10-07；岗位码「创建后不可改」于 2026-10-08 放开） |
+| 状态 | 已落库（需求 `01-2` / 任务 `01_02`，2026-10-07；岗位码「创建后不可改」于 2026-10-08 放开；系统字段 `form_key` / `parent_id` 随嵌套子任务 `02-04` 于 2026-10-22 补齐） |
 | 相关节点 | [数据库设计总览](../01_数据库设计_总览.md)、[org_dept](org_dept.md)、[org_user_post](org_user_post.md)、[org_role_post](org_role_post.md) |
 
 ## 2. 字段 <a id="fields"></a>
@@ -22,6 +22,8 @@
 | 字段 | 类型 | 可空 | 约束 / 默认 | 说明 |
 | --- | --- | --- | --- | --- |
 | `id` | BIGINT | 否 | 主键，雪花 ID | 主键 |
+| `form_key` | VARCHAR(64) | 否 | 与 `deleted_at` 复合唯一 | **系统字段**：表单标识（固定 `org_post`；多表联合取数的表判别列，保存后不变） |
+| `parent_id` | BIGINT | 是 | — | **系统字段**：上级字典 ID（自引用同表 `id`；岗位为非层级字典，按口径保留冗余，恒 `NULL`；不建索引） |
 | `code` | VARCHAR(64) | 否 | 与 `deleted_at` 复合唯一 | 岗位码（租户内唯一；格式受 `org.post_code_pattern` 约束；**创建后可修改**） |
 | `name` | VARCHAR(128) | 否 | — | 岗位名称 |
 | `dept_id` | BIGINT | 否 | — | 归属部门 id（逻辑外键 → `org_dept.id`，同库） |
@@ -38,6 +40,7 @@
 
 | 名称 | 类型 | 列 | 说明 |
 | --- | --- | --- | --- |
+| `uq_org_post_form_key_deleted_at` | 唯一 | `(form_key, deleted_at)` | 系统字段口径的复合唯一（`form_key` 为每表常量，跨表全局唯一由构建期清单承担） |
 | `uq_org_post_code_deleted_at` | 唯一 | `(code, deleted_at)` | 岗位码租户内唯一（软删除后可复用） |
 | `idx_org_post_dept_id` | 普通 | `dept_id` | 按部门筛选、归属部门引用检查 |
 | `idx_org_post_status` | 普通 | `status` | 状态筛选 |
@@ -58,5 +61,6 @@
 | --- | --- | --- | --- |
 | 2026-10-07 | v1 | 新建表结构（mdm 组织域，自 bms 概要设计 08 迁入） | minjian |
 | 2026-10-08 | v2 | 岗位码由「创建后不可改」放开为可改（仅应用层行为，无结构变更） | minjian |
+| 2026-10-22 | v3 | 系统字段对齐：增 `form_key`（表单标识，固定 `org_post`）+ 复合唯一 `uq_org_post_form_key_deleted_at`，增 `parent_id`（非层级字典冗余、可空、不建索引）；存量按 DDL 缺省回填（迁移 `0005_org_form_key`，任务 `01_02/_04`） | minjian |
 
 > 数据表设计 · 与 bms《数据库开发规范》「数据表文件规范」节配套
