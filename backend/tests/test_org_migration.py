@@ -95,11 +95,11 @@ def _sync_table_names(url: str) -> set[str]:
 
 @pytest.mark.kiwi_id(2255)
 def test_org_tenant_chain_registered() -> None:
-    """链注册：`org:tenant` 有脚本、链头为 `0004_user_dept_and_primary`、表集含六表 + 基础设施三表。"""
+    """链注册：`org:tenant` 有脚本、链头为 `0005_org_form_key`、表集含六表 + 基础设施三表。"""
     register()
     chain = resolve_chain(_CHAIN)
     assert has_revisions(chain)
-    assert head_revision(chain) == "0004_user_dept_and_primary"
+    assert head_revision(chain) == "0005_org_form_key"
     tables = chain_tables("org", "tenant")
     assert all(name in tables for name in (*_ORG_TABLES, *_INFRA_TABLES))
 
@@ -150,6 +150,21 @@ def test_dept_code_backfilled_on_upgrade(tmp_path: Path) -> None:
 
     assert _dept_codes(url) == ["DEPT0001", "DEPT0002"]
     assert _code_column_not_null(url)
+
+
+@pytest.mark.kiwi_id(2340)
+def test_form_key_backfilled_on_upgrade(tmp_path: Path) -> None:
+    """存量回填：升级 `0005_org_form_key` 后存量部门 / 岗位行 `form_key` 取表常量、`parent_id` 保持空。"""
+    register()
+    url = f"sqlite+aiosqlite:///{tmp_path / 'org.db'}"
+    _upgrade(url)
+    _downgrade(url, "0004_user_dept_and_primary")
+    _insert_legacy_org_rows(url)
+    _upgrade(url)
+
+    assert _form_key_values(url, "org_dept") == ["org_dept"]
+    assert _form_key_values(url, "org_post") == ["org_post"]
+    assert _post_parent_ids(url) == [None]
 
 
 def _sync_engine(url: str) -> Engine:
@@ -222,5 +237,70 @@ def _code_column_not_null(url: str) -> bool:
         with engine.connect() as connection:
             columns = [item for item in inspect(connection).get_columns("org_dept") if item["name"] == "code"]
             return bool(columns) and columns[0]["nullable"] is False
+    finally:
+        engine.dispose()
+
+
+def _insert_legacy_org_rows(url: str) -> None:
+    """在 `0004` 结构上插入存量部门 / 岗位（`form_key` 回填验证用）。
+
+    Args:
+        url: 目标库连接串。
+    """
+    engine = _sync_engine(url)
+    now = datetime(2026, 10, 20, tzinfo=UTC)
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                sa.text(
+                    "INSERT INTO org_dept (id, code, ancestors, name, sort, status, created_at, updated_at, version)"
+                    " VALUES (:dept_id, 'DEPT0001', '/', '存量部门', 0, 'enabled', :now, :now, 1)"
+                ),
+                {"dept_id": 9001, "now": now},
+            )
+            connection.execute(
+                sa.text(
+                    "INSERT INTO org_post (id, code, name, dept_id, sort, status, created_at, updated_at, version)"
+                    " VALUES (:post_id, 'POST0001', '存量岗位', :dept_id, 0, 'enabled', :now, :now, 1)"
+                ),
+                {"post_id": 9101, "dept_id": 9001, "now": now},
+            )
+    finally:
+        engine.dispose()
+
+
+def _form_key_values(url: str, table: str) -> list[str]:
+    """取表内 `form_key` 取值（回填核对）。
+
+    Args:
+        url: 目标库连接串。
+        table: 物理表名（`org_dept` / `org_post`）。
+
+    Returns:
+        list[str]: `form_key` 取值列表。
+    """
+    engine = _sync_engine(url)
+    try:
+        with engine.connect() as connection:
+            rows = connection.execute(sa.text(f"SELECT form_key FROM {table} ORDER BY id")).fetchall()
+            return [str(row[0]) for row in rows]
+    finally:
+        engine.dispose()
+
+
+def _post_parent_ids(url: str) -> list[int | None]:
+    """取岗位 `parent_id` 取值（非层级字典应为空）。
+
+    Args:
+        url: 目标库连接串。
+
+    Returns:
+        list[int | None]: `parent_id` 取值列表。
+    """
+    engine = _sync_engine(url)
+    try:
+        with engine.connect() as connection:
+            rows = connection.execute(sa.text("SELECT parent_id FROM org_post ORDER BY id")).fetchall()
+            return [row[0] for row in rows]
     finally:
         engine.dispose()

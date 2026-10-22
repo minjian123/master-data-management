@@ -11,7 +11,12 @@
 from collections.abc import Iterable
 from typing import cast
 
-from bms_core.core.concurrent import ConcurrentStableDict, ConcurrentStableList, ConcurrentStableSet
+from bms_core.core.concurrent import (
+    ConcurrentStableDict,
+    ConcurrentStableFrozenDict,
+    ConcurrentStableList,
+    ConcurrentStableSet,
+)
 from bms_core.core.exceptions import ServiceUnavailableError
 from bms_core.db.tenant import current_tenant_id_str
 from bms_core.schemas.pagination import BasePageResponse
@@ -68,14 +73,14 @@ class PlatformOrgUserSource(BaseOrgUserSource):
         Raises:
             OrgSourceUnavailableError: 下游不可达 / 非 2xx / 响应契约非法（330101）。
         """
-        body: ConcurrentStableDict[str, object] = ConcurrentStableDict({"page": page, "size": size})
+        payload: dict[str, object] = {"page": page, "size": size}
         if keyword:
-            body.set("keyword", keyword)
+            payload["keyword"] = keyword
         if status:
-            body.set("status", status)
+            payload["status"] = status
         if ids:
-            body.set("ids", tuple(ids))
-        data = await self._post(body)
+            payload["ids"] = tuple(ids)
+        data = await self._post(ConcurrentStableFrozenDict(payload))
         return _page(data, page=page, size=size)
 
     async def by_ids(self, ids: ConcurrentStableList[int]) -> ConcurrentStableList[OrgUser]:
@@ -92,11 +97,11 @@ class PlatformOrgUserSource(BaseOrgUserSource):
         """
         if not ids:
             return ConcurrentStableList()
-        body: ConcurrentStableDict[str, object] = ConcurrentStableDict({"ids": tuple(ids), "page": 1, "size": len(ids)})
-        data = await self._post(body)
+        payload: dict[str, object] = {"ids": tuple(ids), "page": 1, "size": len(ids)}
+        data = await self._post(ConcurrentStableFrozenDict(payload))
         return _rows(data)
 
-    async def _post(self, body: ConcurrentStableDict[str, object]) -> ConcurrentStableDict[str, object]:
+    async def _post(self, body: ConcurrentStableFrozenDict[str, object]) -> ConcurrentStableDict[str, object]:
         """发起一次用户只读查询调用并取统一响应 `data`。
 
         Args:

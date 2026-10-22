@@ -6,7 +6,11 @@
 
 import pytest
 from bms_core.api.deps import get_service_client, get_uow
-from bms_core.core.concurrent import ConcurrentStableDict, ConcurrentStableList
+from bms_core.core.concurrent import (
+    ConcurrentStableDict,
+    ConcurrentStableFrozenList,
+    ConcurrentStableList,
+)
 from bms_core.core.exceptions import AuthError, ServiceUnavailableError
 from bms_core.oauth.token import TOKEN_AUDIENCE_SERVICE
 from bms_core.oauth.verify import BaseTokenVerifier, VerifiedToken, get_token_verifier
@@ -71,7 +75,9 @@ class _VerifierStub(BaseTokenVerifier):
         """
         del token
         if audience == TOKEN_AUDIENCE_SERVICE and self._service is not None:
-            return VerifiedToken(subject="gateway", service=self._service, audience=(audience,))
+            return VerifiedToken(
+                subject="gateway", service=self._service, audience=ConcurrentStableFrozenList((audience,))
+            )
         raise AuthError("用户令牌不可用（替身）")
 
 

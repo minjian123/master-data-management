@@ -5,7 +5,7 @@
 新增必须可选，破坏性变更升主版本。
 """
 
-from bms_core.core.concurrent import ConcurrentStableDict
+from bms_core.core.concurrent import ConcurrentStableFrozenDict
 from bms_core.events.contracts import (
     EventContract,
     EventContractRegistry,
@@ -41,38 +41,38 @@ ORG_EVENT_CONTRACTS: tuple[EventContract, ...] = (
     EventContract(
         event_type=DEPT_CHANGED_EVENT,
         description="部门变更后（新建 / 修改 / 移动 / 删除）",
-        fields=ConcurrentStableDict({"dept_id": _STRING_REQUIRED, "changed_type": _CHANGED_TYPE}),
+        fields=ConcurrentStableFrozenDict({"dept_id": _STRING_REQUIRED, "changed_type": _CHANGED_TYPE}),
     ),
     EventContract(
         event_type=POST_CHANGED_EVENT,
         description="岗位变更后（新建 / 修改 / 删除）",
-        fields=ConcurrentStableDict({"post_id": _STRING_REQUIRED, "changed_type": _CHANGED_TYPE}),
+        fields=ConcurrentStableFrozenDict({"post_id": _STRING_REQUIRED, "changed_type": _CHANGED_TYPE}),
     ),
     EventContract(
         event_type=USER_POST_CHANGED_EVENT,
         description="用户-岗位分配变更后（全量覆盖 / 解绑 / 用户删除清理）",
-        fields=ConcurrentStableDict(
+        fields=ConcurrentStableFrozenDict(
             {"user_id": _STRING_REQUIRED, "post_id": _STRING_REQUIRED, "changed_type": _CHANGED_TYPE}
         ),
     ),
     EventContract(
         event_type=ROLE_POST_CHANGED_EVENT,
         description="角色-岗位分配变更后（供 bms 权限版本失效）",
-        fields=ConcurrentStableDict(
+        fields=ConcurrentStableFrozenDict(
             {"role_id": _STRING_REQUIRED, "post_id": _STRING_REQUIRED, "changed_type": _CHANGED_TYPE}
         ),
     ),
     EventContract(
         event_type=ROLE_DEPT_CHANGED_EVENT,
         description="角色-部门分配变更后（供 bms 权限版本失效）",
-        fields=ConcurrentStableDict(
+        fields=ConcurrentStableFrozenDict(
             {"role_id": _STRING_REQUIRED, "dept_id": _STRING_REQUIRED, "changed_type": _CHANGED_TYPE}
         ),
     ),
     EventContract(
         event_type=USER_DEPT_CHANGED_EVENT,
         description="用户-部门分配变更后（全量覆盖 / 解绑 / 主要部门置位或清除 / 用户删除清理）",
-        fields=ConcurrentStableDict(
+        fields=ConcurrentStableFrozenDict(
             {"user_id": _STRING_REQUIRED, "dept_id": _STRING_REQUIRED, "changed_type": _CHANGED_TYPE}
         ),
     ),

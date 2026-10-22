@@ -7,6 +7,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 ROOT_ANCESTORS = "/"
 """根部门祖先路径（根部门 `parent_id` 为空、`ancestors` 取本值）。"""
 
+DEPT_FORM_KEY = "org_dept"
+"""部门表单标识（`form_key`；多表联合取数的表判别列，保存后不变）。"""
+
 STATUS_ENABLED = "enabled"
 """启用状态。"""
 
@@ -22,6 +25,7 @@ class OrgDept(BaseModel):
 
     __tablename__ = "org_dept"
     __table_args__ = (
+        UniqueConstraint("form_key", "deleted_at", name="uq_org_dept_form_key_deleted_at"),
         UniqueConstraint("code", "deleted_at", name="uq_org_dept_code_deleted_at"),
         UniqueConstraint("parent_id", "name", "deleted_at", name="uq_org_dept_parent_name_deleted_at"),
         Index("idx_org_dept_parent_id", "parent_id"),
@@ -29,6 +33,7 @@ class OrgDept(BaseModel):
         Index("idx_org_dept_ancestors", "ancestors"),
     )
 
+    form_key: Mapped[str] = mapped_column(String(64), default=DEPT_FORM_KEY, comment="表单标识（全局唯一；保存后不变）")
     code: Mapped[str] = mapped_column(
         String(64), comment="部门编码（租户内唯一；格式受 org.dept_code_pattern 约束；可修改）"
     )

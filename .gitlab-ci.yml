@@ -146,6 +146,8 @@ backend-modules:
   script:
     - *backend-setup
     - uv run python -m ops.check_modules
+    # 系统字段 `form_key`：产品清单 ↔ 模型双向一致 + 同名闭合 + 关联表不落字段（mdm `01_02/_04`）
+    - uv run python -m ops.check_forms
     - uv run python -m ops.contract_snapshot check
     # 契约门禁：基线 ↔ 实时公开契约破坏性变更比对（--engine auto：docker 可用走 oasdiff，否则内置结构化判定）
     - uv run python -m ops.contract_gate check

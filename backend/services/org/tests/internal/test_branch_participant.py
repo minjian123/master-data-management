@@ -5,7 +5,7 @@
 """
 
 import pytest
-from bms_core.core.concurrent import ConcurrentStableDict
+from bms_core.core.concurrent import ConcurrentStableDict, ConcurrentStableFrozenList
 from bms_core.core.exceptions import AuthError
 from bms_core.oauth.token import TOKEN_AUDIENCE_SERVICE
 from bms_core.oauth.verify import BaseTokenVerifier, VerifiedToken, get_token_verifier
@@ -47,7 +47,9 @@ class _BranchVerifierStub(BaseTokenVerifier):
         """
         del token
         if audience == TOKEN_AUDIENCE_SERVICE:
-            return VerifiedToken(subject="gateway", service="platform", audience=(audience,))
+            return VerifiedToken(
+                subject="gateway", service="platform", audience=ConcurrentStableFrozenList((audience,))
+            )
         raise AuthError("用户令牌不可用（替身）")
 
 
@@ -104,11 +106,12 @@ async def test_branch_execute_rejected_when_provider_disabled(service_app: FastA
     """`[transaction_manager].provider` 缺省为空 ⇒ 参与方为占位实现：执行分支**明确拒绝**（`10013` / 503）。"""
     service_app.dependency_overrides[get_token_verifier] = lambda: _BranchVerifierStub()
 
-    response = await client.post(
-        "/api/v1/txn/branches",
-        json={"xid": "1|b1", "db_key": "tenant_demo", "ops": [{"op": USER_DEPTS_OP, "args": {}}]},
-        headers={"Authorization": "Bearer stub"},
-    )
+    payload: dict[str, object] = {
+        "xid": "1|b1",
+        "db_key": "tenant_demo",
+        "ops": [{"op": USER_DEPTS_OP, "args": {}}],
+    }
+    response = await client.post("/api/v1/txn/branches", json=payload, headers={"Authorization": "Bearer stub"})
 
     assert response.status_code == 503
     assert response.json()["code"] == 10013
