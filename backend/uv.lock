@@ -10,7 +10,7 @@ constraints = [{ name = "sqlalchemy", specifier = ">=2.0,<2.1" }]
 
 [manifest.dependency-groups]
 dev = [
-    { name = "engkit", git = "http://192.168.0.107:8080/bms/engkit.git?rev=3cf674a1cf0137b39b2b2f076d9c0d85d8127d1f" },
+    { name = "engkit", git = "http://192.168.0.107:8080/bms/engkit.git?rev=959965a6b3b591626338b7e3bd7fd28f7a758d51" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "pyright", specifier = ">=1.1.380" },
     { name = "pytest", specifier = ">=8.0" },
@@ -478,7 +478,7 @@ wheels = [
 [[package]]
 name = "engkit"
 version = "0.1.0"
-source = { git = "http://192.168.0.107:8080/bms/engkit.git?rev=3cf674a1cf0137b39b2b2f076d9c0d85d8127d1f#3cf674a1cf0137b39b2b2f076d9c0d85d8127d1f" }
+source = { git = "http://192.168.0.107:8080/bms/engkit.git?rev=959965a6b3b591626338b7e3bd7fd28f7a758d51#959965a6b3b591626338b7e3bd7fd28f7a758d51" }
 dependencies = [
     { name = "pytest-xdist" },
 ]
