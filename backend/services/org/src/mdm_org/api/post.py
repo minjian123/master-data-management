@@ -214,8 +214,7 @@ async def delete_post(
     需要 org:delete 权限；仍关联用户 / 角色分配时拒绝（330034 / 330035）。
     """
     service = _service(uow, config, outbox)
-    post = await service.require_post(post_id)
-    await service.delete_post(post_id=post_id)
+    post = await service.delete_post(post_id=post_id)
     _audit(audit, post)
     return ApiResponse.ok(_item(post))
 

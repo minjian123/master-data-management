@@ -281,7 +281,9 @@ def _from_payload(payload: object) -> ConcurrentStableList[int] | None:
     for item in cast("Iterable[object]", raw):
         if not isinstance(item, int):
             return None
-        role_ids.add(item)
+        # 与 DB 路径（`list_user_roles` 的判重口径）保持一致：缓存载荷重复 id 不重复返回
+        if item not in role_ids:
+            role_ids.add(item)
     return role_ids
 
 

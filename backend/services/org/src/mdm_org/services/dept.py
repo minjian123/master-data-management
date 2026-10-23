@@ -337,12 +337,18 @@ class DeptService(BaseFrameworkObject):
             await self._publish(dept.id, CHANGE_MOVED)
         return dept
 
-    async def delete_dept(self, *, dept_id: int, actor: int | None = None) -> None:
+    async def delete_dept(self, *, dept_id: int, actor: int | None = None) -> OrgDept:
         """删除部门（引用检查通过后软删除；同事务校验 + 删除）。
+
+        返回被删实体：调用方（路由）据其填审计占位，**不应在调用前另行查询**——那会在请求级会话上
+        先开启一次事务，随后的 `begin()` 边界会抛「事务已开启」。
 
         Args:
             dept_id: 部门 id。
             actor: 操作者（审计占位用）。
+
+        Returns:
+            OrgDept: 被删除的部门（软删除前状态）。
 
         Raises:
             OrgDeptNotFoundError: 部门不存在（330051）。
@@ -361,6 +367,7 @@ class DeptService(BaseFrameworkObject):
                 raise OrgDeptHasRolesError(f"部门仍存在角色分配，禁止删除：{dept_id}")
             await self._depts.soft_delete(dept_id)
             await self._publish(dept.id, CHANGE_DELETED)
+        return dept
 
     async def _assert_code_format(self, code: str) -> None:
         """校验部门编码格式（受 `org.dept_code_pattern` 约束；配置非法回落默认）。
@@ -466,10 +473,9 @@ def _build_tree(rows: ConcurrentStableList[OrgDept]) -> ConcurrentStableList[Dep
         )
         order.add(row.id)
     roots: ConcurrentStableList[DeptTreeNode] = ConcurrentStableList()
+    # order 与 nodes 同源（同一批 rows 填充），故 order 内每个 id 必在 nodes 中，无需缺项兜底分支
     for dept_id in order:
-        node = nodes.get(dept_id)
-        if node is None:
-            continue
+        node = nodes[dept_id]
         parent = nodes.get(node.parent_id) if node.parent_id is not None else None
         if parent is None:
             roots.add(node)

@@ -1,8 +1,11 @@
 """组织域事件契约（Kiwi 2255）：6 条契约形态 / 注入幂等 / 快照零漂移与兼容校验。"""
 
+import runpy
+import sys
 from pathlib import Path
 
 import pytest
+from bms_core.core.concurrent import ConcurrentStableList
 from bms_core.events.contracts import EventContractRegistry, default_event_contract_registry
 
 from mdm_org.events import ORG_EVENT_CONTRACTS, register_product_event_contracts
@@ -57,3 +60,49 @@ def test_event_snapshot_export_and_check(tmp_path: Path) -> None:
 def test_repo_event_snapshot_in_sync() -> None:
     """仓库内事件契约快照与当前声明一致（CI 口径：提交的快照零漂移）。"""
     assert event_contracts.check(event_contracts.REPO_ROOT) == 0
+
+
+@pytest.mark.kiwi_id(2255)
+def test_export_reports_registry_errors(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """导出：注册表校验失败时逐条打印并退出码 1（不写快照）。"""
+    monkeypatch.setattr(
+        event_contracts, "registry_errors", lambda registry: ConcurrentStableList(["事件域未登记：ghost"])
+    )
+    assert event_contracts.export(tmp_path) == 1
+    assert "事件域未登记：ghost" in capsys.readouterr().out
+    assert not event_contracts.snapshot_path(tmp_path).exists()
+
+
+@pytest.mark.kiwi_id(2255)
+def test_export_to_stdout(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """导出 `--print`：打印生成内容且退出码 0。"""
+    assert event_contracts.export(tmp_path, to_stdout=True) == 0
+    assert "org.dept.changed" in capsys.readouterr().out
+
+
+@pytest.mark.kiwi_id(2255)
+def test_check_reports_missing_snapshot(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """校验：快照缺件即不通过（退出码 1 并提示缺件）。"""
+    assert event_contracts.check(tmp_path) == 1
+    assert "缺事件契约快照" in capsys.readouterr().out
+
+
+@pytest.mark.kiwi_id(2255)
+def test_main_dispatches_export_and_check(tmp_path: Path) -> None:
+    """命令行入口：`export`（含 `--print`）与 `check` 两条分支均按退出码返回。"""
+    assert event_contracts.main(["export", "--root", str(tmp_path)]) == 0
+    assert event_contracts.main(["check", "--root", str(tmp_path)]) == 0
+    assert event_contracts.main(["export", "--print", "--root", str(tmp_path)]) == 0
+
+
+@pytest.mark.kiwi_id(2255)
+def test_module_entry_point(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """`python -m ops.event_contracts` 入口按 CLI 参数执行并以退出码结束。"""
+    assert event_contracts.export(tmp_path) == 0
+    monkeypatch.delitem(sys.modules, "ops.event_contracts", raising=False)
+    monkeypatch.setattr(sys, "argv", ["ops.event_contracts", "check", "--root", str(tmp_path)])
+    with pytest.raises(SystemExit) as excinfo:
+        runpy.run_module("ops.event_contracts", run_name="__main__")
+    assert excinfo.value.code == 0

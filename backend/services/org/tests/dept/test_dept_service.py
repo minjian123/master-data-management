@@ -4,6 +4,7 @@
 """
 
 import pytest
+from bms_core.core.exceptions import ConcurrentConflictError
 from bms_core.models.outbox import SysOutbox
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -202,6 +203,50 @@ async def test_dept_validation_limits_and_duplicates() -> None:
         with pytest.raises(OrgDeptParentUnavailableError) as unavailable:
             await service.create_dept(code="foster", name="寄子", parent_id=child_id, sort=1)
         assert unavailable.value.code == 330052
+        await org_env.commit(session)
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.kiwi_id(2255)
+async def test_dept_update_move_rejections_and_optimistic_lock() -> None:
+    """更新与移动的拒绝分支：同父重名 / 改排序 / 新父不存在 / 新父停用 / 移动后超深 / 版本冲突。"""
+    session, service, engine = await _env(max_depth=2)
+    try:
+        root = await service.create_dept(code="hq", name="总部", parent_id=None, sort=1)
+        root_id = root.id
+        await org_env.commit(session)
+        left = await service.create_dept(code="l", name="左", parent_id=root_id, sort=1)
+        left_id = left.id
+        await org_env.commit(session)
+        right = await service.create_dept(code="r", name="右", parent_id=root_id, sort=2)
+        right_id = right.id
+        await org_env.commit(session)
+
+        with pytest.raises(OrgDeptNameExistsError):
+            await service.update_dept(dept_id=left_id, name="右")
+        await org_env.commit(session)
+
+        with pytest.raises(ConcurrentConflictError):
+            await service.update_dept(dept_id=left_id, version=999)
+        await org_env.commit(session)
+
+        updated = await service.update_dept(dept_id=left_id, sort=9)
+        assert updated.sort == 9
+        await org_env.commit(session)
+
+        with pytest.raises(OrgDeptNotFoundError):
+            await service.move_dept(dept_id=left_id, new_parent_id=999999)
+        await org_env.commit(session)
+
+        with pytest.raises(OrgDeptDepthExceededError):
+            await service.move_dept(dept_id=left_id, new_parent_id=right_id)
+        await org_env.commit(session)
+
+        await service.update_dept(dept_id=right_id, status="disabled")
+        await org_env.commit(session)
+        with pytest.raises(OrgDeptParentUnavailableError):
+            await service.move_dept(dept_id=left_id, new_parent_id=right_id)
         await org_env.commit(session)
     finally:
         await engine.dispose()

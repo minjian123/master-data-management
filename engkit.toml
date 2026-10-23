@@ -25,8 +25,8 @@ cwd = "backend"
 [coverage]
 data_env = "MDM_COVERAGE_DATA"
 source_env = "MDM_COVERAGE_SOURCE"
-# 门禁阈值沿用本仓现行口径（不因接入收紧）；口径定义见《AI开发规范》「覆盖率要求」节
-fail_under = 70
+# 门禁阈值：行 + 分支 100%，与其他仓统一、不设例外（口径定义见《AI开发规范》「覆盖率要求」节）
+fail_under = 100
 plugin = "engkit.coverage_plugin"
 data_file = "backend/.coverage"
 interpreter = "uv run python"
@@ -80,6 +80,11 @@ cwd = "backend"
 label = "后端测试：定向（选测 + 覆盖率门禁 + 扩圈）"
 type = "scoped_tests"
 preset = "scoped"
+
+[[preflight.steps]]
+label = "后端测试：聚合全量（--full；含行 + 分支 100% 覆盖率门禁）"
+type = "full_tests"
+preset = "full"
 
 [runonce]
 cache_dir = ".cache/run-once"

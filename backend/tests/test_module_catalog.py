@@ -1,5 +1,9 @@
 """产品服务目录登记与装配校验（清单唯一与格式 / 产品维度 / 两侧同值 / 服务包声明）。"""
 
+import runpy
+import sys
+from pathlib import Path
+
 import pytest
 from bms_core.core.concurrent import ConcurrentStableDict, ConcurrentStableList
 from bms_core.services.module_registry import (
@@ -15,6 +19,7 @@ from bms_core.services.module_registry import (
     validate_product_service_records,
 )
 
+from ops import check_modules
 from ops.check_modules import check_offline, check_service_declarations, resolve_service_contracts
 from services.module_registry import (
     MDM_SERVICE_RECORDS,
@@ -192,3 +197,57 @@ def test_service_package_declaration_mismatch_detected() -> None:
     )
     assert any("主版本不符" in message for message in errors), f"未检出主版本不符：{list(errors)}"
     assert any("服务工程未登记：ghost" in message for message in errors), f"未检出未登记工程：{list(errors)}"
+
+
+def _write_contract_package(root: Path, key: str, body: str) -> None:
+    """在临时根下造一个服务工程的 `__init__.py`。
+
+    Args:
+        root: 临时服务工程根。
+        key: 服务键。
+        body: `__init__.py` 内容。
+    """
+    init = root / key / "src" / service_package(key) / "__init__.py"
+    init.parent.mkdir(parents=True, exist_ok=True)
+    init.write_text(body, encoding="utf-8")
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_resolve_service_contracts_non_literal_and_missing(tmp_path: Path) -> None:
+    """声明解析：非字符串字面量 / 无赋值语句均记 `None`；无 `__init__.py` 与隐藏目录跳过。"""
+    _write_contract_package(tmp_path, "org", "CONTRACT_VERSION = 1\n")
+    _write_contract_package(tmp_path, "other", "import os\n")
+    (tmp_path / "empty").mkdir()
+    (tmp_path / ".hidden").mkdir()
+    declarations = resolve_service_contracts(tmp_path)
+    assert dict(declarations) == {"org": None, "other": None}
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_service_declarations_undeclared_and_non_semver() -> None:
+    """声明核对：未声明常量 / 常量非 semver / 清单服务缺对应工程 三类均被检出。"""
+    undeclared = check_service_declarations(MDM_SERVICE_RECORDS, ConcurrentStableDict({SERVICE_KEY: None}))
+    assert any("未声明 CONTRACT_VERSION" in message for message in undeclared)
+    non_semver = check_service_declarations(MDM_SERVICE_RECORDS, ConcurrentStableDict({SERVICE_KEY: "v1"}))
+    assert any("非 semver" in message for message in non_semver)
+    missing_engineering = check_service_declarations(MDM_SERVICE_RECORDS, ConcurrentStableDict())
+    assert list(missing_engineering) == []
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_main_reports_offline_errors(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """入口：离线校验有冲突时逐条打印并返回 1。"""
+    monkeypatch.setattr(check_modules, "check_offline", lambda: ConcurrentStableList(["冲突一"]))
+    assert check_modules.main([]) == 1
+    out = capsys.readouterr().out
+    assert "冲突一" in out and "校验失败（1 项）" in out
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_module_entry_point_exits_by_cli(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`python -m ops.check_modules` 入口：按 CLI 参数执行并以退出码结束。"""
+    monkeypatch.delitem(sys.modules, "ops.check_modules", raising=False)
+    monkeypatch.setattr(sys, "argv", ["ops.check_modules", "--offline"])
+    with pytest.raises(SystemExit) as excinfo:
+        runpy.run_module("ops.check_modules", run_name="__main__")
+    assert excinfo.value.code == 0

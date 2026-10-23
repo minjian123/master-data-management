@@ -161,3 +161,15 @@ async def test_dept_code_update_allowed() -> None:
         await org_env.commit(session)
     finally:
         await engine.dispose()
+
+
+@pytest.mark.kiwi_id(2268)
+async def test_dept_invalid_pattern_falls_back_to_default() -> None:
+    """参数配置了非法正则：回落默认格式口径（不因配置写错而全量拒绝写入）。"""
+    session, service, engine = await _env(dept_pattern="[")
+    try:
+        dept = await service.create_dept(code="hq", name="总部", parent_id=None, sort=1)
+        assert dept.code == "hq"
+        await org_env.commit(session)
+    finally:
+        await engine.dispose()

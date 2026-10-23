@@ -220,3 +220,41 @@ async def test_post_code_update_allowed() -> None:
         await org_env.commit(session)
     finally:
         await engine.dispose()
+
+
+@pytest.mark.kiwi_id(2255)
+async def test_post_update_dept_sort_status_and_invalid_pattern() -> None:
+    """更新分支：改归属部门（含不存在 / 停用拒绝）、改排序与状态；编码格式正则非法时回落默认口径。"""
+    session, posts, depts, _role_posts, engine = await _env(post_pattern="[")
+    try:
+        first = await depts.create_dept(code="rd", name="研发中心", parent_id=None, sort=1)
+        first_id = first.id
+        await org_env.commit(session)
+        second = await depts.create_dept(code="mkt", name="市场部", parent_id=None, sort=2)
+        second_id = second.id
+        await org_env.commit(session)
+
+        # 非法正则 ⇒ 回落默认模式（仍可创建合法编码）
+        post = await posts.create_post(code="dev", name="开发岗", dept_id=first_id, sort=1)
+        post_id = post.id
+        await org_env.commit(session)
+
+        moved = await posts.update_post(post_id=post_id, dept_id=second_id)
+        assert moved.dept_id == second_id
+        await org_env.commit(session)
+
+        with pytest.raises(OrgPostDeptUnavailableError):
+            await posts.update_post(post_id=post_id, dept_id=999999)
+        await org_env.commit(session)
+
+        await depts.update_dept(dept_id=first_id, status="disabled")
+        await org_env.commit(session)
+        with pytest.raises(OrgPostDeptUnavailableError):
+            await posts.update_post(post_id=post_id, dept_id=first_id)
+        await org_env.commit(session)
+
+        changed = await posts.update_post(post_id=post_id, sort=7, status="disabled")
+        assert (changed.sort, changed.status) == (7, "disabled")
+        await org_env.commit(session)
+    finally:
+        await engine.dispose()

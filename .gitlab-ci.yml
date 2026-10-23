@@ -153,10 +153,11 @@ backend-test:
     BMS_ENV: test
   script:
     - *backend-setup
+    # 覆盖率硬门禁：行 + 分支 100%（与其他仓统一，不设例外）
     - >-
       uv run pytest
       --cov=mdm_org --cov=services --cov=ops
-      --cov-branch --cov-report=term --cov-fail-under=70
+      --cov-branch --cov-report=term --cov-fail-under=100
   coverage: '/^TOTAL.*?\s+\d+\s+\d+\s+(\d+(?:\.\d+)?%)$/'
 
 backend-modules:

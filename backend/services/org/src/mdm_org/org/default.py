@@ -390,10 +390,9 @@ def _build_tree(rows: ConcurrentStableList[OrgDeptModel]) -> ConcurrentStableLis
         nodes.set(row.id, _node(row))
         order.add(row.id)
     roots: ConcurrentStableList[OrgDept] = ConcurrentStableList()
+    # order 与 nodes 同源（同一批 rows 填充），故 order 内每个 id 必在 nodes 中，无需缺项兜底分支
     for dept_id in order:
-        node = nodes.get(dept_id)
-        if node is None:
-            continue
+        node = nodes[dept_id]
         parent = nodes.get(node.parent_id) if node.parent_id is not None else None
         if parent is None:
             roots.add(node)

@@ -232,11 +232,17 @@ class PostService(BaseFrameworkObject):
             await self._publish(post.id, CHANGE_UPDATED)
         return post
 
-    async def delete_post(self, *, post_id: int) -> None:
+    async def delete_post(self, *, post_id: int) -> OrgPost:
         """删除岗位（有关联用户 / 角色分配则拒绝；通过后软删除）。
+
+        返回被删实体：调用方（路由）据其填审计占位，**不应在调用前另行查询**——那会在请求级会话上
+        先开启一次事务，随后的 `begin()` 边界会抛「事务已开启」。
 
         Args:
             post_id: 岗位 id。
+
+        Returns:
+            OrgPost: 被删除的岗位（软删除前状态）。
 
         Raises:
             OrgPostNotFoundError: 岗位不存在（330031）。
@@ -251,6 +257,7 @@ class PostService(BaseFrameworkObject):
                 raise OrgPostHasRolesError(f"岗位仍绑定角色，禁止删除：{post_id}")
             await self._posts.soft_delete(post_id)
             await self._publish(post.id, CHANGE_DELETED)
+        return post
 
     async def _assert_code_format(self, code: str) -> None:
         """校验岗位码格式（受 `org.post_code_pattern` 约束；配置非法回落默认）。

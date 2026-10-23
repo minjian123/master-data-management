@@ -6,7 +6,7 @@
 
 import pytest
 from bms_core.core.concurrent import ConcurrentStableDict, ConcurrentStableFrozenList
-from bms_core.core.exceptions import AuthError
+from bms_core.core.exceptions import AuthError, ParamError
 from bms_core.oauth.token import TOKEN_AUDIENCE_SERVICE
 from bms_core.oauth.verify import BaseTokenVerifier, VerifiedToken, get_token_verifier
 from bms_core.transaction.base import BranchHandlerRegistry
@@ -15,7 +15,7 @@ from httpx import AsyncClient
 
 from mdm_org.repositories.dept import DeptRepository
 from mdm_org.repositories.user_dept import UserDeptRepository
-from mdm_org.services.branch_handlers import BRANCH_OPS, USER_DEPTS_OP
+from mdm_org.services.branch_handlers import BRANCH_OPS, ROLE_DEPTS_OP, ROLE_POSTS_OP, USER_DEPTS_OP, USER_POSTS_OP
 from mdm_org.services.user_dept import UserDeptService
 from tests_support import org_env
 
@@ -99,6 +99,62 @@ async def test_branch_handlers_registered_and_delegate_to_service(service_app: F
         await org_env.commit(session)
     finally:
         await engine.dispose()
+
+
+@pytest.mark.kiwi_id(2274)
+async def test_branch_handlers_cover_all_ops_and_reject_invalid_params(service_app: FastAPI) -> None:
+    """四 `op` 处理器全走通（用户-岗位带主要项 / 角色-岗位 / 角色-部门），非法载荷一律 `ParamError`。"""
+    handlers = service_app.state.branch_handlers
+    session, engine = await org_env.make_session()
+    try:
+        key = await org_env.seed_org_tree(session)
+
+        user_posts = handlers.resolve(USER_POSTS_OP)
+        role_posts = handlers.resolve(ROLE_POSTS_OP)
+        role_depts = handlers.resolve(ROLE_DEPTS_OP)
+        assert user_posts is not None and role_posts is not None and role_depts is not None
+
+        await user_posts(
+            session,
+            ConcurrentStableDict[str, object](
+                {"user_id": 3102, "post_ids": [key["eng"]], "primary_post_id": key["eng"]}
+            ),
+        )
+        await org_env.commit(session)
+        await role_posts(session, ConcurrentStableDict[str, object]({"role_id": 9101, "post_ids": [key["eng"]]}))
+        await org_env.commit(session)
+        await role_depts(session, ConcurrentStableDict[str, object]({"role_id": 9101, "dept_ids": [key["root"]]}))
+        await org_env.commit(session)
+        # 不带主要项 / 不带集合键：分别覆盖「跳过主要项置位」与「缺省空集合」两条分支
+        await user_posts(session, ConcurrentStableDict[str, object]({"user_id": 3103, "post_ids": []}))
+        await org_env.commit(session)
+        await role_depts(session, ConcurrentStableDict[str, object]({"role_id": 9102}))
+        await org_env.commit(session)
+        await handlers.resolve(USER_DEPTS_OP)(
+            session, ConcurrentStableDict[str, object]({"user_id": 3104, "dept_ids": []})
+        )
+        await org_env.commit(session)
+
+        with pytest.raises(ParamError):
+            await user_posts(session, ConcurrentStableDict[str, object]({"user_id": True, "post_ids": []}))
+        with pytest.raises(ParamError):
+            await user_posts(
+                session,
+                ConcurrentStableDict[str, object]({"user_id": 1, "post_ids": [], "primary_post_id": True}),
+            )
+        with pytest.raises(ParamError):
+            await user_posts(session, ConcurrentStableDict[str, object]({"user_id": 1, "post_ids": "bad"}))
+        with pytest.raises(ParamError):
+            await user_posts(session, ConcurrentStableDict[str, object]({"user_id": 1, "post_ids": [True]}))
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.kiwi_id(2274)
+async def test_branch_verifier_stub_rejects_user_audience() -> None:
+    """令牌替身自身：非服务受众一律拒（替身行为与真实校验器口径一致）。"""
+    with pytest.raises(AuthError):
+        await _BranchVerifierStub().verify("token", audience="api")
 
 
 @pytest.mark.kiwi_id(2274)

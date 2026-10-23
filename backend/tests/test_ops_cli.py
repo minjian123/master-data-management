@@ -1,9 +1,13 @@
 """运维脚本（ops）CLI 用例：清单校验 / 契约快照 / 分链迁移 / 建库。"""
 
+import runpy
+import sys
+import types
 from pathlib import Path
 
 import pytest
 from bms_core.core.config import get_settings
+from bms_core.core.exceptions import ConfigError
 
 from ops import check_modules, contract_snapshot, db_admin, migrate
 from services.module_registry import MDM_SERVICE_RECORDS, SERVICE_KEY
@@ -148,3 +152,188 @@ def test_db_admin_exists_on_temporary_sqlite(tmp_path: Path, capsys: pytest.Capt
     url = f"sqlite+aiosqlite:///{tmp_path / 'mdm_migrcheck.db'}"
     assert db_admin.main(["exists", "--url", url]) == 0
     assert "不存在" in capsys.readouterr().out
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_db_admin_create_exists_drop_cycle(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """建库 CLI：`create` → `exists`（存在）→ `drop` 闭环，均退出码 0 且打印结果。"""
+    url = f"sqlite+aiosqlite:///{tmp_path / 'mdm_cycle.db'}"
+    assert db_admin.main(["create", "--url", url]) == 0
+    assert "新建" in capsys.readouterr().out
+    assert db_admin.main(["create", "--url", url]) == 0  # 幂等：已存在跳过
+    assert "已存在（跳过）" in capsys.readouterr().out
+    assert db_admin.main(["exists", "--url", url]) == 0
+    assert "存在" in capsys.readouterr().out
+    assert db_admin.main(["drop", "--url", url]) == 0
+    assert "已删除" in capsys.readouterr().out
+    assert db_admin.main(["drop", "--url", url]) == 0  # 幂等：不存在跳过
+    assert "不存在（跳过）" in capsys.readouterr().out
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_db_admin_reports_config_error(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """建库 CLI：目标解析失败（`ConfigError`）→ 打印原因并退出码 1。"""
+
+    def _raise(coro: object) -> int:
+        coro.close()
+        raise ConfigError("连接串非法")
+
+    monkeypatch.setattr(db_admin, "asyncio", types.SimpleNamespace(run=_raise))
+    assert db_admin.main(["exists", "--url", "sqlite://"]) == 1
+    assert "连接串非法" in capsys.readouterr().out
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_db_admin_module_entry_point(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """`python -m ops.db_admin` 入口按 CLI 参数执行并以退出码结束。"""
+    url = f"sqlite+aiosqlite:///{tmp_path / 'mdm_entry.db'}"
+    monkeypatch.delitem(sys.modules, "ops.db_admin", raising=False)
+    monkeypatch.setattr(sys, "argv", ["ops.db_admin", "exists", "--url", url])
+    with pytest.raises(SystemExit) as excinfo:
+        runpy.run_module("ops.db_admin", run_name="__main__")
+    assert excinfo.value.code == 0
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_contract_snapshot_build_app_reports_package_and_factory_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """内存构建失败三态：服务包缺失 / 缺应用工厂 / 应用构建抛错，均转 `RuntimeError` 并带原因。"""
+
+    def _missing(_name: str) -> types.ModuleType:
+        raise ModuleNotFoundError("No module named 'mdm_missing'")
+
+    monkeypatch.setattr(contract_snapshot, "import_module", _missing)
+    with pytest.raises(RuntimeError, match="服务包缺失"):
+        contract_snapshot.build_app("missing")
+
+    monkeypatch.setattr(contract_snapshot, "import_module", lambda _name: types.SimpleNamespace())
+    with pytest.raises(RuntimeError, match="缺少 ApplicationFactory"):
+        contract_snapshot.build_app("org")
+
+    class _Boom:
+        def create(self, _settings: object) -> object:
+            raise ValueError("起不来")
+
+    monkeypatch.setattr(
+        contract_snapshot, "import_module", lambda _name: types.SimpleNamespace(ApplicationFactory=_Boom)
+    )
+    with pytest.raises(RuntimeError, match="服务应用构建失败"):
+        contract_snapshot.build_app("org")
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_contract_snapshot_export_reports_validation_failures(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """导出：单服务契约校验失败时汇总打印并退出码 1（不写文件）。"""
+    monkeypatch.setattr(contract_snapshot, "_validate", lambda record, openapi: ["契约缺 title"])
+    assert contract_snapshot.export(tmp_path) == 1
+    assert "契约缺 title" in capsys.readouterr().err
+    assert not contract_snapshot.snapshot_path(tmp_path, SERVICE_KEY).exists()
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_contract_snapshot_export_to_stdout(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """导出 `--print`：打印生成内容（供人工比对）且退出码 0。"""
+    assert contract_snapshot.export(tmp_path, to_stdout=True) == 0
+    assert '"openapi"' in capsys.readouterr().out
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_contract_snapshot_check_reports_validation_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """校验：快照存在但契约校验失败时归入问题清单并退出码 1。"""
+    assert contract_snapshot.export(tmp_path) == 0
+    monkeypatch.setattr(contract_snapshot, "_validate", lambda record, openapi: ["契约版本不符"])
+    assert contract_snapshot.check(tmp_path) == 1
+    assert "契约版本不符" in capsys.readouterr().err
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_migrate_single_database_targets(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """单库模式：`--target tenant` / `--target platform` 带 `--url` 时按指定库建任务（dry-run 不建连）。"""
+    url = f"sqlite+aiosqlite:///{tmp_path / 'mdm_single.db'}"
+    assert migrate.main(["--target", "tenant", "--url", url, "--dry-run"]) == 0
+    assert "tenant" in capsys.readouterr().out
+    assert migrate.main(["--target", "platform", "--url", url, "--dry-run"]) == 0
+    assert "platform_org" in capsys.readouterr().out
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_migrate_requires_running_service(monkeypatch: pytest.MonkeyPatch) -> None:
+    """服务维度缺省解析为空（产品清单无在运服务）即明确报错，不静默空跑。"""
+    monkeypatch.setattr(migrate, "local_service_keys", lambda: [])
+    with pytest.raises(ConfigError, match="产品清单无在运服务"):
+        migrate.resolve_services([])
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_migrate_service_tasks_without_platform(monkeypatch: pytest.MonkeyPatch) -> None:
+    """任务清单：`include_platform=False` 时只出服务租户库与归档库（按需裁剪）。"""
+    _enable_sqlite_templates(monkeypatch)
+    tasks = migrate.service_tasks(
+        migrate.ConcurrentStableList(["org"]),
+        migrate.ConcurrentStableList(["demo"]),
+        include_platform=False,
+        include_archive=True,
+    )
+    chain_names = [task.chain.name for task in tasks]
+    assert all(not name.startswith("org:platform") for name in chain_names)
+    assert any(name.startswith("org:tenant") for name in chain_names)
+    assert any(name.startswith("platform:archive") for name in chain_names)
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+async def test_migrate_run_tasks_reports_three_outcomes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """执行汇总：已最新（跳过）/ 迁移完成（成功）/ 抛错（失败）三类结果均如实登记。"""
+    chain = migrate.resolve_chain(migrate.build_chain_name("org", migrate.DATASOURCE_PLATFORM))
+    tasks = migrate.ConcurrentStableList(
+        [migrate.MigrationTask(chain=chain, label="mdm_org", url="sqlite+aiosqlite:///mdm_run.db")]
+    )
+    monkeypatch.setattr(migrate, "head_revision", lambda _chain: "rev_head")
+
+    async def _current(url: str, schema: str | None = None) -> str:
+        return "rev_head"
+
+    monkeypatch.setattr(migrate, "current_revision", _current)
+    summary = await migrate.run_tasks(tasks)
+    assert summary.skipped == ("mdm_org",)
+
+    async def _stale(url: str, schema: str | None = None) -> str:
+        return "rev_old"
+
+    upgrades: list[str] = []
+    monkeypatch.setattr(migrate, "current_revision", _stale)
+    monkeypatch.setattr(migrate, "upgrade_chain", lambda _chain, _url, schema=None: upgrades.append(_url))
+    summary = await migrate.run_tasks(tasks)
+    assert summary.succeeded == ("mdm_org",) and upgrades
+
+    async def _boom(url: str, schema: str | None = None) -> str:
+        raise RuntimeError("连不上库")
+
+    monkeypatch.setattr(migrate, "current_revision", _boom)
+    summary = await migrate.run_tasks(tasks)
+    assert summary.failed == ("mdm_org",)
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_migrate_module_entry_point(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`python -m ops.migrate` 入口按 CLI 参数执行并以退出码结束。"""
+    monkeypatch.delitem(sys.modules, "ops.migrate", raising=False)
+    monkeypatch.setattr(sys, "argv", ["ops.migrate", "--dry-run"])
+    with pytest.raises(SystemExit) as excinfo:
+        runpy.run_module("ops.migrate", run_name="__main__")
+    assert excinfo.value.code == 0
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_contract_snapshot_module_entry_point(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """`python -m ops.contract_snapshot` 入口按 CLI 参数执行并以退出码结束。"""
+    assert contract_snapshot.export(tmp_path) == 0
+    monkeypatch.delitem(sys.modules, "ops.contract_snapshot", raising=False)
+    monkeypatch.setattr(sys, "argv", ["ops.contract_snapshot", "check", "--root", str(tmp_path)])
+    with pytest.raises(SystemExit) as excinfo:
+        runpy.run_module("ops.contract_snapshot", run_name="__main__")
+    assert excinfo.value.code == 0

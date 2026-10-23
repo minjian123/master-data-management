@@ -222,8 +222,7 @@ async def delete_dept(
     需要 org:delete 权限；子部门 / 岗位 / 角色分配存在时拒绝（330054 / 330055 / 330056）。
     """
     service = _service(uow, config, outbox)
-    dept = await service.dept_detail(dept_id)
-    await service.delete_dept(dept_id=dept_id)
+    dept = await service.delete_dept(dept_id=dept_id)
     _audit(audit, dept)
     return ApiResponse.ok(_item(dept))
 
