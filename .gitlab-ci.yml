@@ -156,7 +156,7 @@ backend-test:
     # 覆盖率硬门禁：行 + 分支 100%（与其他仓统一，不设例外）
     - >-
       uv run pytest
-      --cov=mdm_org --cov=services --cov=ops
+      --cov=mdm --cov=services --cov=ops
       --cov-branch --cov-report=term --cov-fail-under=100
   coverage: '/^TOTAL.*?\s+\d+\s+\d+\s+(\d+(?:\.\d+)?%)$/'
 
@@ -207,7 +207,14 @@ frontend-test:
     # 契约类型零漂移（生成物 ↔ 产品契约快照逐字节比对）
     - pnpm run api-types:gen:check
     - pnpm run api-types:test
-    - pnpm run org:test
+    # 模块用例 + 覆盖率采集（行 + 分支；门禁阈值口径见《AI开发规范》「覆盖率要求」节，
+    # 本地按变更源文件 `--coverage.include=… --coverage.thresholds.lines=100 --coverage.thresholds.branches=100` 收口）
+    - pnpm --filter @mdm/module-org run test:cov
+  coverage: '/^All files\s*\|\s*(\d+(?:\.\d+)?)/'
+  artifacts:
+    when: always
+    paths: [frontend/modules/org/coverage/]
+    expire_in: 30 days
 
 frontend-build:
   stage: test

@@ -47,8 +47,8 @@ describe('mdm 组织域模块 · 注入上下文消费（01_04 · Kiwi 2261）',
     expect((caught as Error).message).toBe(MODULE_API_ABSENT)
   })
 
-  it('权限码派生可写态：含 `org:update` 可写；无权限信息按可写（显隐只是体验）', () => {
-    applyHostContext({ user: ['org:update'] })
+  it('权限码派生可写态：含 `mdm:update` 可写；无权限信息按可写（显隐只是体验）', () => {
+    applyHostContext({ user: ['mdm:update'] })
     expect(orgRuntime().canUpdate).toBe(true)
 
     applyHostContext({ user: ['other:perm'] })

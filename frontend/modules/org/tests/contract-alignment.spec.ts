@@ -3,7 +3,7 @@
  * 契约对齐门禁（mdm 01_04）：**前端调用面 ⊆ 产品契约**。
  *
  * 做法：以请求能力替身驱动**全部**服务方法（真实调用路径 / 参数），把捕获到的
- * 「方法 + 路径 + 查询参数名」与 `deploy/contracts/org.json`（产品契约快照，唯一事实源）逐条比对：
+ * 「方法 + 路径 + 查询参数名」与 `deploy/contracts/mdm.json`（产品契约快照，唯一事实源）逐条比对：
  *   - 路径（补产品域前缀后按模板归一）必须命中契约 `paths`；
  *   - 查询参数名必须命中该操作点声明的 `parameters`；
  *   - 比对为**双向覆盖**：契约中管理面端点（排除出口 / 探针）必须被前端覆盖，避免「端点在契约、前端漏接」。
@@ -54,12 +54,12 @@ import {
 /** 仓根（本测试位于 `modules/org/tests`）。 */
 const REPO_ROOT = resolve(import.meta.dirname, '../../../..')
 /** 产品契约快照（唯一事实源）。 */
-const CONTRACT = JSON.parse(readFileSync(resolve(REPO_ROOT, 'deploy/contracts/org.json'), 'utf8')) as {
+const CONTRACT = JSON.parse(readFileSync(resolve(REPO_ROOT, 'deploy/contracts/mdm.json'), 'utf8')) as {
   paths: Record<string, Record<string, { parameters?: { name: string; in: string }[] }>>
 }
 
 /** 服务调用前缀（产品域前缀；模块侧只写相对路径）。 */
-const PRODUCT_PREFIX = '/api/v1/org'
+const PRODUCT_PREFIX = '/api/v1/mdm'
 
 /** 用例中使用的实体标识（归一为路径模板时替换）。 */
 const TEST_IDS = ['d-1', 'p-1', 'u-1', 'r-1', 'd-2']

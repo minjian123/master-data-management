@@ -50,6 +50,7 @@ const columns = computed<DataTableColumn[]>(() => [
   { key: 'name', title: t('mdmOrg.post.column.name'), minWidth: 160, sortable: true },
   { key: 'dept_id', title: t('mdmOrg.post.column.dept'), width: 200 },
   { key: 'status', title: t('mdmOrg.post.column.status'), width: 110 },
+  { key: 'actions', title: t('mdmOrg.post.column.actions'), width: 200 },
 ])
 
 /** 写权限（显隐只是体验，后端强制校验）。 */
@@ -170,11 +171,16 @@ async function onToggleStatus(row: PostItem): Promise<void> {
  * @param row 行数据。
  */
 async function onDelete(row: PostItem): Promise<void> {
-  await ElMessageBox.confirm(t('mdmOrg.post.delete.confirm'), t('mdmOrg.common.delete'), {
-    confirmButtonText: t('mdmOrg.common.confirm'),
-    cancelButtonText: t('mdmOrg.common.cancel'),
-    type: 'warning',
-  })
+  try {
+    await ElMessageBox.confirm(t('mdmOrg.post.delete.confirm'), t('mdmOrg.common.delete'), {
+      confirmButtonText: t('mdmOrg.common.confirm'),
+      cancelButtonText: t('mdmOrg.common.cancel'),
+      type: 'warning',
+    })
+  } catch {
+    // 用户取消 / 关闭对话框：不提示、不发请求
+    return
+  }
   try {
     await deletePost(String(row.id))
     ElMessage.success(t('mdmOrg.common.delete'))
@@ -187,15 +193,20 @@ async function onDelete(row: PostItem): Promise<void> {
 /** 批量删除（按勾选行逐个删除，逐条失败不阻塞其余）。 */
 async function onBatchDelete(): Promise<void> {
   if (selectedKeys.value.length === 0) return
-  await ElMessageBox.confirm(
-    t('mdmOrg.post.batchDelete.confirm', { count: selectedKeys.value.length }),
-    t('mdmOrg.common.delete'),
-    {
-      confirmButtonText: t('mdmOrg.common.confirm'),
-      cancelButtonText: t('mdmOrg.common.cancel'),
-      type: 'warning',
-    },
-  )
+  try {
+    await ElMessageBox.confirm(
+      t('mdmOrg.post.batchDelete.confirm', { count: selectedKeys.value.length }),
+      t('mdmOrg.common.delete'),
+      {
+        confirmButtonText: t('mdmOrg.common.confirm'),
+        cancelButtonText: t('mdmOrg.common.cancel'),
+        type: 'warning',
+      },
+    )
+  } catch {
+    // 用户取消 / 关闭对话框：不提示、不发请求
+    return
+  }
   let failed = 0
   for (const id of selectedKeys.value) {
     try {
@@ -277,7 +288,7 @@ onMounted(async () => {
         :error="errorText"
         row-key="id"
         selectable
-        form-key="mdm_org_post_list"
+        form-key="mdm_mdm_post_list"
         :empty-text="t('mdmOrg.post.list.empty')"
         @update:page="onPageChange"
         @update:page-size="onPageSizeChange"
@@ -333,7 +344,7 @@ onMounted(async () => {
       </data-table>
     </section-container>
 
-    <el-dialog v-model="rolesVisible" :title="t('mdmOrg.post.roles.title')" width="480" align-center>
+    <el-dialog v-model="rolesVisible" :title="t('mdmOrg.post.roles.title')" :width="480" :align-center="true">
       <p class="mdm-org-post__hint" data-test="post-roles-hint">{{ t('mdmOrg.post.roles.readonlyHint') }}</p>
       <el-tag v-for="role in boundRoleIds" :key="role" class="mdm-org-post__role" size="small">{{ role }}</el-tag>
       <span v-if="boundRoleIds.length === 0" data-test="post-roles-empty">{{ t('mdmOrg.common.empty') }}</span>

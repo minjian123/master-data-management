@@ -1,14 +1,14 @@
 /**
  * 组织域领域类型与选项常量。
  *
- * **类型不手写**：一律自产品契约生成类型 `@mdm/api-types`（`org` 命名空间）取别名——
+ * **类型不手写**：一律自产品契约生成类型 `@mdm/api-types`（`mdm` 命名空间）取别名——
  * 后端契约变更后重生成即同步（`pnpm run api-types:gen`，漂移由 `gen:check` 阻断）。
  */
 
-import type { org as orgContract } from '@mdm/api-types'
+import type { mdm as mdmContract } from '@mdm/api-types'
 
 /** 契约 schema 集合别名。 */
-type Schemas = orgContract.components['schemas']
+type Schemas = mdmContract.components['schemas']
 
 /** 部门行（响应面）。 */
 export type DeptItem = Schemas['DeptItem']

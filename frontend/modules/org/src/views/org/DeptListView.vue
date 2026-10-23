@@ -1,9 +1,21 @@
 <script setup lang="ts">
 // 部门管理页：组织架构树 + 选中部门详情（**页内编辑**：修改 / 保存 / 取消，只读态↔编辑态）+
 // 工具栏（新建子部门 / 移动 / 启停 / 刷新）+ 只读的直属用户与角色 + `ancestors` 链展示。
-// 数据经**产品域寻址** `api.product('mdm', 'org')`（见 services/org-service）；模块不自建 HTTP、不自拼前缀。
+// 数据经**产品域寻址** `api.product('mdm', 'mdm')`（见 services/org-service）；模块不自建 HTTP、不自拼前缀。
 import { EmptyState, PageContainer, SectionContainer } from '@bms/ui-ep'
-import { ElButton, ElInput, ElInputNumber, ElMessage, ElMessageBox, ElOption, ElSelect, ElTag, ElTree } from 'element-plus'
+import {
+  ElButton,
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElInputNumber,
+  ElMessage,
+  ElMessageBox,
+  ElOption,
+  ElSelect,
+  ElTag,
+  ElTree,
+} from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -172,47 +184,58 @@ function openFormPage(): void {
   void router.push({ name: 'MdmOrgDeptForm', params: { id: String(selected.value.id) } })
 }
 
-/** 移动选中部门（对话框选目标）。 */
+/** 移动选中部门（对话框选目标；取消 / 关闭静默返回）。 */
 async function onMove(): Promise<void> {
   if (selected.value === null) return
-  const target = await ElMessageBox.prompt(t('mdmOrg.dept.move.target'), t('mdmOrg.dept.move.title'), {
-    inputPlaceholder: t('mdmOrg.dept.form.root'),
-    confirmButtonText: t('mdmOrg.common.confirm'),
-    cancelButtonText: t('mdmOrg.common.cancel'),
-  })
+  let target: { value: string }
+  try {
+    target = await ElMessageBox.prompt(t('mdmOrg.dept.move.target'), t('mdmOrg.dept.move.title'), {
+      inputPlaceholder: t('mdmOrg.dept.form.root'),
+      confirmButtonText: t('mdmOrg.common.confirm'),
+      cancelButtonText: t('mdmOrg.common.cancel'),
+    })
+  } catch {
+    // 用户取消 / 关闭对话框：不提示、不发请求
+    return
+  }
   try {
     await moveDept(String(selected.value.id), { parent_id: toIdParam(target.value.trim()) })
     ElMessage.success(t('mdmOrg.common.save'))
     await load()
   } catch (caught) {
-    if (caught === 'cancel' || caught === 'close') return
     ElMessage.error(isApiAbsent(caught) ? t('mdmOrg.common.apiAbsent') : t('mdmOrg.common.failed'))
   }
 }
 
-/** 启停选中部门（立即生效）。 */
+/** 启停选中部门（立即生效；重载后按标识重选，避免重载已置空选中项）。 */
 async function onToggleStatus(): Promise<void> {
   if (selected.value === null) return
+  const id = String(selected.value.id)
   const next = selected.value.status === ENTITY_STATUS.enabled ? ENTITY_STATUS.disabled : ENTITY_STATUS.enabled
   try {
-    await updateDept(String(selected.value.id), { status: next })
+    await updateDept(id, { status: next })
     ElMessage.success(t('mdmOrg.common.save'))
     await load()
-    const hit = findNode(tree.value, String(selected.value.id))
+    const hit = findNode(tree.value, id)
     if (hit !== null) await onSelect(hit)
   } catch (caught) {
     ElMessage.error(isApiAbsent(caught) ? t('mdmOrg.common.apiAbsent') : t('mdmOrg.common.failed'))
   }
 }
 
-/** 删除选中部门。 */
+/** 删除选中部门（二次确认；取消 / 关闭静默返回）。 */
 async function onDelete(): Promise<void> {
   if (selected.value === null) return
-  await ElMessageBox.confirm(t('mdmOrg.dept.delete.confirm'), t('mdmOrg.common.delete'), {
-    confirmButtonText: t('mdmOrg.common.confirm'),
-    cancelButtonText: t('mdmOrg.common.cancel'),
-    type: 'warning',
-  })
+  try {
+    await ElMessageBox.confirm(t('mdmOrg.dept.delete.confirm'), t('mdmOrg.common.delete'), {
+      confirmButtonText: t('mdmOrg.common.confirm'),
+      cancelButtonText: t('mdmOrg.common.cancel'),
+      type: 'warning',
+    })
+  } catch {
+    // 用户取消 / 关闭对话框：不提示、不发请求
+    return
+  }
   try {
     await deleteDept(String(selected.value.id))
     ElMessage.success(t('mdmOrg.common.delete'))

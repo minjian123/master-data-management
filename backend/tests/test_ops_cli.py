@@ -44,7 +44,7 @@ def test_check_modules_parser_defaults() -> None:
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 def test_contract_snapshot_export_and_check(tmp_path: Path) -> None:
-    """契约快照：导出 `deploy/contracts/org.json` 后可零漂移校验（退出码 0）。"""
+    """契约快照：导出 `deploy/contracts/mdm.json` 后可零漂移校验（退出码 0）。"""
     assert contract_snapshot.export(tmp_path) == 0
     snapshot = contract_snapshot.snapshot_path(tmp_path, SERVICE_KEY)
     assert snapshot.is_file()

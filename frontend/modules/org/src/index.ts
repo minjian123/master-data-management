@@ -25,7 +25,7 @@ export const orgModule = defineModule({
     return {
       routes: [
         {
-          path: '/org/depts',
+          path: '/mdm/depts',
           name: 'MdmOrgDeptList',
           component: () => import('./views/org/DeptListView.vue'),
           meta: {
@@ -37,19 +37,19 @@ export const orgModule = defineModule({
           },
         },
         {
-          path: '/org/depts/form/:id?',
+          path: '/mdm/depts/form/:id?',
           name: 'MdmOrgDeptForm',
           component: () => import('./views/org/DeptFormView.vue'),
           meta: { title: '部门表单', menu: false },
         },
         {
-          path: '/org/posts',
+          path: '/mdm/posts',
           name: 'MdmOrgPostList',
           component: () => import('./views/org/PostListView.vue'),
           meta: { title: '岗位管理', icon: 'briefcase', group: '组织主数据', keepAlive: true },
         },
         {
-          path: '/org/posts/form/:id?',
+          path: '/mdm/posts/form/:id?',
           name: 'MdmOrgPostForm',
           component: () => import('./views/org/PostFormView.vue'),
           meta: { title: '岗位表单', menu: false },
@@ -62,7 +62,7 @@ export const orgModule = defineModule({
           component: () => import('./components/slots/UserPostsPanel.vue'),
           order: 20,
           title: '岗位分配',
-          perm: 'org:update',
+          perm: 'mdm:update',
         },
         {
           key: 'mdm-org:user-depts',
@@ -70,7 +70,7 @@ export const orgModule = defineModule({
           component: () => import('./components/slots/UserDeptsPanel.vue'),
           order: 30,
           title: '部门分配',
-          perm: 'org:update',
+          perm: 'mdm:update',
         },
         {
           key: 'mdm-org:role-posts',
@@ -78,7 +78,7 @@ export const orgModule = defineModule({
           component: () => import('./components/slots/RolePostsPanel.vue'),
           order: 20,
           title: '岗位分配',
-          perm: 'org:update',
+          perm: 'mdm:update',
         },
         {
           key: 'mdm-org:role-depts',
@@ -86,7 +86,7 @@ export const orgModule = defineModule({
           component: () => import('./components/slots/RoleDeptsPanel.vue'),
           order: 30,
           title: '部门分配',
-          perm: 'org:update',
+          perm: 'mdm:update',
         },
       ],
       i18nPacks: [

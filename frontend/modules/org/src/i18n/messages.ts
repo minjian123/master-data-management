@@ -108,7 +108,7 @@ export const ORG_MESSAGES_ZH_CN: Record<string, string> = {
   'mdmOrg.slot.noChange': '无未提交变更',
   'mdmOrg.slot.empty': '尚未分配',
   'mdmOrg.slot.contextAbsent': '当前页面未提供实体标识，插件暂不可用',
-  'mdmOrg.slot.noPermission': '无分配权限（org:update）',
+  'mdmOrg.slot.noPermission': '无分配权限（mdm:update）',
   'mdmOrg.slot.deptExactHint': '部门分配按精确匹配生效（不含子部门）',
   'mdmOrg.slot.posts': '岗位',
   'mdmOrg.slot.depts': '部门',
@@ -185,7 +185,7 @@ export const ORG_MESSAGES_EN: Record<string, string> = {
   'mdmOrg.slot.submitted': 'Changes submitted',
   'mdmOrg.slot.empty': 'Nothing assigned',
   'mdmOrg.slot.contextAbsent': 'Entity id is not provided by the host page',
-  'mdmOrg.slot.noPermission': 'No permission (org:update)',
+  'mdmOrg.slot.noPermission': 'No permission (mdm:update)',
 }
 
 /** 各语言文案表（`i18nPacks` 注册载荷：键 = `<模块名>:<语言标识>`）。 */

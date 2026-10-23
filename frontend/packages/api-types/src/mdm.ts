@@ -1,8 +1,8 @@
 /**
- * 产品契约生成类型：org
+ * 产品契约生成类型：mdm
  *
  * 本文件由 `frontend/packages/api-types/scripts/generate.mjs` 生成，请勿手工修改。
- * 来源：deploy/contracts/org.json（产品契约快照，唯一事实源）。
+ * 来源：deploy/contracts/mdm.json（产品契约快照，唯一事实源）。
  * 重新生成：pnpm run api-types:gen
  */
 export interface paths {
@@ -29,7 +29,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/data-source/dept-tree": {
+    "/api/v1/mdm/data-source/dept-tree": {
         parameters: {
             query?: never;
             header?: never;
@@ -40,7 +40,7 @@ export interface paths {
          * Get Dept Tree
          * @description 组织数据源 · 部门树（一次性返回、不分页；数据范围限定外的部门不入树）。
          */
-        get: operations["get_dept_tree_api_v1_org_data_source_dept_tree_get"];
+        get: operations["get_dept_tree_api_v1_mdm_data_source_dept_tree_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -49,7 +49,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/data-source/posts": {
+    "/api/v1/mdm/data-source/posts": {
         parameters: {
             query?: never;
             header?: never;
@@ -60,7 +60,7 @@ export interface paths {
          * List Posts
          * @description 组织数据源 · 岗位（关键字 / 部门含子级 / 状态 / 分页）。
          */
-        get: operations["list_posts_api_v1_org_data_source_posts_get"];
+        get: operations["list_posts_api_v1_mdm_data_source_posts_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -69,7 +69,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/data-source/users": {
+    "/api/v1/mdm/data-source/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -81,9 +81,9 @@ export interface paths {
          * @description 组织数据源 · 用户（关键字 / 部门 / 含子级 / 状态 / 分页）。
          *
          *     部门过滤口径：映射为「该部门含子树下岗位、且用户已分配该岗位」的候选集——
-         *     用户归属部门归本域 `org_user_dept`（2026-10-09 起），**不经平台字段**（`sys_user` 不落组织字段）。
+         *     用户归属部门归本域 `mdm_user_dept`（2026-10-09 起），**不经平台字段**（`sys_user` 不落组织字段）。
          */
-        get: operations["list_users_api_v1_org_data_source_users_get"];
+        get: operations["list_users_api_v1_mdm_data_source_users_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -92,7 +92,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/depts": {
+    "/api/v1/mdm/depts": {
         parameters: {
             query?: never;
             header?: never;
@@ -103,25 +103,25 @@ export interface paths {
          * List Depts
          * @description 部门树。
          *
-         *     需要 org:query 权限；一次性返回（不分页），可按状态过滤。
+         *     需要 mdm:query 权限；一次性返回（不分页），可按状态过滤。
          */
-        get: operations["list_depts_api_v1_org_depts_get"];
+        get: operations["list_depts_api_v1_mdm_depts_get"];
         put?: never;
         /**
          * Create Dept
          * @description 新建部门。
          *
-         *     需要 org:create 权限；部门编码必填且租户内唯一（格式受 `org.dept_code_pattern` 约束）；
+         *     需要 mdm:create 权限；部门编码必填且租户内唯一（格式受 `mdm.dept_code_pattern` 约束）；
          *     同父部门名称唯一；支持幂等键。
          */
-        post: operations["create_dept_api_v1_org_depts_post"];
+        post: operations["create_dept_api_v1_mdm_depts_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/depts/{dept_id}": {
+    "/api/v1/mdm/depts/{dept_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -132,30 +132,30 @@ export interface paths {
          * Get Dept
          * @description 部门详情（含 `ancestors` 路径）。
          *
-         *     需要 org:query 权限；不存在抛 330051。
+         *     需要 mdm:query 权限；不存在抛 330051。
          */
-        get: operations["get_dept_api_v1_org_depts__dept_id__get"];
+        get: operations["get_dept_api_v1_mdm_depts__dept_id__get"];
         /**
          * Update Dept
          * @description 修改部门（编码 / 名称 / 排序 / 状态）。
          *
-         *     需要 org:update 权限；编码可改（格式与唯一校验、自身同值豁免）；`version` 提供时做乐观锁比对（冲突转统一并发冲突）。
+         *     需要 mdm:update 权限；编码可改（格式与唯一校验、自身同值豁免）；`version` 提供时做乐观锁比对（冲突转统一并发冲突）。
          */
-        put: operations["update_dept_api_v1_org_depts__dept_id__put"];
+        put: operations["update_dept_api_v1_mdm_depts__dept_id__put"];
         post?: never;
         /**
          * Delete Dept
          * @description 删除部门（有引用拒绝，软删除）。
          *
-         *     需要 org:delete 权限；子部门 / 岗位 / 角色分配存在时拒绝（330054 / 330055 / 330056）。
+         *     需要 mdm:delete 权限；子部门 / 岗位 / 角色分配存在时拒绝（330054 / 330055 / 330056）。
          */
-        delete: operations["delete_dept_api_v1_org_depts__dept_id__delete"];
+        delete: operations["delete_dept_api_v1_mdm_depts__dept_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/depts/{dept_id}/move": {
+    "/api/v1/mdm/depts/{dept_id}/move": {
         parameters: {
             query?: never;
             header?: never;
@@ -167,9 +167,9 @@ export interface paths {
          * Move Dept
          * @description 移动部门（级联维护子树 `ancestors`）。
          *
-         *     需要 org:update 权限；防环（新父不得为自身或其后代，330053）。
+         *     需要 mdm:update 权限；防环（新父不得为自身或其后代，330053）。
          */
-        put: operations["move_dept_api_v1_org_depts__dept_id__move_put"];
+        put: operations["move_dept_api_v1_mdm_depts__dept_id__move_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -177,7 +177,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/depts/{dept_id}/roles": {
+    "/api/v1/mdm/depts/{dept_id}/roles": {
         parameters: {
             query?: never;
             header?: never;
@@ -188,9 +188,9 @@ export interface paths {
          * List Dept Roles
          * @description 部门角色分配回显。
          *
-         *     需要 org:query 权限。
+         *     需要 mdm:query 权限。
          */
-        get: operations["list_dept_roles_api_v1_org_depts__dept_id__roles_get"];
+        get: operations["list_dept_roles_api_v1_mdm_depts__dept_id__roles_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -199,7 +199,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/depts/{dept_id}/users": {
+    "/api/v1/mdm/depts/{dept_id}/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -210,9 +210,9 @@ export interface paths {
          * List Dept Users
          * @description 部门（含子树）归属用户列表。
          *
-         *     需要 org:query 权限；用户名称回显经组织主数据只读契约（01_03）。
+         *     需要 mdm:query 权限；用户名称回显经组织主数据只读契约（01_03）。
          */
-        get: operations["list_dept_users_api_v1_org_depts__dept_id__users_get"];
+        get: operations["list_dept_users_api_v1_mdm_depts__dept_id__users_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -221,7 +221,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/internal/role-depts/{role_id}": {
+    "/api/v1/mdm/internal/role-depts/{role_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -233,7 +233,7 @@ export interface paths {
          * Internal Assign Role Depts
          * @description 内部全量覆盖角色部门（服务身份 `platform`；角色侧无主要项语义）。
          */
-        put: operations["internal_assign_role_depts_api_v1_org_internal_role_depts__role_id__put"];
+        put: operations["internal_assign_role_depts_api_v1_mdm_internal_role_depts__role_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -241,7 +241,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/internal/role-posts/{role_id}": {
+    "/api/v1/mdm/internal/role-posts/{role_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -253,7 +253,7 @@ export interface paths {
          * Internal Assign Role Posts
          * @description 内部全量覆盖角色岗位（服务身份 `platform`；角色侧无主要项语义）。
          */
-        put: operations["internal_assign_role_posts_api_v1_org_internal_role_posts__role_id__put"];
+        put: operations["internal_assign_role_posts_api_v1_mdm_internal_role_posts__role_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -261,7 +261,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/internal/user-depts/{user_id}": {
+    "/api/v1/mdm/internal/user-depts/{user_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -273,7 +273,7 @@ export interface paths {
          * Internal Assign User Depts
          * @description 内部全量覆盖用户部门 + 主要部门（服务身份 `platform`）。
          */
-        put: operations["internal_assign_user_depts_api_v1_org_internal_user_depts__user_id__put"];
+        put: operations["internal_assign_user_depts_api_v1_mdm_internal_user_depts__user_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -281,7 +281,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/internal/user-posts/{user_id}": {
+    "/api/v1/mdm/internal/user-posts/{user_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -295,7 +295,7 @@ export interface paths {
          *
          *     与公开面同源：上限 / 不存在 / 主项归属校验、事件与失效代一致；支持幂等键；响应回生效后集合与主要项。
          */
-        put: operations["internal_assign_user_posts_api_v1_org_internal_user_posts__user_id__put"];
+        put: operations["internal_assign_user_posts_api_v1_mdm_internal_user_posts__user_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -303,7 +303,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/posts": {
+    "/api/v1/mdm/posts": {
         parameters: {
             query?: never;
             header?: never;
@@ -314,24 +314,24 @@ export interface paths {
          * List Posts
          * @description 岗位列表（分页；按部门 / 状态 / 关键字筛选）。
          *
-         *     需要 org:query 权限；排序字段经白名单校验。
+         *     需要 mdm:query 权限；排序字段经白名单校验。
          */
-        get: operations["list_posts_api_v1_org_posts_get"];
+        get: operations["list_posts_api_v1_mdm_posts_get"];
         put?: never;
         /**
          * Create Post
          * @description 新建岗位。
          *
-         *     需要 org:create 权限；岗位码租户内唯一且受格式约束；支持幂等键。
+         *     需要 mdm:create 权限；岗位码租户内唯一且受格式约束；支持幂等键。
          */
-        post: operations["create_post_api_v1_org_posts_post"];
+        post: operations["create_post_api_v1_mdm_posts_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/posts/{post_id}": {
+    "/api/v1/mdm/posts/{post_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -342,30 +342,30 @@ export interface paths {
          * Get Post
          * @description 岗位详情。
          *
-         *     需要 org:query 权限；不存在抛 330031。
+         *     需要 mdm:query 权限；不存在抛 330031。
          */
-        get: operations["get_post_api_v1_org_posts__post_id__get"];
+        get: operations["get_post_api_v1_mdm_posts__post_id__get"];
         /**
          * Update Post
          * @description 修改岗位（含岗位码）。
          *
-         *     需要 org:update 权限；岗位码可改（格式与唯一校验、自身同值豁免）；`version` 提供时做乐观锁比对。
+         *     需要 mdm:update 权限；岗位码可改（格式与唯一校验、自身同值豁免）；`version` 提供时做乐观锁比对。
          */
-        put: operations["update_post_api_v1_org_posts__post_id__put"];
+        put: operations["update_post_api_v1_mdm_posts__post_id__put"];
         post?: never;
         /**
          * Delete Post
          * @description 删除岗位（有引用拒绝，软删除）。
          *
-         *     需要 org:delete 权限；仍关联用户 / 角色分配时拒绝（330034 / 330035）。
+         *     需要 mdm:delete 权限；仍关联用户 / 角色分配时拒绝（330034 / 330035）。
          */
-        delete: operations["delete_post_api_v1_org_posts__post_id__delete"];
+        delete: operations["delete_post_api_v1_mdm_posts__post_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/posts/{post_id}/roles": {
+    "/api/v1/mdm/posts/{post_id}/roles": {
         parameters: {
             query?: never;
             header?: never;
@@ -376,9 +376,9 @@ export interface paths {
          * List Post Roles
          * @description 岗位角色分配回显。
          *
-         *     需要 org:query 权限。
+         *     需要 mdm:query 权限。
          */
-        get: operations["list_post_roles_api_v1_org_posts__post_id__roles_get"];
+        get: operations["list_post_roles_api_v1_mdm_posts__post_id__roles_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -387,7 +387,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/posts/{post_id}/users": {
+    "/api/v1/mdm/posts/{post_id}/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -398,9 +398,9 @@ export interface paths {
          * List Post Users
          * @description 岗位下用户列表。
          *
-         *     需要 org:query 权限。
+         *     需要 mdm:query 权限。
          */
-        get: operations["list_post_users_api_v1_org_posts__post_id__users_get"];
+        get: operations["list_post_users_api_v1_mdm_posts__post_id__users_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -409,7 +409,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/resolve-names": {
+    "/api/v1/mdm/resolve-names": {
         parameters: {
             query?: never;
             header?: never;
@@ -420,7 +420,7 @@ export interface paths {
          * Resolve Names
          * @description 名称回显（`target` + `id_in` 逗号分隔；未命中项占位、不抛错）。
          */
-        get: operations["resolve_names_api_v1_org_resolve_names_get"];
+        get: operations["resolve_names_api_v1_mdm_resolve_names_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -429,7 +429,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/role-depts": {
+    "/api/v1/mdm/role-depts": {
         parameters: {
             query?: never;
             header?: never;
@@ -440,9 +440,9 @@ export interface paths {
          * List Role Depts
          * @description 按角色列已分配部门（「部门分配」插件）。
          *
-         *     需要 org:query 权限。
+         *     需要 mdm:query 权限。
          */
-        get: operations["list_role_depts_api_v1_org_role_depts_get"];
+        get: operations["list_role_depts_api_v1_mdm_role_depts_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -451,7 +451,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/role-depts/{role_id}": {
+    "/api/v1/mdm/role-depts/{role_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -463,9 +463,9 @@ export interface paths {
          * Assign Role Depts
          * @description 全量覆盖分配角色部门（diff 后增删单事务）。
          *
-         *     需要 org:update 权限；`role_id` 对 bms 角色逻辑外键（不下库校验）；支持幂等键。
+         *     需要 mdm:update 权限；`role_id` 对 bms 角色逻辑外键（不下库校验）；支持幂等键。
          */
-        put: operations["assign_role_depts_api_v1_org_role_depts__role_id__put"];
+        put: operations["assign_role_depts_api_v1_mdm_role_depts__role_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -473,7 +473,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/role-depts/{role_id}/{dept_id}": {
+    "/api/v1/mdm/role-depts/{role_id}/{dept_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -487,15 +487,15 @@ export interface paths {
          * Unassign Role Dept
          * @description 解绑单个角色-部门。
          *
-         *     需要 org:update 权限；分配不存在抛 330091。
+         *     需要 mdm:update 权限；分配不存在抛 330091。
          */
-        delete: operations["unassign_role_dept_api_v1_org_role_depts__role_id___dept_id__delete"];
+        delete: operations["unassign_role_dept_api_v1_mdm_role_depts__role_id___dept_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/role-posts": {
+    "/api/v1/mdm/role-posts": {
         parameters: {
             query?: never;
             header?: never;
@@ -506,9 +506,9 @@ export interface paths {
          * List Role Posts
          * @description 按角色列已分配岗位（「岗位分配」插件）。
          *
-         *     需要 org:query 权限。
+         *     需要 mdm:query 权限。
          */
-        get: operations["list_role_posts_api_v1_org_role_posts_get"];
+        get: operations["list_role_posts_api_v1_mdm_role_posts_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -517,7 +517,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/role-posts/{role_id}": {
+    "/api/v1/mdm/role-posts/{role_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -529,9 +529,9 @@ export interface paths {
          * Assign Role Posts
          * @description 全量覆盖分配角色岗位（diff 后增删单事务）。
          *
-         *     需要 org:update 权限；`role_id` 对 bms 角色逻辑外键（不下库校验）；支持幂等键。
+         *     需要 mdm:update 权限；`role_id` 对 bms 角色逻辑外键（不下库校验）；支持幂等键。
          */
-        put: operations["assign_role_posts_api_v1_org_role_posts__role_id__put"];
+        put: operations["assign_role_posts_api_v1_mdm_role_posts__role_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -539,7 +539,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/role-posts/{role_id}/{post_id}": {
+    "/api/v1/mdm/role-posts/{role_id}/{post_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -553,15 +553,15 @@ export interface paths {
          * Unassign Role Post
          * @description 解绑单个角色-岗位。
          *
-         *     需要 org:update 权限；分配不存在抛 330081。
+         *     需要 mdm:update 权限；分配不存在抛 330081。
          */
-        delete: operations["unassign_role_post_api_v1_org_role_posts__role_id___post_id__delete"];
+        delete: operations["unassign_role_post_api_v1_mdm_role_posts__role_id___post_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/user-depts/{user_id}": {
+    "/api/v1/mdm/user-depts/{user_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -572,16 +572,16 @@ export interface paths {
          * List User Depts
          * @description 按用户查已分配部门（含主要部门）。
          *
-         *     需要 org:query 权限；供 bms 用户管理页具名插槽插件回显。
+         *     需要 mdm:query 权限；供 bms 用户管理页具名插槽插件回显。
          */
-        get: operations["list_user_depts_api_v1_org_user_depts__user_id__get"];
+        get: operations["list_user_depts_api_v1_mdm_user_depts__user_id__get"];
         /**
          * Assign User Depts
          * @description 全量覆盖分配用户部门（diff 后增删单事务）。
          *
-         *     需要 org:update 权限；单用户部门数受上限约束（330112）；被移除项若为主要部门则同事务清空标记；支持幂等键。
+         *     需要 mdm:update 权限；单用户部门数受上限约束（330112）；被移除项若为主要部门则同事务清空标记；支持幂等键。
          */
-        put: operations["assign_user_depts_api_v1_org_user_depts__user_id__put"];
+        put: operations["assign_user_depts_api_v1_mdm_user_depts__user_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -589,7 +589,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/user-depts/{user_id}/primary": {
+    "/api/v1/mdm/user-depts/{user_id}/primary": {
         parameters: {
             query?: never;
             header?: never;
@@ -601,10 +601,10 @@ export interface paths {
          * Set Primary Dept
          * @description 置位 / 清除主要部门（同事务互斥置位）。
          *
-         *     需要 org:update 权限；`dept_id` 为空表示清除；置位目标须已分配，否则 330113；
+         *     需要 mdm:update 权限；`dept_id` 为空表示清除；置位目标须已分配，否则 330113；
          *     主要部门不参与角色解析（解析按全部已分配部门）。
          */
-        put: operations["set_primary_dept_api_v1_org_user_depts__user_id__primary_put"];
+        put: operations["set_primary_dept_api_v1_mdm_user_depts__user_id__primary_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -612,7 +612,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/user-depts/{user_id}/{dept_id}": {
+    "/api/v1/mdm/user-depts/{user_id}/{dept_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -626,15 +626,15 @@ export interface paths {
          * Unassign User Dept
          * @description 解绑单个用户-部门。
          *
-         *     需要 org:update 权限；关联不存在抛 330111；若被解绑项为主要部门则标记随之清空。
+         *     需要 mdm:update 权限；关联不存在抛 330111；若被解绑项为主要部门则标记随之清空。
          */
-        delete: operations["unassign_user_dept_api_v1_org_user_depts__user_id___dept_id__delete"];
+        delete: operations["unassign_user_dept_api_v1_mdm_user_depts__user_id___dept_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/user-posts": {
+    "/api/v1/mdm/user-posts": {
         parameters: {
             query?: never;
             header?: never;
@@ -645,9 +645,9 @@ export interface paths {
          * List User Posts
          * @description 按用户查已分配岗位。
          *
-         *     需要 org:query 权限；供 bms 用户管理页具名插槽插件回显。
+         *     需要 mdm:query 权限；供 bms 用户管理页具名插槽插件回显。
          */
-        get: operations["list_user_posts_api_v1_org_user_posts_get"];
+        get: operations["list_user_posts_api_v1_mdm_user_posts_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -656,7 +656,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/user-posts/{user_id}": {
+    "/api/v1/mdm/user-posts/{user_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -668,9 +668,9 @@ export interface paths {
          * Assign User Posts
          * @description 全量覆盖分配用户岗位（diff 后增删单事务）。
          *
-         *     需要 org:update 权限；单用户岗位数受上限约束（330072）；支持幂等键。
+         *     需要 mdm:update 权限；单用户岗位数受上限约束（330072）；支持幂等键。
          */
-        put: operations["assign_user_posts_api_v1_org_user_posts__user_id__put"];
+        put: operations["assign_user_posts_api_v1_mdm_user_posts__user_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -678,7 +678,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/user-posts/{user_id}/primary": {
+    "/api/v1/mdm/user-posts/{user_id}/primary": {
         parameters: {
             query?: never;
             header?: never;
@@ -690,10 +690,10 @@ export interface paths {
          * Set Primary Post
          * @description 置位 / 清除主要岗位（同事务互斥置位）。
          *
-         *     需要 org:update 权限；`post_id` 为空表示清除；置位目标须已分配，否则 330113；
+         *     需要 mdm:update 权限；`post_id` 为空表示清除；置位目标须已分配，否则 330113；
          *     主要岗位不参与角色解析（解析按全部已分配岗位）。
          */
-        put: operations["set_primary_post_api_v1_org_user_posts__user_id__primary_put"];
+        put: operations["set_primary_post_api_v1_mdm_user_posts__user_id__primary_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -701,7 +701,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/user-posts/{user_id}/{post_id}": {
+    "/api/v1/mdm/user-posts/{user_id}/{post_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -715,15 +715,15 @@ export interface paths {
          * Unassign User Post
          * @description 解绑单个用户-岗位。
          *
-         *     需要 org:update 权限；关联不存在抛 330071。
+         *     需要 mdm:update 权限；关联不存在抛 330071。
          */
-        delete: operations["unassign_user_post_api_v1_org_user_posts__user_id___post_id__delete"];
+        delete: operations["unassign_user_post_api_v1_mdm_user_posts__user_id___post_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/org/user-roles": {
+    "/api/v1/mdm/user-roles": {
         parameters: {
             query?: never;
             header?: never;
@@ -736,7 +736,7 @@ export interface paths {
          *
          *     供 bms 权限引擎跨服务汇总（用户直接角色 `sys_user_role` 由消费方合并）。
          */
-        get: operations["get_user_roles_api_v1_org_user_roles_get"];
+        get: operations["get_user_roles_api_v1_mdm_user_roles_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1307,7 +1307,7 @@ export interface components {
         DeptCreateRequest: {
             /**
              * Code
-             * @description 部门编码（租户内唯一；格式受 org.dept_code_pattern 约束）
+             * @description 部门编码（租户内唯一；格式受 mdm.dept_code_pattern 约束）
              */
             code: string;
             /**
@@ -1697,7 +1697,7 @@ export interface components {
         PostCreateRequest: {
             /**
              * Code
-             * @description 岗位码（租户内唯一；格式受 org.post_code_pattern 约束）
+             * @description 岗位码（租户内唯一；格式受 mdm.post_code_pattern 约束）
              */
             code: string;
             /**
@@ -1937,7 +1937,7 @@ export interface operations {
             };
         };
     };
-    get_dept_tree_api_v1_org_data_source_dept_tree_get: {
+    get_dept_tree_api_v1_mdm_data_source_dept_tree_get: {
         parameters: {
             query?: {
                 status?: string | null;
@@ -2013,7 +2013,7 @@ export interface operations {
             };
         };
     };
-    list_posts_api_v1_org_data_source_posts_get: {
+    list_posts_api_v1_mdm_data_source_posts_get: {
         parameters: {
             query?: {
                 dept_id?: number | null;
@@ -2100,7 +2100,7 @@ export interface operations {
             };
         };
     };
-    list_users_api_v1_org_data_source_users_get: {
+    list_users_api_v1_mdm_data_source_users_get: {
         parameters: {
             query?: {
                 dept_id?: number | null;
@@ -2187,7 +2187,7 @@ export interface operations {
             };
         };
     };
-    list_depts_api_v1_org_depts_get: {
+    list_depts_api_v1_mdm_depts_get: {
         parameters: {
             query?: {
                 status?: string | null;
@@ -2263,7 +2263,7 @@ export interface operations {
             };
         };
     };
-    create_dept_api_v1_org_depts_post: {
+    create_dept_api_v1_mdm_depts_post: {
         parameters: {
             query?: never;
             header?: {
@@ -2344,7 +2344,7 @@ export interface operations {
             };
         };
     };
-    get_dept_api_v1_org_depts__dept_id__get: {
+    get_dept_api_v1_mdm_depts__dept_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -2420,7 +2420,7 @@ export interface operations {
             };
         };
     };
-    update_dept_api_v1_org_depts__dept_id__put: {
+    update_dept_api_v1_mdm_depts__dept_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -2500,7 +2500,7 @@ export interface operations {
             };
         };
     };
-    delete_dept_api_v1_org_depts__dept_id__delete: {
+    delete_dept_api_v1_mdm_depts__dept_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -2576,7 +2576,7 @@ export interface operations {
             };
         };
     };
-    move_dept_api_v1_org_depts__dept_id__move_put: {
+    move_dept_api_v1_mdm_depts__dept_id__move_put: {
         parameters: {
             query?: never;
             header?: never;
@@ -2656,7 +2656,7 @@ export interface operations {
             };
         };
     };
-    list_dept_roles_api_v1_org_depts__dept_id__roles_get: {
+    list_dept_roles_api_v1_mdm_depts__dept_id__roles_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -2732,7 +2732,7 @@ export interface operations {
             };
         };
     };
-    list_dept_users_api_v1_org_depts__dept_id__users_get: {
+    list_dept_users_api_v1_mdm_depts__dept_id__users_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -2808,7 +2808,7 @@ export interface operations {
             };
         };
     };
-    internal_assign_role_depts_api_v1_org_internal_role_depts__role_id__put: {
+    internal_assign_role_depts_api_v1_mdm_internal_role_depts__role_id__put: {
         parameters: {
             query?: never;
             header?: {
@@ -2892,7 +2892,7 @@ export interface operations {
             };
         };
     };
-    internal_assign_role_posts_api_v1_org_internal_role_posts__role_id__put: {
+    internal_assign_role_posts_api_v1_mdm_internal_role_posts__role_id__put: {
         parameters: {
             query?: never;
             header?: {
@@ -2976,7 +2976,7 @@ export interface operations {
             };
         };
     };
-    internal_assign_user_depts_api_v1_org_internal_user_depts__user_id__put: {
+    internal_assign_user_depts_api_v1_mdm_internal_user_depts__user_id__put: {
         parameters: {
             query?: never;
             header?: {
@@ -3060,7 +3060,7 @@ export interface operations {
             };
         };
     };
-    internal_assign_user_posts_api_v1_org_internal_user_posts__user_id__put: {
+    internal_assign_user_posts_api_v1_mdm_internal_user_posts__user_id__put: {
         parameters: {
             query?: never;
             header?: {
@@ -3144,7 +3144,7 @@ export interface operations {
             };
         };
     };
-    list_posts_api_v1_org_posts_get: {
+    list_posts_api_v1_mdm_posts_get: {
         parameters: {
             query?: {
                 dept_id?: number | null;
@@ -3230,7 +3230,7 @@ export interface operations {
             };
         };
     };
-    create_post_api_v1_org_posts_post: {
+    create_post_api_v1_mdm_posts_post: {
         parameters: {
             query?: never;
             header?: {
@@ -3311,7 +3311,7 @@ export interface operations {
             };
         };
     };
-    get_post_api_v1_org_posts__post_id__get: {
+    get_post_api_v1_mdm_posts__post_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3387,7 +3387,7 @@ export interface operations {
             };
         };
     };
-    update_post_api_v1_org_posts__post_id__put: {
+    update_post_api_v1_mdm_posts__post_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -3467,7 +3467,7 @@ export interface operations {
             };
         };
     };
-    delete_post_api_v1_org_posts__post_id__delete: {
+    delete_post_api_v1_mdm_posts__post_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -3543,7 +3543,7 @@ export interface operations {
             };
         };
     };
-    list_post_roles_api_v1_org_posts__post_id__roles_get: {
+    list_post_roles_api_v1_mdm_posts__post_id__roles_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3619,7 +3619,7 @@ export interface operations {
             };
         };
     };
-    list_post_users_api_v1_org_posts__post_id__users_get: {
+    list_post_users_api_v1_mdm_posts__post_id__users_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3695,7 +3695,7 @@ export interface operations {
             };
         };
     };
-    resolve_names_api_v1_org_resolve_names_get: {
+    resolve_names_api_v1_mdm_resolve_names_get: {
         parameters: {
             query?: {
                 target?: string;
@@ -3772,7 +3772,7 @@ export interface operations {
             };
         };
     };
-    list_role_depts_api_v1_org_role_depts_get: {
+    list_role_depts_api_v1_mdm_role_depts_get: {
         parameters: {
             query: {
                 role_id: number;
@@ -3848,7 +3848,7 @@ export interface operations {
             };
         };
     };
-    assign_role_depts_api_v1_org_role_depts__role_id__put: {
+    assign_role_depts_api_v1_mdm_role_depts__role_id__put: {
         parameters: {
             query?: never;
             header?: {
@@ -3931,7 +3931,7 @@ export interface operations {
             };
         };
     };
-    unassign_role_dept_api_v1_org_role_depts__role_id___dept_id__delete: {
+    unassign_role_dept_api_v1_mdm_role_depts__role_id___dept_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -4008,7 +4008,7 @@ export interface operations {
             };
         };
     };
-    list_role_posts_api_v1_org_role_posts_get: {
+    list_role_posts_api_v1_mdm_role_posts_get: {
         parameters: {
             query: {
                 role_id: number;
@@ -4084,7 +4084,7 @@ export interface operations {
             };
         };
     };
-    assign_role_posts_api_v1_org_role_posts__role_id__put: {
+    assign_role_posts_api_v1_mdm_role_posts__role_id__put: {
         parameters: {
             query?: never;
             header?: {
@@ -4167,7 +4167,7 @@ export interface operations {
             };
         };
     };
-    unassign_role_post_api_v1_org_role_posts__role_id___post_id__delete: {
+    unassign_role_post_api_v1_mdm_role_posts__role_id___post_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -4244,7 +4244,7 @@ export interface operations {
             };
         };
     };
-    list_user_depts_api_v1_org_user_depts__user_id__get: {
+    list_user_depts_api_v1_mdm_user_depts__user_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4320,7 +4320,7 @@ export interface operations {
             };
         };
     };
-    assign_user_depts_api_v1_org_user_depts__user_id__put: {
+    assign_user_depts_api_v1_mdm_user_depts__user_id__put: {
         parameters: {
             query?: never;
             header?: {
@@ -4403,7 +4403,7 @@ export interface operations {
             };
         };
     };
-    set_primary_dept_api_v1_org_user_depts__user_id__primary_put: {
+    set_primary_dept_api_v1_mdm_user_depts__user_id__primary_put: {
         parameters: {
             query?: never;
             header?: never;
@@ -4483,7 +4483,7 @@ export interface operations {
             };
         };
     };
-    unassign_user_dept_api_v1_org_user_depts__user_id___dept_id__delete: {
+    unassign_user_dept_api_v1_mdm_user_depts__user_id___dept_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -4560,7 +4560,7 @@ export interface operations {
             };
         };
     };
-    list_user_posts_api_v1_org_user_posts_get: {
+    list_user_posts_api_v1_mdm_user_posts_get: {
         parameters: {
             query: {
                 user_id: number;
@@ -4636,7 +4636,7 @@ export interface operations {
             };
         };
     };
-    assign_user_posts_api_v1_org_user_posts__user_id__put: {
+    assign_user_posts_api_v1_mdm_user_posts__user_id__put: {
         parameters: {
             query?: never;
             header?: {
@@ -4719,7 +4719,7 @@ export interface operations {
             };
         };
     };
-    set_primary_post_api_v1_org_user_posts__user_id__primary_put: {
+    set_primary_post_api_v1_mdm_user_posts__user_id__primary_put: {
         parameters: {
             query?: never;
             header?: never;
@@ -4799,7 +4799,7 @@ export interface operations {
             };
         };
     };
-    unassign_user_post_api_v1_org_user_posts__user_id___post_id__delete: {
+    unassign_user_post_api_v1_mdm_user_posts__user_id___post_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -4876,7 +4876,7 @@ export interface operations {
             };
         };
     };
-    get_user_roles_api_v1_org_user_roles_get: {
+    get_user_roles_api_v1_mdm_user_roles_get: {
         parameters: {
             query: {
                 user_id: number;

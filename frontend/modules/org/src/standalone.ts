@@ -18,11 +18,11 @@ import PostListView from './views/org/PostListView.vue'
 
 /** 独立预览路由（与模块声明的路径 / 路由名同构，便于脱离宿主验证页面跳转）。 */
 const routes: RouteRecordRaw[] = [
-  { path: '/', redirect: '/org/depts' },
-  { path: '/org/depts', name: 'MdmOrgDeptList', component: DeptListView },
-  { path: '/org/depts/form/:id?', name: 'MdmOrgDeptForm', component: DeptFormView },
-  { path: '/org/posts', name: 'MdmOrgPostList', component: PostListView },
-  { path: '/org/posts/form/:id?', name: 'MdmOrgPostForm', component: PostFormView },
+  { path: '/', redirect: '/mdm/depts' },
+  { path: '/mdm/depts', name: 'MdmOrgDeptList', component: DeptListView },
+  { path: '/mdm/depts/form/:id?', name: 'MdmOrgDeptForm', component: DeptFormView },
+  { path: '/mdm/posts', name: 'MdmOrgPostList', component: PostListView },
+  { path: '/mdm/posts/form/:id?', name: 'MdmOrgPostForm', component: PostFormView },
 ]
 
 const router = createRouter({ history: createWebHashHistory(), routes })

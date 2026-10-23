@@ -59,7 +59,7 @@ async function listContracts() {
 /**
  * 生成单域类型文件内容。
  *
- * @param fileName 快照文件名（如 `org.json`）。
+ * @param fileName 快照文件名（如 `mdm.json`）。
  * @returns 生成内容。
  */
 async function generateFile(fileName) {
@@ -80,7 +80,7 @@ function indexContent(domains) {
     '/**',
     ' * 产品契约生成类型汇总（由 scripts/generate.mjs 生成，勿手改）。',
     ' *',
-    ' * 按域命名空间导出：`import type { org } from "@mdm/api-types"`。',
+    ' * 按产品契约快照文件名作命名空间导出（如 `import type { <域> } from "@mdm/api-types"`）。',
     ' */',
     '',
   ]

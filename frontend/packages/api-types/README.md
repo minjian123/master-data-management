@@ -25,7 +25,7 @@ pnpm run api-types:check        # gen:check + typecheck + lint + test 聚合
 frontend/packages/api-types/
 ├── src/
 │   ├── index.ts    # 包根出口（按域命名空间导出）
-│   └── org.ts      # 组织域契约类型（`org_dept` / `org_post` 等 schema 与端点）
+│   └── org.ts      # 组织域契约类型（`mdm_dept` / `mdm_post` 等 schema 与端点）
 ├── scripts/        # generate.mjs（契约快照 → 类型；`--check` 零漂移）
 └── tests/          # 生成物一致性用例（覆盖快照全部路径 / 导出面 / 生成头）
 ```

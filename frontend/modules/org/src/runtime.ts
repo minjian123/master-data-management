@@ -8,10 +8,10 @@
 import type { ModuleApi, ModuleHostContext } from '@bms/core'
 
 /** 组织域写权限码（管理面与插件写操作同权限码，与后端 `require_permission` 同源）。 */
-export const ORG_UPDATE_PERMISSION = 'org:update'
+export const ORG_UPDATE_PERMISSION = 'mdm:update'
 
 /** 组织域查询权限码。 */
-export const ORG_QUERY_PERMISSION = 'org:query'
+export const ORG_QUERY_PERMISSION = 'mdm:query'
 
 /** 宿主请求能力缺失时的哨兵错误（视图据此降级为「未接入」提示）。 */
 export const MODULE_API_ABSENT = 'MODULE_API_ABSENT'

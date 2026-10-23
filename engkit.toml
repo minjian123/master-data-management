@@ -16,7 +16,7 @@ root = "backend"
 groups = ["services"]
 test_prefix = "test_"
 projects = ["services/org"]
-coverage_packages = ["mdm_org", "services", "ops"]
+coverage_packages = ["mdm", "services", "ops"]
 
 [pytest]
 cmd = "uv run pytest"

@@ -1,6 +1,6 @@
 // kiwi_id: 2261
 /**
- * 数据通路用例（mdm 01_04）：组织域经**产品域寻址**（`api.product('mdm','org')`）访问管理面端点、
+ * 数据通路用例（mdm 01_04）：组织域经**产品域寻址**（`api.product('mdm','mdm')`）访问管理面端点、
  * 平台用户经**平台服务通道**（`api.get('platform','/users')`）——模块不自拼前缀、不自建 HTTP。
  */
 
@@ -69,7 +69,7 @@ describe('mdm 组织域模块 · 数据通路（01_04 · Kiwi 2261）', () => {
     await fetchDeptTree()
     await fetchPostPage({ dept_id: 'd-1', page: 1, size: 10 })
 
-    expect(spy.product).toHaveBeenCalledWith('mdm', 'org')
+    expect(spy.product).toHaveBeenCalledWith('mdm', 'mdm')
     expect(spy.scope.get).toHaveBeenNthCalledWith(1, '/depts', undefined)
     expect(spy.scope.get).toHaveBeenNthCalledWith(2, '/posts', { dept_id: 'd-1', page: 1, size: 10 })
   })

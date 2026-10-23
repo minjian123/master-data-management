@@ -22,17 +22,17 @@ describe('mdm 组织域模块定义（01_04 · Kiwi 2261）', () => {
   it('路由：部门 / 岗位管理页进菜单（分组「组织主数据」），表单页不进菜单', () => {
     const routes = registration.routes ?? []
     expect(routes.map((route) => route.path)).toEqual([
-      '/org/depts',
-      '/org/depts/form/:id?',
-      '/org/posts',
-      '/org/posts/form/:id?',
+      '/mdm/depts',
+      '/mdm/depts/form/:id?',
+      '/mdm/posts',
+      '/mdm/posts/form/:id?',
     ])
 
-    const deptList = routes.find((route) => route.path === '/org/depts')
+    const deptList = routes.find((route) => route.path === '/mdm/depts')
     expect(deptList?.meta?.title).toBe('部门管理')
     expect(deptList?.meta?.group).toBe('组织主数据')
 
-    const postList = routes.find((route) => route.path === '/org/posts')
+    const postList = routes.find((route) => route.path === '/mdm/posts')
     expect(postList?.meta?.title).toBe('岗位管理')
 
     for (const route of routes.filter((item) => item.path.includes('form'))) {
@@ -54,13 +54,13 @@ describe('mdm 组织域模块定义（01_04 · Kiwi 2261）', () => {
       'sys.role.detail.assign',
       'sys.role.detail.assign',
     ])
-    // 次序：用户详情页签下岗位 20 / 部门 30；角色分配页签下岗位 20 / 部门 30；权限码同源 `org:update`
+    // 次序：用户详情页签下岗位 20 / 部门 30；角色分配页签下岗位 20 / 部门 30；权限码同源 `mdm:update`
     expect(regions[0]?.order).toBe(20)
     expect(regions[1]?.order).toBe(30)
     expect(regions[2]?.order).toBe(20)
     expect(regions[3]?.order).toBe(30)
     for (const region of regions) {
-      expect(region.perm).toBe('org:update')
+      expect(region.perm).toBe('mdm:update')
       expect(region.component).toBeDefined()
     }
   })

@@ -20,7 +20,7 @@ const srcDir = resolve(dirname(fileURLToPath(import.meta.url)), '../src')
 /**
  * 读取契约快照。
  *
- * @param domain 域简称（如 `org`）。
+ * @param domain 域段（如 `mdm`）。
  * @returns 快照对象。
  */
 function contractOf(domain: string): { openapi?: string; paths?: Record<string, unknown> } {
@@ -29,29 +29,29 @@ function contractOf(domain: string): { openapi?: string; paths?: Record<string, 
 
 describe('mdm 产品契约类型生成物（01_04 · Kiwi 2261）', () => {
   it('事实源就位：快照为 OpenAPI 3.x 且含业务端点', () => {
-    const schema = contractOf('org')
+    const schema = contractOf('mdm')
     expect(String(schema.openapi ?? '').startsWith('3.')).toBe(true)
     expect(Object.keys(schema.paths ?? {}).length).toBeGreaterThan(20)
   })
 
   it('生成物覆盖快照全部路径（逐路径断言，防漏生成）', () => {
-    const generated = readFileSync(join(srcDir, 'org.ts'), 'utf8')
-    for (const path of Object.keys(contractOf('org').paths ?? {})) {
+    const generated = readFileSync(join(srcDir, 'mdm.ts'), 'utf8')
+    for (const path of Object.keys(contractOf('mdm').paths ?? {})) {
       expect(generated, `生成物缺少路径：${path}`).toContain(`"${path}"`)
     }
   })
 
   it('按域命名空间导出（index.ts）并生成头齐备', () => {
     const index = readFileSync(join(srcDir, 'index.ts'), 'utf8')
-    expect(index).toContain("export type * as org from './org'")
+    expect(index).toContain("export type * as mdm from './mdm'")
 
-    const generated = readFileSync(join(srcDir, 'org.ts'), 'utf8')
-    expect(generated).toContain('deploy/contracts/org.json')
+    const generated = readFileSync(join(srcDir, 'mdm.ts'), 'utf8')
+    expect(generated).toContain('deploy/contracts/mdm.json')
     expect(generated).toContain('请勿手工修改')
   })
 
   it('无多余生成文件（目录面与快照一一对应）', () => {
-    const snapshotDomains = ['org']
+    const snapshotDomains = ['mdm']
     for (const domain of snapshotDomains) {
       expect(existsSync(join(srcDir, `${domain}.ts`))).toBe(true)
     }

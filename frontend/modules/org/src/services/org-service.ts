@@ -1,5 +1,5 @@
 /**
- * 组织域数据服务（**产品域寻址**：`api.product('mdm', 'org')` → `/api/mdm/v1/org/...`）。
+ * 组织域数据服务（**产品域寻址**：`api.product('mdm', 'mdm')` → `/api/mdm/v1/mdm/...`）。
  *
  * 前缀组装、凭据注入、统一响应解包、401 静默刷新与重放**一律由平台宿主请求层处理**；
  * 模块**不自建 HTTP**（护栏 R3）、**不自拼前缀**（护栏 R4）、无 401 逻辑。
@@ -40,7 +40,7 @@ import { toIdParam } from '../domain'
 /** 产品键（与平台侧产品登记同源）。 */
 export const ORG_PRODUCT = 'mdm'
 /** 组织域段（产品自持域）。 */
-export const ORG_DOMAIN = 'org'
+export const ORG_DOMAIN = 'mdm'
 
 /**
  * 组织域管理面作用域（每次取用；请求能力未注入即抛哨兵错误）。
