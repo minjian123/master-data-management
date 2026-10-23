@@ -26,6 +26,7 @@ mdm/
 ├── README.md                 # 本文件
 ├── LICENSE                   # MIT 许可
 ├── renovate.json             # Renovate 配置（CI 依赖自动升级已停用）
+├── engkit.toml               # 跨仓工程化工具包配置（文档根 / 预检步骤 / 覆盖率门禁 / 拦截口径）
 ├── bms文档/                  # 符号链接 → ../bms/bms文档（基座权威源，并排引用）
 ├── backend/                  # 后端工程（uv workspace：services/ 各主数据域服务）
 ├── frontend/                 # 前端工程（pnpm workspace：modules/ 运行时模块 + packages/ 类型包）
@@ -60,3 +61,19 @@ mdm/
 | 主数据管理知识档案（标准做法专题，15 篇） | [资料/知识档案/主数据管理总览](mdm文档/资料/知识档案/主数据管理/01_主数据管理_总览.md) |
 | 产品服务接入与能力边界 | bms 仓库《微服务演进规划》《平台可扩展性规划》《项目规划说明》 |
 | 开发环境与基础设施 | bms 仓库《开发部署规划》与开发服务器部署说明 |
+| 本地预检（链接 / 口径 / 定向用例 + 覆盖率门禁） | 下文「本地预检」节 |
+
+## 本地预检
+
+推送前在 `backend/` 下执行（工具为跨仓工程化工具包 `engkit`，与 CI 门禁同口径）：
+
+```bash
+cd backend
+uv run engkit links --root ..          # 文档相对链接与锚点
+uv run engkit docs-scope --root ..     # 文档口径：进度类字段只允许落在阶段计划
+uv run engkit run-once --root .. -- uv run engkit preflight --root ..   # 预检：静态 + 契约门禁 + 定向用例 + 覆盖率
+```
+
+- 预检步骤、覆盖率阈值与拦截口径都在仓根 `engkit.toml`——改步骤即改配置，不改工具包代码；
+- 分钟级命令一律经 `run-once` 包装（窗口内命中即回放完整输出）；本地裸跑重命令（全量 `pytest`、无参数 `ruff` / `pyright`）会被守卫拦下，`ENGKIT_ALLOW_UNWRAPPED=1` 仅用于排查包装器自身问题；
+- 本地确需跑全量 pytest 须显式声明（`pytest --full`），口径见 engkit 仓《工程化工具包说明》§4.4。
