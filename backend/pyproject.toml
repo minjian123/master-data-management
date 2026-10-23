@@ -16,6 +16,9 @@ constraint-dependencies = ["sqlalchemy>=2.0,<2.1"]
 # 并与「bms 侧 `org` 标识已释放（11_01）」强绑定；升级须同步改 rev（人工或接入 Renovate）。
 # 凭据：仓库为内网 GitLab（只读 clone 无需凭据）；CI 内以 git `insteadOf` 注入 CI_JOB_TOKEN。
 bms-core = { git = "http://192.168.0.107:8080/bms/bms.git", subdirectory = "backend/libs/bms_core", rev = "3a32a138ff62a13820f7530b674c3d5a6d2fde9d" }
+# 跨仓工程化工具包（engkit 仓）：文档链接 / 文档口径 / 预检 / 重命令包装 / 用例登记的唯一实现，
+# 同样锁提交 SHA；升级只改此处 rev（与 `.gitlab-ci.yml` 无耦合，CI 走 `uv sync --frozen` 拉取）。
+engkit = { git = "http://192.168.0.107:8080/bms/engkit.git", rev = "3cf674a1cf0137b39b2b2f076d9c0d85d8127d1f" }
 
 [dependency-groups]
 dev = [
@@ -25,6 +28,7 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.6",
     "pyright>=1.1.380",
+    "engkit",
 ]
 
 [[tool.uv.index]]
@@ -64,7 +68,9 @@ reportMissingTypeStubs = false
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 # importlib 模式：多套同名 `tests` 目录互不冲突，测试模块按路径唯一命名
-addopts = "--import-mode=importlib"
+# -p engkit.coverage_plugin：入口插件（跨仓工程化工具包）——**最早**启动覆盖率采集（导入期行可采），
+#   并挂上重命令 / 全量测试守卫；仓内不再另写采集或拦截实现（口径见 engkit《工程化工具包说明》§4.4）
+addopts = "--import-mode=importlib -p engkit.coverage_plugin"
 testpaths = [
     "services/org/tests",
     "tests",

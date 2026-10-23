@@ -1,0 +1,91 @@
+# mdm 仓工程化工具包配置（唯一：文档根 / 工程清单 / 选测规则 / 预检步骤 / 拦截口径）
+# 口径见 engkit 文档《工程化工具包说明》§4 字段表；接入步骤见同仓《接入说明》§1。
+
+[repo]
+name = "mdm"
+
+[docs]
+root = "mdm文档"
+
+[docs.scope]
+whitelist_dirs = ["规范/", "资料/", "用户文档/"]
+plan_dir_pattern = "^项目/[^/]+/计划/"
+
+[backend]
+root = "backend"
+groups = ["services"]
+test_prefix = "test_"
+projects = ["services/org"]
+coverage_packages = ["mdm_org", "services", "ops"]
+
+[pytest]
+cmd = "uv run pytest"
+cwd = "backend"
+
+[coverage]
+data_env = "MDM_COVERAGE_DATA"
+source_env = "MDM_COVERAGE_SOURCE"
+# 门禁阈值沿用本仓现行口径（不因接入收紧）；口径定义见《AI开发规范》「覆盖率要求」节
+fail_under = 70
+plugin = "engkit.coverage_plugin"
+data_file = "backend/.coverage"
+interpreter = "uv run python"
+
+# ---- 预检步骤（声明序即执行序；`--fast` 只跑 always，`--full` 追加 full）----
+[[preflight.steps]]
+label = "门禁冒烟：Python 版本"
+cmd = ["{python}", "-c", "import sys; assert sys.version_info >= (3, 14), 'Python < 3.14'"]
+
+[[preflight.steps]]
+label = "后端静态：ruff check"
+cmd = ["uv", "run", "ruff", "check", "."]
+cwd = "backend"
+
+[[preflight.steps]]
+label = "后端静态：ruff format --check"
+cmd = ["uv", "run", "ruff", "format", "--check", "."]
+cwd = "backend"
+
+[[preflight.steps]]
+label = "后端静态：pyright"
+cmd = ["uv", "run", "pyright"]
+cwd = "backend"
+
+[[preflight.steps]]
+label = "门禁：check_modules（模块清单零漂移）"
+cmd = ["uv", "run", "python", "-m", "ops.check_modules"]
+cwd = "backend"
+
+[[preflight.steps]]
+label = "门禁：check_forms（系统字段 form_key 双向一致）"
+cmd = ["uv", "run", "python", "-m", "ops.check_forms"]
+cwd = "backend"
+
+[[preflight.steps]]
+label = "契约：contract_snapshot check（公开契约零漂移）"
+cmd = ["uv", "run", "python", "-m", "ops.contract_snapshot", "check"]
+cwd = "backend"
+
+[[preflight.steps]]
+label = "契约：contract_gate check（基线 ↔ 实时契约破坏性变更）"
+cmd = ["uv", "run", "python", "-m", "ops.contract_gate", "check"]
+cwd = "backend"
+
+[[preflight.steps]]
+label = "契约：event_contracts check（事件契约零漂移 + 兼容）"
+cmd = ["uv", "run", "python", "-m", "ops.event_contracts", "check"]
+cwd = "backend"
+
+[[preflight.steps]]
+label = "后端测试：定向（选测 + 覆盖率门禁 + 扩圈）"
+type = "scoped_tests"
+preset = "scoped"
+
+[runonce]
+cache_dir = ".cache/run-once"
+window_seconds = 1800
+
+[guard]
+scripts = []
+repo_dirs = ["services", "ops", "alembic"]
+dir_test_threshold = 20
