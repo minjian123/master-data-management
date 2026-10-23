@@ -4,7 +4,7 @@ requires-python = ">=3.14"
 
 [manifest]
 members = [
-    "mdm-org",
+    "mdm",
 ]
 constraints = [{ name = "sqlalchemy", specifier = ">=2.0,<2.1" }]
 
@@ -110,7 +110,7 @@ wheels = [
 [[package]]
 name = "bms-core"
 version = "0.1.0"
-source = { git = "http://192.168.0.107:8080/bms/bms.git?subdirectory=backend%2Flibs%2Fbms_core&rev=3a32a138ff62a13820f7530b674c3d5a6d2fde9d#3a32a138ff62a13820f7530b674c3d5a6d2fde9d" }
+source = { git = "http://192.168.0.107:8080/bms/bms.git?subdirectory=backend%2Flibs%2Fbms_core&rev=d2ba8c488564d305e5b1da5136bc642b40d0e5f5#d2ba8c488564d305e5b1da5136bc642b40d0e5f5" }
 dependencies = [
     { name = "aiomysql" },
     { name = "aiosqlite" },
@@ -740,7 +740,7 @@ wheels = [
 ]
 
 [[package]]
-name = "mdm-org"
+name = "mdm"
 version = "0.1.0"
 source = { editable = "services/org" }
 dependencies = [
@@ -751,7 +751,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bms-core", git = "http://192.168.0.107:8080/bms/bms.git?subdirectory=backend%2Flibs%2Fbms_core&rev=3a32a138ff62a13820f7530b674c3d5a6d2fde9d" },
+    { name = "bms-core", git = "http://192.168.0.107:8080/bms/bms.git?subdirectory=backend%2Flibs%2Fbms_core&rev=d2ba8c488564d305e5b1da5136bc642b40d0e5f5" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]

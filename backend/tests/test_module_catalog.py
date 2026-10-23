@@ -7,14 +7,13 @@ from pathlib import Path
 import pytest
 from bms_core.core.concurrent import ConcurrentStableDict, ConcurrentStableList
 from bms_core.services.module_registry import (
-    PRODUCT_CATALOG,
-    PRODUCT_ROUTES,
     SERVICE_CATALOG,
     ModuleRecord,
     ModuleRegistry,
     ModuleStatus,
     ServiceGroup,
-    merge_service_records,
+    product_catalog_view,
+    product_routes_view,
     validate_product_routes,
     validate_product_service_records,
 )
@@ -34,19 +33,8 @@ from services.module_registry import (
 KIWI_CASE_ID = 2253
 """Kiwi TCMS 策展用例编号（mdm 阶段一 01_01）。"""
 
-_ORG_NAME = "mdm 组织主数据服务"
-"""组织域服务登记名（平台侧与产品侧同值）。"""
-
-
-def _platform_org_row() -> ModuleRecord:
-    """取平台侧 `org` 登记行（产品行在平台清单中已登记，R 架构两侧并存）。
-
-    Returns:
-        ModuleRecord: 平台侧 org 登记行。
-    """
-    row = next((record for record in SERVICE_CATALOG if record.module_key == "org"), None)
-    assert row is not None, "平台侧服务目录缺 org 登记行（须先完成 bms 11_01）"
-    return row
+_MDM_NAME = "mdm 主数据服务"
+"""产品服务登记名（产品自持，不写平台常量）。"""
 
 
 def _record(**overrides: object) -> ModuleRecord:
@@ -59,12 +47,12 @@ def _record(**overrides: object) -> ModuleRecord:
         ModuleRecord: 记录。
     """
     base: dict[str, object] = {
-        "module_key": "org",
-        "service_key": "org",
-        "name": _ORG_NAME,
-        "table_prefix": "org_",
+        "module_key": "mdm",
+        "service_key": "mdm",
+        "name": _MDM_NAME,
+        "table_prefix": "mdm_",
         "errcode_segment": "33",
-        "event_domain": "org",
+        "event_domain": "mdm",
         "service_group": ServiceGroup.PRODUCT,
         "build_batch": 3,
         "product_key": PRODUCT_KEY,
@@ -82,53 +70,51 @@ def test_local_catalog_passes_offline_validation() -> None:
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
-def test_org_row_follows_plan_registration() -> None:
-    """`org` 四要素随规划登记（服务键 / 模块键 / 表前缀 / 事件域），产品维度字段就位。"""
+def test_mdm_row_follows_registration() -> None:
+    """`mdm` 四要素（服务键 / 模块键 / 表前缀 / 事件域）与产品维度字段就位。"""
     record = MDM_SERVICE_RECORDS[0]
-    assert (record.service_key, record.module_key) == ("org", "org")
-    assert (record.table_prefix, record.event_domain) == ("org_", "org")
+    assert (record.service_key, record.module_key) == ("mdm", "mdm")
+    assert (record.table_prefix, record.event_domain) == ("mdm_", "mdm")
     assert record.errcode_segment == "33"
     assert (record.service_group, record.product_key) == (ServiceGroup.PRODUCT, PRODUCT_KEY)
     assert (record.build_batch, record.status) == (3, ModuleStatus.ENABLED)
     assert record.contract_version == "0.1.0"
     assert local_service_keys() == (SERVICE_KEY,)
-    assert service_package(SERVICE_KEY) == "mdm_org"
+    assert service_package(SERVICE_KEY) == "mdm"
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
-def test_injected_row_is_identical_to_platform_row() -> None:
-    """两侧同值（R 架构）：产品自持行与平台侧登记行**逐字段相等**（基座合并才去重）。"""
-    assert MDM_SERVICE_RECORDS[0] == _platform_org_row()
+def test_product_row_not_in_platform_catalog() -> None:
+    """产品自持：`mdm` 行**不在平台常量**里（经产品清单 / 装载期注册进入合并视图）。"""
+    assert all(record.module_key != "mdm" for record in SERVICE_CATALOG)
+    assert MDM_SERVICE_RECORDS[0] not in SERVICE_CATALOG
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
-def test_catalog_view_dedupes_platform_row() -> None:
-    """应用级视图：同值去重后条目数与平台清单一致，`org` 仅一条且平台清单顺序在前。"""
+def test_catalog_view_appends_product_row() -> None:
+    """应用级视图：平台清单在前、产品行顺延追加（条目 = 平台清单 + 1）。"""
     merged = catalog_view()
-    assert len(merged) == len(SERVICE_CATALOG)
-    assert [record.module_key for record in merged if record.module_key == "org"] == ["org"]
+    assert len(merged) == len(SERVICE_CATALOG) + 1
+    assert [record.module_key for record in merged if record.module_key == "mdm"] == ["mdm"]
     assert merged[0] == SERVICE_CATALOG[0]
+    assert merged[-1] == MDM_SERVICE_RECORDS[0]
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
-def test_conflicting_injected_row_rejected() -> None:
-    """异值即拒：注入行与平台行任一字段不同即不去重，以 `module_key` 重复被唯一性校验拒绝。"""
+def test_conflicting_rows_rejected() -> None:
+    """异值即拒：同 `module_key` 两条异值记录被唯一性校验拒绝（不静默取一侧）。"""
     conflicting = _record(errcode_segment="34")
-    merged = merge_service_records(SERVICE_CATALOG, ConcurrentStableList([conflicting]))
-    errors = ModuleRegistry(merged).validate()
+    errors = ModuleRegistry(ConcurrentStableList([_record(), conflicting])).validate()
     assert any("module_key 重复" in message for message in errors), f"未检出冲突：{list(errors)}"
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
-def test_platform_row_missing_is_rejected() -> None:
-    """两侧并存要求：平台清单缺同 `module_key` 行时，本地校验明确报「未在平台侧登记」（不可仅产品自持）。"""
-    errors = validate_local_catalog()
-    assert list(errors) == []
-    # 以「仅本产品清单（无平台清单）」的方式模拟平台侧缺行：注入记录不落在平台清单内
-    ghost = _record(module_key="ghost", table_prefix="ghost_", event_domain="ghost", service_key="ghost")
-    merged = merge_service_records(SERVICE_CATALOG, ConcurrentStableList([ghost]))
-    assert merged[-1] == ghost
-    assert ghost not in SERVICE_CATALOG
+def test_product_record_registered() -> None:
+    """产品档案与产品路由经装载期注册进入视图（平台不再硬编码产品行）。"""
+    assert PRODUCT_KEY in {record.product_key for record in product_catalog_view()}
+    assert [(route.product_key, route.domain, route.service_key) for route in product_routes_view()] == [
+        ("mdm", "mdm", "mdm")
+    ]
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
@@ -170,19 +156,20 @@ def test_product_dimension_running_service_missing_detected() -> None:
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 def test_product_route_mapping_registered() -> None:
-    """产品命名空间映射：`mdm/org → org`（域段与上游服务显式绑定，对外 `/api/mdm/v1/org/...`）。"""
-    assert [(route.product_key, route.domain, route.service_key) for route in PRODUCT_ROUTES] == [("mdm", "org", "org")]
+    """产品命名空间映射：`mdm/mdm → mdm`（域段与上游服务显式绑定，对外 `/api/mdm/v1/mdm/...`）。"""
+    routes = product_routes_view()
+    assert [(route.product_key, route.domain, route.service_key) for route in routes] == [("mdm", "mdm", "mdm")]
     errors = validate_product_routes(
-        ConcurrentStableList(PRODUCT_ROUTES),
-        ConcurrentStableList(SERVICE_CATALOG),
-        ConcurrentStableList(PRODUCT_CATALOG),
+        ConcurrentStableList(routes),
+        catalog_view(),
+        product_catalog_view(),
     )
     assert list(errors) == []
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 def test_service_package_declaration_matches_catalog() -> None:
-    """服务包声明：`mdm_org.CONTRACT_VERSION` 与清单登记值主版本一致（工程 ↔ 清单双向核对）。"""
+    """服务包声明：`mdm.CONTRACT_VERSION` 与清单登记值主版本一致（工程 ↔ 清单双向核对）。"""
     declarations = resolve_service_contracts()
     assert declarations.get(SERVICE_KEY) == "0.1.0"
     assert list(check_service_declarations(MDM_SERVICE_RECORDS, declarations)) == []
@@ -193,7 +180,7 @@ def test_service_package_declaration_mismatch_detected() -> None:
     """服务包声明异常：主版本不符 / 工程未登记均被检出。"""
     errors = check_service_declarations(
         MDM_SERVICE_RECORDS,
-        ConcurrentStableDict({"org": "1.0.0", "ghost": "0.1.0"}),
+        ConcurrentStableDict({"mdm": "1.0.0", "ghost": "0.1.0"}),
     )
     assert any("主版本不符" in message for message in errors), f"未检出主版本不符：{list(errors)}"
     assert any("服务工程未登记：ghost" in message for message in errors), f"未检出未登记工程：{list(errors)}"
@@ -215,12 +202,12 @@ def _write_contract_package(root: Path, key: str, body: str) -> None:
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 def test_resolve_service_contracts_non_literal_and_missing(tmp_path: Path) -> None:
     """声明解析：非字符串字面量 / 无赋值语句均记 `None`；无 `__init__.py` 与隐藏目录跳过。"""
-    _write_contract_package(tmp_path, "org", "CONTRACT_VERSION = 1\n")
+    _write_contract_package(tmp_path, "mdm", "CONTRACT_VERSION = 1\n")
     _write_contract_package(tmp_path, "other", "import os\n")
     (tmp_path / "empty").mkdir()
     (tmp_path / ".hidden").mkdir()
     declarations = resolve_service_contracts(tmp_path)
-    assert dict(declarations) == {"org": None, "other": None}
+    assert dict(declarations) == {"mdm": None, "other": None}
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)

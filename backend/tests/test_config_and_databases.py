@@ -22,8 +22,8 @@ def test_minimal_config_loads_with_mdm_name_prefix() -> None:
 def test_database_names_derive_from_prefix() -> None:
     """库名派生：平台服务库 / 服务租户库 / 归档库一律取 `[database].name_prefix`（mdm）。"""
     prefix = get_settings().database.name_prefix
-    assert platform_database_name("org", prefix=prefix) == "mdm_org"
-    assert tenant_database_name("org", "demo", prefix=prefix) == "mdm_org_demo"
+    assert platform_database_name("mdm", prefix=prefix) == "mdm"
+    assert tenant_database_name("mdm", "demo", prefix=prefix) == "mdm_demo"
     assert archive_database_name(prefix=prefix) == "mdm_archive"
 
 
@@ -52,17 +52,17 @@ def test_env_var_overrides_toml(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("BMS_DATABASE__NAME_PREFIX", "mdmx")
     get_settings.cache_clear()
     assert get_settings().database.name_prefix == "mdmx"
-    assert platform_database_name("org", prefix=get_settings().database.name_prefix) == "mdmx_org"
+    assert platform_database_name("mdm", prefix=get_settings().database.name_prefix) == "mdmx_mdm"
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 async def test_service_identity_written_back_to_settings(service_app: FastAPI) -> None:
     """服务身份回写：应用装配后服务标识为 `org`（链名 / 库名 / 探针响应的共同来源）。"""
-    assert service_app.state.service_identity.name == "org"
-    assert get_settings().app.service == "org"
+    assert service_app.state.service_identity.name == "mdm"
+    assert get_settings().app.service == "mdm"
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 async def test_event_domains_include_product_domain(service_app: FastAPI) -> None:
     """事件契约域取应用级视图：产品服务自有事件域 `org` 随注入记录生效（01_03 事件发布前置）。"""
-    assert "org" in service_app.state.module_registry.event_domains()
+    assert "mdm" in service_app.state.module_registry.event_domains()

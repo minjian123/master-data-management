@@ -1,4 +1,4 @@
-"""org:tenant 迁移链（Kiwi 2255）：链头 / 表集与模型零漂移 / 升降级往返。"""
+"""mdm:tenant 迁移链（Kiwi 2255）：链头 / 表集与模型零漂移 / 升降级往返。"""
 
 import asyncio
 from datetime import UTC, datetime
@@ -15,10 +15,10 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from services.table_registry import register
 
-_CHAIN = "org:tenant"
+_CHAIN = "mdm:tenant"
 
-_ORG_TABLES = ("org_dept", "org_post", "org_user_post", "org_user_dept", "org_role_post", "org_role_dept")
-_ORG_TABLES_BASE = ("org_dept", "org_post", "org_user_post", "org_role_post", "org_role_dept")
+_ORG_TABLES = ("mdm_dept", "mdm_post", "mdm_user_post", "mdm_user_dept", "mdm_role_post", "mdm_role_dept")
+_ORG_TABLES_BASE = ("mdm_dept", "mdm_post", "mdm_user_post", "mdm_role_post", "mdm_role_dept")
 _INFRA_TABLES = ("sys_outbox", "sys_event_consumed", "sys_event_dead_letter")
 
 
@@ -95,20 +95,20 @@ def _sync_table_names(url: str) -> set[str]:
 
 @pytest.mark.kiwi_id(2255)
 def test_org_tenant_chain_registered() -> None:
-    """链注册：`org:tenant` 有脚本、链头为 `0005_org_form_key`、表集含六表 + 基础设施三表。"""
+    """链注册：`mdm:tenant` 有脚本、链头为 `0005_mdm_form_key`、表集含六表 + 基础设施三表。"""
     register()
     chain = resolve_chain(_CHAIN)
     assert has_revisions(chain)
-    assert head_revision(chain) == "0005_org_form_key"
-    tables = chain_tables("org", "tenant")
+    assert head_revision(chain) == "0005_mdm_form_key"
+    tables = chain_tables("mdm", "tenant")
     assert all(name in tables for name in (*_ORG_TABLES, *_INFRA_TABLES))
 
 
 @pytest.mark.kiwi_id(2255)
 async def test_org_tenant_migration_upgrades_with_zero_drift(tmp_path: Path) -> None:
-    """迁移：`org:tenant` 升到 head 建齐八表，且库结构与模型元数据零漂移。"""
+    """迁移：`mdm:tenant` 升到 head 建齐八表，且库结构与模型元数据零漂移。"""
     register()
-    url = f"sqlite+aiosqlite:///{tmp_path / 'org.db'}"
+    url = f"sqlite+aiosqlite:///{tmp_path / 'mdm.db'}"
     await asyncio.to_thread(_upgrade, url)
 
     engine = create_async_engine(url)
@@ -125,16 +125,16 @@ async def test_org_tenant_migration_upgrades_with_zero_drift(tmp_path: Path) -> 
 
 @pytest.mark.kiwi_id(2255)
 def test_org_tenant_migration_downgrades(tmp_path: Path) -> None:
-    """降级：回退到 `0001_org_tables` 后基础设施三表与 `org_user_dept`（0004 建）移除、首建五表保留。"""
+    """降级：回退到 `0001_mdm_tables` 后基础设施三表与 `mdm_user_dept`（0004 建）移除、首建五表保留。"""
     register()
-    url = f"sqlite+aiosqlite:///{tmp_path / 'org.db'}"
+    url = f"sqlite+aiosqlite:///{tmp_path / 'mdm.db'}"
     _upgrade(url)
-    _downgrade(url, "0001_org_tables")
+    _downgrade(url, "0001_mdm_tables")
 
     names = _sync_table_names(url)
 
     assert all(name in names for name in _ORG_TABLES_BASE)
-    assert "org_user_dept" not in names
+    assert "mdm_user_dept" not in names
     assert not any(name in names for name in _INFRA_TABLES)
 
 
@@ -142,7 +142,7 @@ def test_org_tenant_migration_downgrades(tmp_path: Path) -> None:
 def test_dept_code_backfilled_on_upgrade(tmp_path: Path) -> None:
     """存量回填：升级 `0003_dept_code` 后按 `id` 升序补 `DEPT` + 定长序号，且 `code` 置非空。"""
     register()
-    url = f"sqlite+aiosqlite:///{tmp_path / 'org.db'}"
+    url = f"sqlite+aiosqlite:///{tmp_path / 'mdm.db'}"
     _upgrade(url)
     _downgrade(url, "0002_outbox_tables")
     _insert_legacy_depts(url, 2)
@@ -154,16 +154,16 @@ def test_dept_code_backfilled_on_upgrade(tmp_path: Path) -> None:
 
 @pytest.mark.kiwi_id(2340)
 def test_form_key_backfilled_on_upgrade(tmp_path: Path) -> None:
-    """存量回填：升级 `0005_org_form_key` 后存量部门 / 岗位行 `form_key` 取表常量、`parent_id` 保持空。"""
+    """存量回填：升级 `0005_mdm_form_key` 后存量部门 / 岗位行 `form_key` 取表常量、`parent_id` 保持空。"""
     register()
-    url = f"sqlite+aiosqlite:///{tmp_path / 'org.db'}"
+    url = f"sqlite+aiosqlite:///{tmp_path / 'mdm.db'}"
     _upgrade(url)
     _downgrade(url, "0004_user_dept_and_primary")
     _insert_legacy_org_rows(url)
     _upgrade(url)
 
-    assert _form_key_values(url, "org_dept") == ["org_dept"]
-    assert _form_key_values(url, "org_post") == ["org_post"]
+    assert _form_key_values(url, "mdm_dept") == ["mdm_dept"]
+    assert _form_key_values(url, "mdm_post") == ["mdm_post"]
     assert _post_parent_ids(url) == [None]
 
 
@@ -192,7 +192,7 @@ def _insert_legacy_depts(url: str, count: int) -> None:
             for index in range(count):
                 connection.execute(
                     sa.text(
-                        "INSERT INTO org_dept (id, ancestors, name, sort, status, created_at, updated_at, version)"
+                        "INSERT INTO mdm_dept (id, ancestors, name, sort, status, created_at, updated_at, version)"
                         " VALUES (:dept_id, '/', :name, 0, 'enabled', :now, :now, 1)"
                     ),
                     {
@@ -217,14 +217,14 @@ def _dept_codes(url: str) -> list[str]:
     engine = _sync_engine(url)
     try:
         with engine.connect() as connection:
-            rows = connection.execute(sa.text("SELECT code FROM org_dept ORDER BY id")).fetchall()
+            rows = connection.execute(sa.text("SELECT code FROM mdm_dept ORDER BY id")).fetchall()
             return [str(row[0]) for row in rows]
     finally:
         engine.dispose()
 
 
 def _code_column_not_null(url: str) -> bool:
-    """`org_dept.code` 是否已置为非空（迁移第三步）。
+    """`mdm_dept.code` 是否已置为非空（迁移第三步）。
 
     Args:
         url: 目标库连接串。
@@ -235,7 +235,7 @@ def _code_column_not_null(url: str) -> bool:
     engine = _sync_engine(url)
     try:
         with engine.connect() as connection:
-            columns = [item for item in inspect(connection).get_columns("org_dept") if item["name"] == "code"]
+            columns = [item for item in inspect(connection).get_columns("mdm_dept") if item["name"] == "code"]
             return bool(columns) and columns[0]["nullable"] is False
     finally:
         engine.dispose()
@@ -253,14 +253,14 @@ def _insert_legacy_org_rows(url: str) -> None:
         with engine.begin() as connection:
             connection.execute(
                 sa.text(
-                    "INSERT INTO org_dept (id, code, ancestors, name, sort, status, created_at, updated_at, version)"
+                    "INSERT INTO mdm_dept (id, code, ancestors, name, sort, status, created_at, updated_at, version)"
                     " VALUES (:dept_id, 'DEPT0001', '/', '存量部门', 0, 'enabled', :now, :now, 1)"
                 ),
                 {"dept_id": 9001, "now": now},
             )
             connection.execute(
                 sa.text(
-                    "INSERT INTO org_post (id, code, name, dept_id, sort, status, created_at, updated_at, version)"
+                    "INSERT INTO mdm_post (id, code, name, dept_id, sort, status, created_at, updated_at, version)"
                     " VALUES (:post_id, 'POST0001', '存量岗位', :dept_id, 0, 'enabled', :now, :now, 1)"
                 ),
                 {"post_id": 9101, "dept_id": 9001, "now": now},
@@ -274,7 +274,7 @@ def _form_key_values(url: str, table: str) -> list[str]:
 
     Args:
         url: 目标库连接串。
-        table: 物理表名（`org_dept` / `org_post`）。
+        table: 物理表名（`mdm_dept` / `mdm_post`）。
 
     Returns:
         list[str]: `form_key` 取值列表。
@@ -300,7 +300,7 @@ def _post_parent_ids(url: str) -> list[int | None]:
     engine = _sync_engine(url)
     try:
         with engine.connect() as connection:
-            rows = connection.execute(sa.text("SELECT parent_id FROM org_post ORDER BY id")).fetchall()
+            rows = connection.execute(sa.text("SELECT parent_id FROM mdm_post ORDER BY id")).fetchall()
             return [row[0] for row in rows]
     finally:
         engine.dispose()

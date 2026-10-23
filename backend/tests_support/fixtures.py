@@ -21,7 +21,7 @@ from bms_core.core.context import (
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from mdm_org.main import ApplicationFactory
+from mdm.main import ApplicationFactory
 from tests_support.tenant_source import install_fake_tenant_source
 
 __all__ = [

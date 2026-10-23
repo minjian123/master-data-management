@@ -1,7 +1,7 @@
-# mdm 服务运行镜像（按服务参数化；构建上下文为 backend/）
+# mdm 服务运行镜像（服务标识 `mdm`；服务工程目录保留分类 `services/org`；构建上下文为 backend/）
 #
 # 构建：
-#   docker build --provenance=false --build-arg SERVICE=org -t <registry>/mdm-org:<sha> -f deploy/Dockerfile backend/
+#   docker build --provenance=false -t <registry>/mdm:<sha> -f deploy/Dockerfile backend/
 #   （--provenance=false：BuildKit 默认 attestation 清单推送会被 GitLab Registry 拒绝，报 blob unknown）
 # 运行：
 #   docker run --rm -p 8000:8000 -e BMS_ENV=<环境> <image>
@@ -10,13 +10,12 @@
 # - 工作目录 /opt/mdm/backend：`services` 产品清单模块、`alembic.ini` 与 `config*.toml` 均相对该根定位；
 # - venv 落工作目录内（不设 UV_PROJECT_ENVIRONMENT）——共享基座经 site-packages 向上定位工程根
 #   （`bms_core.db.migration._find_backend_root`）依赖 `alembic.ini` 在 venv 祖先目录内；
-# - 启动入口 `python -m mdm_{service}`（按服务参数化；当前仅 org）。
+# - 启动入口 `python -m mdm`（服务包名 = 服务标识；前缀与服务同名时去重）。
 FROM python:3.14-slim
 
-ARG SERVICE=org
 ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
     UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple \
-    SERVICE=${SERVICE}
+    SERVICE=org
 
 # 系统包安全更新（镜像扫描 CRITICAL/HIGH 阻断发版）+ apt 换清华源（与平台侧镜像同口径）
 RUN sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources \
@@ -33,12 +32,12 @@ WORKDIR /opt/mdm/backend
 COPY pyproject.toml uv.lock alembic.ini config.toml config.*.toml ./
 COPY services/org/pyproject.toml services/org/pyproject.toml
 # 第三方依赖层（不装工作区成员；锁文件零漂移；共享基座 `bms-core` 为 git 源依赖，随本层装齐）
-RUN uv sync --frozen --no-install-workspace --package "mdm-${SERVICE}" && rm -rf /root/.cache
+RUN uv sync --frozen --no-install-workspace --package mdm && rm -rf /root/.cache
 
 # 工作区成员源码（产品服务清单模块 + 目标服务）
 COPY services/module_registry.py services/module_registry.py
 COPY services/${SERVICE}/src services/${SERVICE}/src
-RUN uv sync --frozen --no-dev --package "mdm-${SERVICE}" && rm -rf /root/.cache
+RUN uv sync --frozen --no-dev --package mdm && rm -rf /root/.cache
 
 # 迁移能力：分链迁移脚本 + 运维脚本（部署流程内一次性迁移容器复用本镜像，版本与发布一致）
 COPY alembic ./alembic
@@ -51,4 +50,4 @@ ENV PATH=/opt/mdm/backend/.venv/bin:$PATH
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
   CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"]
-CMD ["sh", "-c", "exec python -m mdm_${SERVICE}"]
+CMD ["python", "-m", "mdm"]

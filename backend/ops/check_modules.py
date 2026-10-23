@@ -1,4 +1,4 @@
-"""CI 产品服务目录校验（**离线**）：清单唯一与格式 + 产品维度断言 + 两侧同值 + 服务包契约声明。
+"""CI 产品服务目录校验（**离线**）：清单唯一与格式 + 产品维度断言 + 产品清单齐备 + 服务包契约声明。
 
 用法：
 
@@ -11,15 +11,16 @@ uv run python -m ops.check_modules --offline  # 显式声明离线（与 bms 侧
 校验面（全部离线，无库依赖）：
 
 1. **清单与产品维度**：`services.module_registry.validate_local_catalog()`——合并视图（平台清单 +
-   产品注入记录）经 `ModuleRegistry.validate()` 校验注册要素唯一与格式 / 分组 / 版本 / 产品归属 /
-   产品级路由映射；产品维度四条断言；**两侧同值**（注入记录须在平台清单中已登记且逐字段同值）；
-2. **服务包契约声明**：扫描 `services/*/src/mdm_*/__init__.py` 的 `CONTRACT_VERSION`（AST 静态读取，
+   产品清单记录）经 `ModuleRegistry.validate()` 校验注册要素唯一与格式 / 分组 / 版本 / 产品归属 /
+   产品级路由映射；产品维度四条断言；
+2. **产品登记清单**：`deploy/registry/mdm.json` 可解析且与服务清单同值（平台侧按此装载）；
+3. **服务包契约声明**：扫描 `services/*/src/mdm_*/__init__.py` 的 `CONTRACT_VERSION`（AST 静态读取，
    不导入服务包），与清单登记值比对主版本；服务工程与清单**双向核对**（工程存在但未登记即失败）。
 
 冲突 / 非法 → 打印明细并退出码 1；通过 → 退出码 0。
 
 > **为何无接库对账**：平台库 `sys_module` / `sys_product` 归平台 `platform` 服务库（bms 侧
-> `ops.check_modules` 对账），产品侧不跨服务直读；mdm 侧以离线清单 + 两侧同值为门禁。
+> `ops.check_modules` 对账），产品侧不跨服务直读；mdm 侧以离线清单 + 产品登记清单为门禁。
 """
 
 import argparse
@@ -29,21 +30,27 @@ from pathlib import Path
 
 from bms_core.core.concurrent import ConcurrentStableDict, ConcurrentStableList
 from bms_core.core.version import contract_major
+from bms_core.registry.products import load_product_manifests
 from bms_core.services.module_registry import SERVICE_CATALOG, ModuleRecord
 
 from services.module_registry import (
     MDM_SERVICE_RECORDS,
     PRODUCT_KEY,
     SERVICE_KEY,
-    service_package,
     validate_local_catalog,
 )
 
 _SERVICES_DIR = Path(__file__).resolve().parents[1] / "services"
 """服务工程根（`backend/services`）。"""
 
+_MANIFEST = Path(__file__).resolve().parents[2] / "deploy" / "registry" / "mdm.json"
+"""产品登记清单（平台侧按 `[registry].product_manifests` 装载的同一份）。"""
+
 _CONTRACT_CONSTANT = "CONTRACT_VERSION"
 """服务包自报契约版本常量名。"""
+
+_SERVICE_NAME_CONSTANT = "SERVICE_NAME"
+"""服务包自报服务标识常量名（目录名可保留分类，服务键以此为准）。"""
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -57,11 +64,12 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _extract_contract_version(init_path: Path) -> str | None:
-    """AST 静态提取服务包 `__init__.py` 的 `CONTRACT_VERSION` 字符串字面量。
+def _extract_constant(init_path: Path, name: str) -> str | None:
+    """AST 静态提取服务包 `__init__.py` 的字符串常量。
 
     Args:
         init_path: 服务包 `__init__.py` 路径。
+        name: 常量名。
 
     Returns:
         str | None: 常量值；未声明或非字符串字面量返回 None。
@@ -70,7 +78,7 @@ def _extract_contract_version(init_path: Path) -> str | None:
     for node in module.body:
         if not isinstance(node, ast.Assign):
             continue
-        if not any(isinstance(target, ast.Name) and target.id == _CONTRACT_CONSTANT for target in node.targets):
+        if not any(isinstance(target, ast.Name) and target.id == name for target in node.targets):
             continue
         if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
             return node.value.value
@@ -79,7 +87,7 @@ def _extract_contract_version(init_path: Path) -> str | None:
 
 
 def resolve_service_contracts(services_dir: Path = _SERVICES_DIR) -> ConcurrentStableDict[str, str | None]:
-    """扫描服务工程读各自报契约版本（包名按 mdm 命名规则 `mdm_{服务键}`）。
+    """扫描服务工程读各自报契约版本（目录名保留分类，服务键取包内 `SERVICE_NAME`）。
 
     Args:
         services_dir: 服务工程根。
@@ -91,9 +99,11 @@ def resolve_service_contracts(services_dir: Path = _SERVICES_DIR) -> ConcurrentS
     for entry in sorted(services_dir.iterdir()):
         if not entry.is_dir() or entry.name.startswith("."):
             continue
-        init_path = entry / "src" / service_package(entry.name) / "__init__.py"
-        if init_path.is_file():
-            declarations.set(entry.name, _extract_contract_version(init_path))
+        for init_path in sorted((entry / "src").glob("*/__init__.py")):
+            if init_path.parent.name == "__pycache__":
+                continue
+            service_name = _extract_constant(init_path, _SERVICE_NAME_CONSTANT) or entry.name
+            declarations.set(service_name, _extract_constant(init_path, _CONTRACT_CONSTANT))
     return declarations
 
 
@@ -143,6 +153,7 @@ def check_offline(services_dir: Path = _SERVICES_DIR) -> ConcurrentStableList[st
     Returns:
         ConcurrentStableList[str]: 冲突 / 非法明细。
     """
+    load_product_manifests([_MANIFEST])
     errors = validate_local_catalog()
     errors.update(check_service_declarations(MDM_SERVICE_RECORDS, resolve_service_contracts(services_dir)))
     return errors
@@ -165,7 +176,7 @@ def main(argv: ConcurrentStableList[str] | None = None) -> int:
         print(f"[服务目录] 校验失败（{len(errors)} 项）")
         return 1
     scope = f"产品清单 {len(MDM_SERVICE_RECORDS)} 项（产品 {PRODUCT_KEY} / 运行服务 {SERVICE_KEY}）"
-    print(f"[服务目录] 校验通过（{scope} + 平台侧同值 {len(SERVICE_CATALOG)} 行对账 + 服务包声明）")
+    print(f"[服务目录] 校验通过（{scope} + 平台清单 {len(SERVICE_CATALOG)} 行合并 + 产品登记清单 + 服务包声明）")
     return 0
 
 

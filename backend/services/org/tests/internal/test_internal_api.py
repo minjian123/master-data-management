@@ -1,6 +1,6 @@
 """组织域内部写通道用例（Kiwi 2274）：端点挂载与**服务身份鉴权**口径。
 
-覆盖：① 四组内部写端点已挂载（`/api/v1/org/internal/*`）；② 无令牌一律 `401`（内部面不接受匿名）；
+覆盖：① 四组内部写端点已挂载（`/api/v1/mdm/internal/*`）；② 无令牌一律 `401`（内部面不接受匿名）；
 ③ 内部面**不挂 `org:*` 权限码**（授权完全由服务身份白名单决定，与只读出口双通道同构）。
 
 > 服务身份矩阵（白名单 `platform` 放行 / 登录态令牌拒 / 非白名单服务拒）与幂等回放属**续做**，
@@ -12,10 +12,10 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 
 INTERNAL_PATHS = (
-    "/api/v1/org/internal/user-posts/{user_id}",
-    "/api/v1/org/internal/user-depts/{user_id}",
-    "/api/v1/org/internal/role-posts/{role_id}",
-    "/api/v1/org/internal/role-depts/{role_id}",
+    "/api/v1/mdm/internal/user-posts/{user_id}",
+    "/api/v1/mdm/internal/user-depts/{user_id}",
+    "/api/v1/mdm/internal/role-posts/{role_id}",
+    "/api/v1/mdm/internal/role-depts/{role_id}",
 )
 
 
@@ -33,6 +33,6 @@ async def test_internal_write_paths_mounted(service_app: FastAPI) -> None:
 @pytest.mark.kiwi_id(2274)
 async def test_internal_write_requires_service_token(client: AsyncClient) -> None:
     """无令牌调用内部写端点一律 `401`（不接受匿名，也不回落登录态）。"""
-    response = await client.put("/api/v1/org/internal/user-depts/1", json={"dept_ids": []})
+    response = await client.put("/api/v1/mdm/internal/user-depts/1", json={"dept_ids": []})
 
     assert response.status_code == 401

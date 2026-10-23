@@ -6,10 +6,10 @@
 import pytest
 from bms_core.core.concurrent import ConcurrentStableDict, ConcurrentStableList
 
-from mdm_org.errors import OrgSourceUnavailableError
-from mdm_org.org import user_source
-from mdm_org.org.user_source import PlatformOrgUserSource
-from mdm_org.services import open_read
+from mdm.errors import OrgSourceUnavailableError
+from mdm.org import user_source
+from mdm.org.user_source import PlatformOrgUserSource
+from mdm.services import open_read
 from tests_support import org_env
 
 

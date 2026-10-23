@@ -6,8 +6,8 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-from mdm_org.errors import OrgDeptCodeExistsError, OrgDeptCodeFormatError
-from mdm_org.services.dept import DeptService
+from mdm.errors import OrgDeptCodeExistsError, OrgDeptCodeFormatError
+from mdm.services.dept import DeptService
 from tests_support import org_env
 
 
@@ -17,7 +17,7 @@ async def _env(
     """建库并装配部门服务。
 
     Args:
-        dept_pattern: 部门编码格式覆盖（`org.dept_code_pattern`）。
+        dept_pattern: 部门编码格式覆盖（`mdm.dept_code_pattern`）。
         max_children: 同级子部门数上限覆盖。
 
     Returns:
@@ -87,7 +87,7 @@ async def test_dept_code_unique_and_reusable_after_soft_delete() -> None:
 
 @pytest.mark.kiwi_id(2268)
 async def test_dept_code_pattern_from_config() -> None:
-    """部门编码格式经 `org.dept_code_pattern` 读取（覆盖默认正则）。"""
+    """部门编码格式经 `mdm.dept_code_pattern` 读取（覆盖默认正则）。"""
     session, service, engine = await _env(dept_pattern=r"^D-[0-9]{3}$")
     try:
         dept = await service.create_dept(code="D-001", name="研发中心", parent_id=None, sort=1)

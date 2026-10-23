@@ -1,8 +1,8 @@
 """按用户解析角色用例（Kiwi 2256）：岗位链 ∪ 部门链 / 去重 / 缓存与失效代 / 用户来源降级。
 
-口径：岗位链（`org_user_post` → `org_role_post`）∪ 部门链（**用户已分配部门**（`org_user_dept`，全部、
-不按主要项）→ `org_role_dept` 精确匹配，不含子树）；**不返回用户直接角色**（`sys_user_role` 归 platform，
-由消费方合并）。**2026-10-09 修订**：部门链来源由「平台用户归属部门」改本域 `org_user_dept`。
+口径：岗位链（`mdm_user_post` → `mdm_role_post`）∪ 部门链（**用户已分配部门**（`mdm_user_dept`，全部、
+不按主要项）→ `mdm_role_dept` 精确匹配，不含子树）；**不返回用户直接角色**（`sys_user_role` 归 platform，
+由消费方合并）。**2026-10-09 修订**：部门链来源由「平台用户归属部门」改本域 `mdm_user_dept`。
 """
 
 import pytest
@@ -10,14 +10,14 @@ from bms_core.core.concurrent import ConcurrentStableList
 from bms_core.db.tenant import current_tenant_id_str
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mdm_org.services.open_read import bump_user_roles_generation
+from mdm.services.open_read import bump_user_roles_generation
 from tests_support import org_env
 
 
 async def _seed_roles(session: AsyncSession) -> dict[str, int]:
     """在组织树基础上分配角色：1001 → 开发主管岗；1002 → 开发主管岗 + 研发中心部门；1003 → 研发中心部门。
 
-    同时给用户 2001 分配研发中心部门（部门链起点改本域 `org_user_dept`）。
+    同时给用户 2001 分配研发中心部门（部门链起点改本域 `mdm_user_dept`）。
 
     Returns:
         dict[str, int]: 组织树关键 id。
@@ -103,7 +103,7 @@ async def test_user_roles_ttl_zero_bypasses_cache() -> None:
 
 @pytest.mark.kiwi_id(2256)
 async def test_user_roles_independent_of_platform_user_source() -> None:
-    """用户来源不可达**不影响**按用户解析角色：部门链取本域 `org_user_dept`，无平台依赖。"""
+    """用户来源不可达**不影响**按用户解析角色：部门链取本域 `mdm_user_dept`，无平台依赖。"""
     session, engine = await org_env.make_session()
     try:
         await _seed_roles(session)

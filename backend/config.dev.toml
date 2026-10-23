@@ -19,12 +19,12 @@ sqlite_dir = "../../database/mdm"
 auto_create = true
 
 [database.platform]
-# 平台服务库（占位 {database} = mdm_{service}）→ mdm_org.db
+# 平台服务库（占位 {database} = mdm_{service}）→ mdm.db
 url = "sqlite+aiosqlite:///./mdm_platform.db"
 url_template = "sqlite+aiosqlite:///./mdm_{service}.db"
 
 [database.tenants]
-# 服务租户库（占位 {database} = mdm_{service}_{tenant}）→ mdm_org_demo.db
+# 服务租户库（占位 {database} = mdm_{service}_{tenant}）→ mdm_demo.db
 url = "sqlite+aiosqlite:///./mdm_tenant_demo.db"
 url_template = "sqlite+aiosqlite:///./mdm_{service}_{tenant}.db"
 

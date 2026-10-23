@@ -115,43 +115,43 @@ def test_count_breaking_parses_oasdiff_output() -> None:
 
 def test_compare_service_reports_missing_baseline_and_unparsable(tmp_path: Path) -> None:
     """基线缺件 / 不可解析 → `ok=False`（工具异常，不算破坏性变更）。"""
-    missing = compare_service(tmp_path, "org", engine=ENGINE_STRUCTURAL)
+    missing = compare_service(tmp_path, "mdm", engine=ENGINE_STRUCTURAL)
     assert missing.ok is False and "基线缺件" in missing.error
 
     broken_dir = contract_gate.baseline_dir(tmp_path)
     broken_dir.mkdir(parents=True, exist_ok=True)
-    baseline_path(tmp_path, "org").write_text("{不合法", encoding="utf-8")
-    unparsable = compare_service(tmp_path, "org", engine=ENGINE_STRUCTURAL)
+    baseline_path(tmp_path, "mdm").write_text("{不合法", encoding="utf-8")
+    unparsable = compare_service(tmp_path, "mdm", engine=ENGINE_STRUCTURAL)
     assert unparsable.ok is False and "基线不可解析" in unparsable.error
 
 
 def test_compare_service_detects_tampered_baseline(tmp_path: Path) -> None:
     """篡改基线（加一条当前不存在的路径）→ 结构化判定报破坏性变更。"""
-    target = baseline_path(tmp_path, "org")
+    target = baseline_path(tmp_path, "mdm")
     target.parent.mkdir(parents=True, exist_ok=True)
-    current = json.loads(contract_gate.snapshot_path(contract_gate.REPO_ROOT, "org").read_text(encoding="utf-8"))
-    current["paths"]["/api/v1/org/retired"] = current["paths"]["/api/v1/org/resolve-names"]
+    current = json.loads(contract_gate.snapshot_path(contract_gate.REPO_ROOT, "mdm").read_text(encoding="utf-8"))
+    current["paths"]["/api/v1/mdm/retired"] = current["paths"]["/api/v1/mdm/resolve-names"]
     target.write_text(json.dumps(current, ensure_ascii=False), encoding="utf-8")
 
-    result = compare_service(tmp_path, "org", engine=ENGINE_STRUCTURAL)
+    result = compare_service(tmp_path, "mdm", engine=ENGINE_STRUCTURAL)
     assert result.ok is True and result.count == 1
-    assert "/api/v1/org/retired" in result.raw
+    assert "/api/v1/mdm/retired" in result.raw
 
 
 def test_repo_baseline_is_compatible() -> None:
     """仓库当前基线 ↔ 实时公开契约兼容（与 CI 门禁同口径）。"""
-    assert compare_service(contract_gate.REPO_ROOT, "org", engine=ENGINE_STRUCTURAL).count == 0
+    assert compare_service(contract_gate.REPO_ROOT, "mdm", engine=ENGINE_STRUCTURAL).count == 0
     assert check(contract_gate.REPO_ROOT, engine=ENGINE_STRUCTURAL) == 0
 
 
 def test_baseline_update_copies_snapshot_and_reports_missing(tmp_path: Path) -> None:
     """基线更新：由当前快照复制；快照缺件即失败返回 1。"""
-    assert baseline_update(tmp_path, services=ConcurrentStableList(["org"])) == 1
+    assert baseline_update(tmp_path, services=ConcurrentStableList(["mdm"])) == 1
 
     contracts_dir(tmp_path).mkdir(parents=True, exist_ok=True)
-    snapshot_path(tmp_path, "org").write_text('{"paths": {}}', encoding="utf-8")
-    assert baseline_update(tmp_path, services=ConcurrentStableList(["org"])) == 0
-    assert baseline_path(tmp_path, "org").read_text(encoding="utf-8") == '{"paths": {}}'
+    snapshot_path(tmp_path, "mdm").write_text('{"paths": {}}', encoding="utf-8")
+    assert baseline_update(tmp_path, services=ConcurrentStableList(["mdm"])) == 0
+    assert baseline_path(tmp_path, "mdm").read_text(encoding="utf-8") == '{"paths": {}}'
 
 
 def test_main_requires_explicit_baseline_target() -> None:
@@ -196,7 +196,7 @@ def test_oasdiff_args_and_docker_orchestration() -> None:
 
 def test_compare_service_oasdiff_reports_tool_failure(tmp_path: Path) -> None:
     """oasdiff 引擎：返回码非 0/1（工具异常）→ `ok=False`；破坏条目数由 stdout 解析。"""
-    target = baseline_path(tmp_path, "org")
+    target = baseline_path(tmp_path, "mdm")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text('{"paths": {}}', encoding="utf-8")
 
@@ -206,7 +206,7 @@ def test_compare_service_oasdiff_reports_tool_failure(tmp_path: Path) -> None:
 
     failed = compare_service(
         tmp_path,
-        "org",
+        "mdm",
         engine=ENGINE_OASDIFF,
         diff=_broken_tool,
     )
@@ -216,14 +216,14 @@ def test_compare_service_oasdiff_reports_tool_failure(tmp_path: Path) -> None:
         del baseline, current, image
         return 1, json.dumps([{"id": "deleted-path"}]), ""
 
-    detected = compare_service(tmp_path, "org", engine=ENGINE_OASDIFF, diff=_breaking_tool)
+    detected = compare_service(tmp_path, "mdm", engine=ENGINE_OASDIFF, diff=_breaking_tool)
     assert detected.ok is True and detected.count == 1 and detected.engine == ENGINE_OASDIFF
 
 
 def test_compare_service_auto_engine_follows_docker_availability(monkeypatch: pytest.MonkeyPatch) -> None:
     """`auto` 引擎选择：docker 不可用回落结构化判定（并显式记录所用引擎）。"""
     monkeypatch.setattr(contract_gate, "docker_available", lambda: False)
-    result = compare_service(contract_gate.REPO_ROOT, "org")
+    result = compare_service(contract_gate.REPO_ROOT, "mdm")
     assert isinstance(result, BreakingResult)
     assert result.ok is True and result.engine == ENGINE_STRUCTURAL
 
@@ -302,7 +302,7 @@ def test_docker_diff_reports_copy_failure(tmp_path: Path) -> None:
 
 def test_compare_service_reports_build_failure(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """比对：基线在但实时契约构建失败 → 记为工具失败（不是破坏性变更）。"""
-    target = baseline_path(tmp_path, "org")
+    target = baseline_path(tmp_path, "mdm")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("{}", encoding="utf-8")
 
@@ -310,29 +310,29 @@ def test_compare_service_reports_build_failure(monkeypatch: pytest.MonkeyPatch, 
         raise RuntimeError("起不来")
 
     monkeypatch.setattr(contract_gate, "build_openapi", _boom)
-    result = compare_service(tmp_path, "org", engine=ENGINE_STRUCTURAL)
+    result = compare_service(tmp_path, "mdm", engine=ENGINE_STRUCTURAL)
     assert result.ok is False and "契约构建失败" in result.error
 
 
 def test_compare_service_oasdiff_oserror(tmp_path: Path) -> None:
     """比对：oasdiff 调用抛 `OSError` → 明确提示确认镜像已预拉。"""
-    target = baseline_path(tmp_path, "org")
+    target = baseline_path(tmp_path, "mdm")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("{}", encoding="utf-8")
 
     def _broken(_baseline: Path, _current: Path, _image: str) -> tuple[int, str, str]:
         raise OSError("docker 缺失")
 
-    result = compare_service(tmp_path, "org", engine=ENGINE_OASDIFF, diff=_broken)
+    result = compare_service(tmp_path, "mdm", engine=ENGINE_OASDIFF, diff=_broken)
     assert result.ok is False and "oasdiff 调用失败" in result.error
 
 
 def test_compare_structurally_rejects_non_object_baseline(tmp_path: Path) -> None:
     """结构化判定：基线内容不是对象 → 明确报「基线非对象」。"""
-    target = baseline_path(tmp_path, "org")
+    target = baseline_path(tmp_path, "mdm")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("[]", encoding="utf-8")
-    result = compare_service(tmp_path, "org", engine=ENGINE_STRUCTURAL)
+    result = compare_service(tmp_path, "mdm", engine=ENGINE_STRUCTURAL)
     assert result.ok is False and result.error == "基线非对象"
 
 
@@ -345,7 +345,7 @@ def test_check_prints_breaking_and_tool_failure(
         "compare_service",
         lambda root, key, **kwargs: BreakingResult(key, 0, "", False, ENGINE_STRUCTURAL, error="工具失败"),
     )
-    assert check(tmp_path, services=ConcurrentStableList(["org"])) == 1
+    assert check(tmp_path, services=ConcurrentStableList(["mdm"])) == 1
     assert "工具失败" in capsys.readouterr().out
 
     monkeypatch.setattr(
@@ -353,7 +353,7 @@ def test_check_prints_breaking_and_tool_failure(
         "compare_service",
         lambda root, key, **kwargs: BreakingResult(key, 2, "line1\n\nline2", True, ENGINE_STRUCTURAL),
     )
-    assert check(tmp_path, services=ConcurrentStableList(["org"])) == 1
+    assert check(tmp_path, services=ConcurrentStableList(["mdm"])) == 1
     out = capsys.readouterr().out
     assert "检测到 2 项破坏性变更" in out and "line1" in out and "baseline-update" in out
 
@@ -361,7 +361,7 @@ def test_check_prints_breaking_and_tool_failure(
 def test_select_services_all_and_single() -> None:
     """目标服务解析：`--all` 取全部在运服务，`--service` 取单个。"""
     assert list(contract_gate._select_services(None, True))
-    assert list(contract_gate._select_services("org", False)) == ["org"]
+    assert list(contract_gate._select_services("mdm", False)) == ["mdm"]
 
 
 def test_module_entry_point_exits_by_cli(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

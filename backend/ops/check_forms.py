@@ -35,7 +35,7 @@ from bms_core.models.base import Base
 from bms_core.registry.forms import FORM_KEY_PATTERN, FormRecord, FormRegistry
 from sqlalchemy import MetaData, UniqueConstraint
 
-from mdm_org.models import MODEL_MODULES
+from mdm.models import MODEL_MODULES
 from services.form_registry import MDM_FORM_RECORDS
 from services.table_registry import table_names as product_table_names
 
@@ -51,10 +51,10 @@ PARENT_ID_COLUMN = "parent_id"
 DELETED_AT_COLUMN = "deleted_at"
 """软删除列（复合唯一第二列）。"""
 
-DICT_TABLES = ("org_dept", "org_post")
+DICT_TABLES = ("mdm_dept", "mdm_post")
 """本产品字典表（须落字典系统字段 5 项）。"""
 
-ASSOCIATION_TABLES = ("org_user_dept", "org_role_dept", "org_role_post", "org_user_post")
+ASSOCIATION_TABLES = ("mdm_user_dept", "mdm_role_dept", "mdm_role_post", "mdm_user_post")
 """多对多关联表（**不落** `form_key` / `parent_id`）。"""
 
 

@@ -8,7 +8,7 @@ from bms_core.models.outbox import SysOutbox
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mdm_org.errors import (
+from mdm.errors import (
     OrgDeptNotFoundError,
     OrgUserDeptLimitExceededError,
     OrgUserDeptNotFoundError,
@@ -110,7 +110,7 @@ async def test_user_dept_assign_diff_limit_unassign_and_purge() -> None:
         await org_env.commit(session)
 
         rows = (await session.execute(select(SysOutbox))).scalars().all()
-        assert "org.user_dept.changed" in {item.event_type for item in rows}
+        assert "mdm.user_dept.changed" in {item.event_type for item in rows}
         await org_env.commit(session)
     finally:
         await engine.dispose()
@@ -220,7 +220,7 @@ async def test_user_post_primary_set_and_clear_on_removal() -> None:
         await org_env.commit(session)
 
         rows = (await session.execute(select(SysOutbox))).scalars().all()
-        assert "org.user_post.changed" in {item.event_type for item in rows}
+        assert "mdm.user_post.changed" in {item.event_type for item in rows}
         await org_env.commit(session)
     finally:
         await engine.dispose()

@@ -3,12 +3,12 @@
 import pytest
 from sqlalchemy import UniqueConstraint
 
-from mdm_org.models.dept import DEPT_FORM_KEY, OrgDept
-from mdm_org.models.post import POST_FORM_KEY, OrgPost
-from mdm_org.models.role_dept import OrgRoleDept
-from mdm_org.models.role_post import OrgRolePost
-from mdm_org.models.user_dept import OrgUserDept
-from mdm_org.models.user_post import OrgUserPost
+from mdm.models.dept import DEPT_FORM_KEY, OrgDept
+from mdm.models.post import POST_FORM_KEY, OrgPost
+from mdm.models.role_dept import OrgRoleDept
+from mdm.models.role_post import OrgRolePost
+from mdm.models.user_dept import OrgUserDept
+from mdm.models.user_post import OrgUserPost
 
 
 def _unique_columns(model: type[OrgDept] | type[OrgPost]) -> dict[str, tuple[str, ...]]:
@@ -29,23 +29,23 @@ def _unique_columns(model: type[OrgDept] | type[OrgPost]) -> dict[str, tuple[str
 
 @pytest.mark.kiwi_id(2340)
 def test_dept_carries_form_key() -> None:
-    """`org_dept`：`form_key` 非空、缺省 `org_dept`、`(form_key, deleted_at)` 复合唯一；`parent_id` 已备。"""
+    """`mdm_dept`：`form_key` 非空、缺省 `mdm_dept`、`(form_key, deleted_at)` 复合唯一；`parent_id` 已备。"""
     column = OrgDept.__table__.columns["form_key"]
     assert column.nullable is False
     assert column.type.length == 64
-    assert getattr(column.default, "arg", None) == DEPT_FORM_KEY == "org_dept"
-    assert _unique_columns(OrgDept)["uq_org_dept_form_key_deleted_at"] == ("form_key", "deleted_at")
+    assert getattr(column.default, "arg", None) == DEPT_FORM_KEY == "mdm_dept"
+    assert _unique_columns(OrgDept)["uq_mdm_dept_form_key_deleted_at"] == ("form_key", "deleted_at")
     assert "parent_id" in OrgDept.__table__.columns
 
 
 @pytest.mark.kiwi_id(2340)
 def test_post_carries_form_key_and_parent_id() -> None:
-    """`org_post`：`form_key` 非空 + 复合唯一；`parent_id` 可空（非层级字典冗余，顶层为空）。"""
+    """`mdm_post`：`form_key` 非空 + 复合唯一；`parent_id` 可空（非层级字典冗余，顶层为空）。"""
     column = OrgPost.__table__.columns["form_key"]
     assert column.nullable is False
     assert column.type.length == 64
-    assert getattr(column.default, "arg", None) == POST_FORM_KEY == "org_post"
-    assert _unique_columns(OrgPost)["uq_org_post_form_key_deleted_at"] == ("form_key", "deleted_at")
+    assert getattr(column.default, "arg", None) == POST_FORM_KEY == "mdm_post"
+    assert _unique_columns(OrgPost)["uq_mdm_post_form_key_deleted_at"] == ("form_key", "deleted_at")
     parent = OrgPost.__table__.columns["parent_id"]
     assert parent.nullable is True
     assert parent.default is None

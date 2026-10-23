@@ -12,11 +12,11 @@ env = "dev"
 debug = false
 # 雪花 ID WorkerId（0~1023，同环境多副本须全局唯一）
 worker_id = 0
-# 服务标识（微服务名；空则取服务包声明 `mdm_org.SERVICE_NAME` = org，启动期回写解析结果）
+# 服务标识（微服务名；空则取服务包声明 `mdm.SERVICE_NAME` = org，启动期回写解析结果）
 service = ""
 # 文档端点开关（Swagger /docs、ReDoc /redoc、OpenAPI /openapi.json；dev 基线开，生产关闭走 CI 契约快照）
 docs_enabled = true
-# 服务包名前缀：链的服务模型模块按 {package_prefix}_{service}.models 解析（mdm → mdm_org.models）
+# 服务包名前缀：链的服务模型模块按 {package_prefix}_{service}.models 解析（mdm → mdm.models）
 # 平台默认 bms；产品部署必须配为自有前缀，否则迁移链与开发库自动建表取不到产品模型（bms 12_04）
 package_prefix = "mdm"
 
@@ -28,7 +28,7 @@ workers = 1
 
 [database]
 # 库名前缀（统一来源）：平台库 {prefix}_{service} / 服务租户库 {prefix}_{service}_{code} / 归档库 {prefix}_archive
-# mdm 产品专属前缀 → mdm_org / mdm_org_{租户} / mdm_archive（库键仍为基座相对键 platform / tenant_{code}）
+# mdm 产品专属前缀 → mdm / mdm_{租户} / mdm_archive（库键仍为基座相对键 platform / tenant_{code}）
 name_prefix = "mdm"
 
 [tenant]

@@ -8,16 +8,16 @@ import pytest
 from bms_core.core.concurrent import ConcurrentStableList
 from bms_core.events.contracts import EventContractRegistry, default_event_contract_registry
 
-from mdm_org.events import ORG_EVENT_CONTRACTS, register_product_event_contracts
+from mdm.events import ORG_EVENT_CONTRACTS, register_product_event_contracts
 from ops import event_contracts
 
 _EXPECTED_TYPES = (
-    "org.dept.changed",
-    "org.post.changed",
-    "org.user_post.changed",
-    "org.role_post.changed",
-    "org.role_dept.changed",
-    "org.user_dept.changed",
+    "mdm.dept.changed",
+    "mdm.post.changed",
+    "mdm.user_post.changed",
+    "mdm.role_post.changed",
+    "mdm.role_dept.changed",
+    "mdm.user_dept.changed",
 )
 
 
@@ -26,7 +26,7 @@ def test_org_event_contracts_shape() -> None:
     """契约形态：6 条、事件域名 `org`、载荷字段为小写下划线且不含信封保留键。"""
     assert tuple(contract.event_type for contract in ORG_EVENT_CONTRACTS) == _EXPECTED_TYPES
     for contract in ORG_EVENT_CONTRACTS:
-        assert contract.domain == "org"
+        assert contract.domain == "mdm"
         assert contract.major == 1
         assert contract.fields, f"{contract.event_type} 应声明载荷字段"
         assert "changed_type" in contract.fields
@@ -52,7 +52,7 @@ def test_event_snapshot_export_and_check(tmp_path: Path) -> None:
     assert event_contracts.check(tmp_path) == 0
 
     path = event_contracts.snapshot_path(tmp_path)
-    path.write_text(path.read_text(encoding="utf-8").replace("org.dept.changed", "org.dept.moved"), encoding="utf-8")
+    path.write_text(path.read_text(encoding="utf-8").replace("mdm.dept.changed", "mdm.dept.moved"), encoding="utf-8")
     assert event_contracts.check(tmp_path) == 1
 
 
@@ -79,7 +79,7 @@ def test_export_reports_registry_errors(
 def test_export_to_stdout(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """导出 `--print`：打印生成内容且退出码 0。"""
     assert event_contracts.export(tmp_path, to_stdout=True) == 0
-    assert "org.dept.changed" in capsys.readouterr().out
+    assert "mdm.dept.changed" in capsys.readouterr().out
 
 
 @pytest.mark.kiwi_id(2255)

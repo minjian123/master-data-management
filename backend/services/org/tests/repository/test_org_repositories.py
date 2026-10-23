@@ -6,11 +6,11 @@
 import pytest
 from bms_core.core.concurrent import ConcurrentStableList
 
-from mdm_org.repositories.dept import DeptRepository
-from mdm_org.repositories.role_dept import RoleDeptRepository
-from mdm_org.repositories.role_post import RolePostRepository
-from mdm_org.repositories.user_dept import UserDeptRepository
-from mdm_org.repositories.user_post import UserPostRepository
+from mdm.repositories.dept import DeptRepository
+from mdm.repositories.role_dept import RoleDeptRepository
+from mdm.repositories.role_post import RolePostRepository
+from mdm.repositories.user_dept import UserDeptRepository
+from mdm.repositories.user_post import UserPostRepository
 from tests_support import org_env
 
 

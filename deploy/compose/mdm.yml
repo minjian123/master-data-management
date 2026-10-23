@@ -1,17 +1,17 @@
-# mdm 产品服务编排（服务名 = 服务标识 `org`，与平台网关声明式上游 `org:8000` 对齐）
+# mdm 产品服务编排（服务名 = 服务标识 `mdm`，与平台网关声明式上游 `mdm:8000` 对齐）
 #
 # 拉起（在 mdm 仓 `deploy/` 目录，`.env` 提供变量）：
 #   docker compose -f compose/mdm.yml --env-file .env up -d
 #
 # 口径：
-# - 服务名（Compose DNS）取服务标识 `org`，与平台网关 upstream 节点同口径——对外经产品命名空间
-#   `/api/mdm/v1/org/...` 暴露（网关由平台侧 `PRODUCT_ROUTES` 生成，mdm 无需改网关）；
+# - 服务名（Compose DNS）取服务标识 `mdm`，与平台网关 upstream 节点同口径——对外经产品命名空间
+#   `/api/mdm/v1/mdm/...` 暴露（网关由平台侧产品登记清单 + `PRODUCT_ROUTES` 生成，mdm 无需改网关）；
 # - **平台基础设施归 bms 部署**（网关 / 认证 / Redis / RocketMQ / 关系库 / Keycloak），本编排不重复；
 #   mdm 服务经 .env 接入平台基础设施与平台网络（见 `networks.platform`）；
 # - 仅内部网络（expose 8000，不映射宿主端口），经平台网关统一入口访问，调试走 `docker compose exec`；
-# - 镜像标签必填（`MDM_TAG_ORG`，`:?` 语法无 latest 兜底）——由发布流程按版本台账注入；
-# - 服务运行库（每服务独立库 × 每租户）：`mdm_org` / `mdm_org_{租户}`（库名前缀 `mdm`，
-#   经 `[database].name_prefix` 配置项派生）；建库 / 迁移编排走 `backend/ops`（db_admin / migrate）。
+# - 镜像标签必填（`MDM_TAG`，`:?` 语法无 latest 兜底）——由发布流程按版本台账注入；
+# - 服务运行库（每服务独立库 × 每租户）：`mdm` / `mdm_{租户}`（库名前缀 `mdm`，
+#   经 `[database].name_prefix` 与「前缀 = 服务标识时去重」派生）；建库 / 迁移编排走 `backend/ops`（db_admin / migrate）。
 #
 # 环境变量（.env，模板见 deploy/.env.example）：密钥与连接串一律经环境变量注入，不入库 / 不入镜像。
 
@@ -49,13 +49,13 @@ x-service-base: &service-base
     <<: *service-env
 
 services:
-  org:
+  mdm:
     <<: *service-base
-    image: ${MDM_REGISTRY_IMAGE_PREFIX:?MDM_REGISTRY_IMAGE_PREFIX required}/mdm-org:${MDM_TAG_ORG:?MDM_TAG_ORG required}
-    container_name: mdm-org
+    image: ${MDM_REGISTRY_IMAGE_PREFIX:?MDM_REGISTRY_IMAGE_PREFIX required}/mdm:${MDM_TAG:?MDM_TAG required}
+    container_name: mdm
 
 networks:
-  # 平台网络（bms 部署创建）：使平台网关可解析 `org:8000`，本服务亦可达平台服务
+  # 平台网络（bms 部署创建）：使平台网关可解析 `mdm:8000`，本服务亦可达平台服务
   # 缺省名 `deploy_default`（bms 在 deploy/ 目录以 compose 项目名 `deploy` 创建）；
   # 实际网络名以平台部署为准，经 .env 的 PLATFORM_NETWORK 覆盖。
   platform:

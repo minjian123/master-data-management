@@ -1,5 +1,5 @@
 [project]
-name = "mdm-org"
+name = "mdm"
 version = "0.1.0"
 description = "mdm 组织主数据服务"
 requires-python = ">=3.14"
@@ -14,7 +14,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mdm_org"]
+packages = ["src/mdm"]
 
 [tool.pytest.ini_options]
 # 工程级测试范围：从本工程目录 `uv run pytest` 只跑本工程 tests（不落到工作区根全量）

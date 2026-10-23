@@ -83,19 +83,19 @@ def test_migrate_dry_run_lists_mdm_databases(
     _enable_sqlite_templates(monkeypatch)
     assert migrate.main(["--dry-run"]) == 0
     out = capsys.readouterr().out
-    assert "platform_org" in out
-    assert "mdm_org.db" in out
+    assert "platform_mdm" in out
+    assert "mdm.db" in out
     assert "mdm_archive.db" in out
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 def test_migrate_dry_run_with_tenant_codes(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
-    """分链迁移 dry-run（租户维度）：`--code` 派生服务租户库 `mdm_org_demo`。"""
+    """分链迁移 dry-run（租户维度）：`--code` 派生服务租户库 `mdm_demo`。"""
     _enable_sqlite_templates(monkeypatch)
     assert migrate.main(["--dry-run", "--code", "demo"]) == 0
     out = capsys.readouterr().out
-    assert "tenant_org_demo" in out
-    assert "mdm_org_demo.db" in out
+    assert "tenant_mdm_demo" in out
+    assert "mdm_demo.db" in out
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
@@ -133,7 +133,7 @@ def test_migrate_tenants_target_requires_codes() -> None:
 def test_migrate_resolve_services_explicit_and_default() -> None:
     """服务维度：显式指定保序去重；缺省取本产品在运服务。"""
 
-    assert list(migrate.resolve_services(["org", "org"])) == ["org"]
+    assert list(migrate.resolve_services(["mdm", "mdm"])) == ["mdm"]
     assert list(migrate.resolve_services([])) == [SERVICE_KEY]
 
 
@@ -209,7 +209,7 @@ def test_contract_snapshot_build_app_reports_package_and_factory_errors(
 
     monkeypatch.setattr(contract_snapshot, "import_module", lambda _name: types.SimpleNamespace())
     with pytest.raises(RuntimeError, match="缺少 ApplicationFactory"):
-        contract_snapshot.build_app("org")
+        contract_snapshot.build_app("mdm")
 
     class _Boom:
         def create(self, _settings: object) -> object:
@@ -219,7 +219,7 @@ def test_contract_snapshot_build_app_reports_package_and_factory_errors(
         contract_snapshot, "import_module", lambda _name: types.SimpleNamespace(ApplicationFactory=_Boom)
     )
     with pytest.raises(RuntimeError, match="服务应用构建失败"):
-        contract_snapshot.build_app("org")
+        contract_snapshot.build_app("mdm")
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
@@ -258,7 +258,7 @@ def test_migrate_single_database_targets(tmp_path: Path, capsys: pytest.CaptureF
     assert migrate.main(["--target", "tenant", "--url", url, "--dry-run"]) == 0
     assert "tenant" in capsys.readouterr().out
     assert migrate.main(["--target", "platform", "--url", url, "--dry-run"]) == 0
-    assert "platform_org" in capsys.readouterr().out
+    assert "platform_mdm" in capsys.readouterr().out
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
@@ -274,23 +274,23 @@ def test_migrate_service_tasks_without_platform(monkeypatch: pytest.MonkeyPatch)
     """任务清单：`include_platform=False` 时只出服务租户库与归档库（按需裁剪）。"""
     _enable_sqlite_templates(monkeypatch)
     tasks = migrate.service_tasks(
-        migrate.ConcurrentStableList(["org"]),
+        migrate.ConcurrentStableList(["mdm"]),
         migrate.ConcurrentStableList(["demo"]),
         include_platform=False,
         include_archive=True,
     )
     chain_names = [task.chain.name for task in tasks]
-    assert all(not name.startswith("org:platform") for name in chain_names)
-    assert any(name.startswith("org:tenant") for name in chain_names)
+    assert all(not name.startswith("mdm:platform") for name in chain_names)
+    assert any(name.startswith("mdm:tenant") for name in chain_names)
     assert any(name.startswith("platform:archive") for name in chain_names)
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 async def test_migrate_run_tasks_reports_three_outcomes(monkeypatch: pytest.MonkeyPatch) -> None:
     """执行汇总：已最新（跳过）/ 迁移完成（成功）/ 抛错（失败）三类结果均如实登记。"""
-    chain = migrate.resolve_chain(migrate.build_chain_name("org", migrate.DATASOURCE_PLATFORM))
+    chain = migrate.resolve_chain(migrate.build_chain_name("mdm", migrate.DATASOURCE_PLATFORM))
     tasks = migrate.ConcurrentStableList(
-        [migrate.MigrationTask(chain=chain, label="mdm_org", url="sqlite+aiosqlite:///mdm_run.db")]
+        [migrate.MigrationTask(chain=chain, label="mdm", url="sqlite+aiosqlite:///mdm_run.db")]
     )
     monkeypatch.setattr(migrate, "head_revision", lambda _chain: "rev_head")
 
@@ -299,7 +299,7 @@ async def test_migrate_run_tasks_reports_three_outcomes(monkeypatch: pytest.Monk
 
     monkeypatch.setattr(migrate, "current_revision", _current)
     summary = await migrate.run_tasks(tasks)
-    assert summary.skipped == ("mdm_org",)
+    assert summary.skipped == ("mdm",)
 
     async def _stale(url: str, schema: str | None = None) -> str:
         return "rev_old"
@@ -308,14 +308,14 @@ async def test_migrate_run_tasks_reports_three_outcomes(monkeypatch: pytest.Monk
     monkeypatch.setattr(migrate, "current_revision", _stale)
     monkeypatch.setattr(migrate, "upgrade_chain", lambda _chain, _url, schema=None: upgrades.append(_url))
     summary = await migrate.run_tasks(tasks)
-    assert summary.succeeded == ("mdm_org",) and upgrades
+    assert summary.succeeded == ("mdm",) and upgrades
 
     async def _boom(url: str, schema: str | None = None) -> str:
         raise RuntimeError("连不上库")
 
     monkeypatch.setattr(migrate, "current_revision", _boom)
     summary = await migrate.run_tasks(tasks)
-    assert summary.failed == ("mdm_org",)
+    assert summary.failed == ("mdm",)
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)

@@ -6,7 +6,7 @@
     uv run python -m ops.event_contracts export --print     # 导出并打印
     uv run python -m ops.event_contracts check              # 零漂移 + 兼容校验（CI / 预检用）
 
-- **契约来源**：产品侧声明模块 `mdm_org.events`（经 `register_product_event_contracts()` 登记），
+- **契约来源**：产品侧声明模块 `mdm.events`（经 `register_product_event_contracts()` 登记），
   与平台默认契约合并（本产品服务不注册平台契约，合并结果即本产品 5 条 `org.*`）；
 - **事件域校验**：域名须在服务目录 `SERVICE_CATALOG.event_domain` 登记（`org` 已登记）；
 - **确定性**：同代码 → 同文本（缩进 2 / 键排序 / 非 ASCII 直出），供 Git 比对与零漂移校验；
@@ -30,7 +30,9 @@ from bms_core.events.contracts import (
 )
 from bms_core.services.module_registry import known_event_domains
 
-from mdm_org.events import register_product_event_contracts
+# 装载产品服务行 / 产品档案 / 产品路由（事件域校验取合并视图；导入即注册、幂等）
+import services.module_registry  # noqa: F401
+from mdm.events import register_product_event_contracts
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = _BACKEND_ROOT.parent

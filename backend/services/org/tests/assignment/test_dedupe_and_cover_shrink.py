@@ -8,11 +8,11 @@ import pytest
 from bms_core.core.concurrent import ConcurrentStableList
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-from mdm_org.services.dept import DeptService
-from mdm_org.services.role_dept import RoleDeptService
-from mdm_org.services.role_post import RolePostService
-from mdm_org.services.user_dept import UserDeptService
-from mdm_org.services.user_post import UserPostService
+from mdm.services.dept import DeptService
+from mdm.services.role_dept import RoleDeptService
+from mdm.services.role_post import RolePostService
+from mdm.services.user_dept import UserDeptService
+from mdm.services.user_post import UserPostService
 from tests_support import org_env
 
 

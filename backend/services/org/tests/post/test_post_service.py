@@ -8,7 +8,7 @@ from bms_core.core.exceptions import ConcurrentConflictError
 from bms_core.schemas.pagination import BasePageQuery
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-from mdm_org.errors import (
+from mdm.errors import (
     OrgPostCodeExistsError,
     OrgPostCodeFormatError,
     OrgPostDeptUnavailableError,
@@ -16,9 +16,9 @@ from mdm_org.errors import (
     OrgPostHasUsersError,
     OrgPostNotFoundError,
 )
-from mdm_org.services.dept import DeptService
-from mdm_org.services.post import PostService
-from mdm_org.services.role_post import RolePostService
+from mdm.services.dept import DeptService
+from mdm.services.post import PostService
+from mdm.services.role_post import RolePostService
 from tests_support import org_env
 
 
@@ -166,7 +166,7 @@ async def test_post_delete_reference_checks() -> None:
 
 @pytest.mark.kiwi_id(2255)
 async def test_post_code_pattern_from_config() -> None:
-    """岗位码格式经 `org.post_code_pattern` 读取（覆盖默认正则）。"""
+    """岗位码格式经 `mdm.post_code_pattern` 读取（覆盖默认正则）。"""
     session, posts, depts, _role_posts, engine = await _env(post_pattern=r"^P-[0-9]{3}$")
     try:
         dept = await depts.create_dept(code="rd", name="研发中心", parent_id=None, sort=1)

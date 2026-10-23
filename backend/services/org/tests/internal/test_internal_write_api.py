@@ -23,10 +23,10 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from services.table_registry import register as register_product_tables
 
-BASE = "/api/v1/org/internal"
+BASE = "/api/v1/mdm/internal"
 """内部写通道前缀。"""
 
-ADMIN = "/api/v1/org"
+ADMIN = "/api/v1/mdm"
 """管理面前缀（造数用）。"""
 
 
@@ -83,7 +83,7 @@ async def prepared_db(isolate_settings: None) -> AsyncIterator[None]:
     """
     del isolate_settings
     register_product_tables()
-    import_models("org")
+    import_models("mdm")
     engine = create_async_engine(os.environ["BMS_DATABASE__TENANTS__URL"])
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)

@@ -1,0 +1,64 @@
+{
+  "product_key": "mdm",
+  "products": [
+    {
+      "product_key": "mdm",
+      "name": "主数据管理",
+      "frontend_package_source": "mdm#frontend",
+      "status": "enabled"
+    }
+  ],
+  "services": [
+    {
+      "module_key": "mdm",
+      "service_key": "mdm",
+      "name": "mdm 主数据服务",
+      "table_prefix": "mdm_",
+      "business_code": "mdm",
+      "errcode_segment": "33",
+      "event_domain": "mdm",
+      "service_group": "product",
+      "build_batch": 3,
+      "service_version": "0.1.0",
+      "contract_version": "0.1.0",
+      "product_key": "mdm",
+      "status": "enabled"
+    }
+  ],
+  "product_routes": [
+    {
+      "product_key": "mdm",
+      "domain": "mdm",
+      "service_key": "mdm",
+      "description": "mdm 主数据服务（对外 /api/mdm/v1/mdm/...）"
+    }
+  ],
+  "data_sources": [
+    {
+      "data_source_key": "mdm_dept",
+      "name": "部门",
+      "kind": "dict",
+      "data_source": "mdm.mdm.dept",
+      "origin": "product",
+      "product_key": "mdm",
+      "path": "/data-source/dept-tree",
+      "allowlist": ["code", "label"],
+      "cascade": true,
+      "strategies": ["select", "region", "match"],
+      "status": "enabled"
+    },
+    {
+      "data_source_key": "mdm_post",
+      "name": "岗位",
+      "kind": "dict",
+      "data_source": "mdm.mdm.post",
+      "origin": "product",
+      "product_key": "mdm",
+      "path": "/data-source/posts",
+      "allowlist": ["code", "label"],
+      "cascade": false,
+      "strategies": ["select", "match"],
+      "status": "enabled"
+    }
+  ]
+}

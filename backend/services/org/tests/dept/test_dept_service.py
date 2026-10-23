@@ -9,7 +9,7 @@ from bms_core.models.outbox import SysOutbox
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-from mdm_org.errors import (
+from mdm.errors import (
     OrgDeptChildrenLimitError,
     OrgDeptCycleError,
     OrgDeptDepthExceededError,
@@ -20,7 +20,7 @@ from mdm_org.errors import (
     OrgDeptParentUnavailableError,
     OrgDeptReferencedError,
 )
-from mdm_org.services.dept import DeptService
+from mdm.services.dept import DeptService
 from tests_support import org_env
 
 
@@ -254,14 +254,14 @@ async def test_dept_update_move_rejections_and_optimistic_lock() -> None:
 
 @pytest.mark.kiwi_id(2255)
 async def test_dept_publishes_changed_event() -> None:
-    """事件：部门新建经事务性发件箱写入 `org.dept.changed`（契约 enforce 放行）。"""
+    """事件：部门新建经事务性发件箱写入 `mdm.dept.changed`（契约 enforce 放行）。"""
     session, service, engine = await _env()
     try:
         dept = await service.create_dept(code="hq", name="总部", parent_id=None, sort=1)
         dept_id = dept.id
         await org_env.commit(session)
         rows = (await session.execute(select(SysOutbox))).scalars().all()
-        assert [item.event_type for item in rows] == ["org.dept.changed"]
+        assert [item.event_type for item in rows] == ["mdm.dept.changed"]
         assert int(str(rows[0].payload["dept_id"])) == dept_id
         assert rows[0].payload["changed_type"] == "created"
         await org_env.commit(session)

@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tests_support import org_env
 
-INTERNAL_USER_DEPTS = "/api/v1/org/internal/user-depts/{user_id}"
+INTERNAL_USER_DEPTS = "/api/v1/mdm/internal/user-depts/{user_id}"
 """内部写端点（用户-部门，含主要项）。"""
 
 AUTH_HEADER = {"Authorization": "Bearer stub"}

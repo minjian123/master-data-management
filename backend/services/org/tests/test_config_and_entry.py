@@ -1,4 +1,4 @@
-"""服务配置读取与启动入口用例：非法参数值回落默认、`python -m mdm_org` 入口可启动。"""
+"""服务配置读取与启动入口用例：非法参数值回落默认、`python -m mdm` 入口可启动。"""
 
 import importlib
 import runpy
@@ -8,13 +8,13 @@ import pytest
 from bms_core.core.concurrent import ConcurrentStableDict
 from bms_core.core.config import get_settings
 
-from mdm_org import config as org_config
+from mdm import config as org_config
 from tests_support import org_env
 
-_INT_KEY = "org.dept_tree_max_depth"
+_INT_KEY = "mdm.dept_tree_max_depth"
 """整型参数键（读不到 / 非法时回落代码默认值）。"""
 
-_STR_KEY = "org.dept_code_pattern"
+_STR_KEY = "mdm.dept_code_pattern"
 """字符串参数键（读不到时回落默认值）。"""
 
 
@@ -34,7 +34,7 @@ async def test_read_int_falls_back_on_invalid_value() -> None:
 
 @pytest.mark.kiwi_id(2255)
 def test_module_entry_point_runs_service(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`python -m mdm_org`：入口以 `ApplicationFactory` 调基座 `run_service`（替身记录调用）。"""
+    """`python -m mdm`：入口以 `ApplicationFactory` 调基座 `run_service`（替身记录调用）。"""
     import bms_core.core.run as run_module
 
     calls: list[object] = []
@@ -43,8 +43,8 @@ def test_module_entry_point_runs_service(monkeypatch: pytest.MonkeyPatch) -> Non
         calls.append(factory)
 
     monkeypatch.setattr(run_module, "run_service", _record)
-    monkeypatch.delitem(sys.modules, "mdm_org.__main__", raising=False)
-    runpy.run_module("mdm_org.__main__", run_name="__main__")
-    importlib.import_module("mdm_org.__main__")  # 以模块名导入：覆盖「非 __main__」分支
+    monkeypatch.delitem(sys.modules, "mdm.__main__", raising=False)
+    runpy.run_module("mdm.__main__", run_name="__main__")
+    importlib.import_module("mdm.__main__")  # 以模块名导入：覆盖「非 __main__」分支
     assert calls, "服务入口未调用 run_service"
     assert get_settings() is not None

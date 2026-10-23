@@ -9,8 +9,8 @@ from bms_core.core.concurrent import ConcurrentStableList
 from bms_core.core.exceptions import ParamError
 from bms_core.scope.base import ScopeCondition
 
-from mdm_org.api import open_read as api_open_read
-from mdm_org.api.open_read import dept_scope_from_predicate
+from mdm.api import open_read as api_open_read
+from mdm.api.open_read import dept_scope_from_predicate
 from tests_support import org_env
 
 

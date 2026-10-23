@@ -20,12 +20,12 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mdm_org.api.open_read import dept_scope_from_predicate, require_org_reader
-from mdm_org.errors import OrgSourceUnavailableError
-from mdm_org.org.user_source import PlatformOrgUserSource
+from mdm.api.open_read import dept_scope_from_predicate, require_org_reader
+from mdm.errors import OrgSourceUnavailableError
+from mdm.org.user_source import PlatformOrgUserSource
 from tests_support import org_env
 
-EXIT_BASE = "/api/v1/org"
+EXIT_BASE = "/api/v1/mdm"
 """出口路径前缀（管面占 `/org/posts` 等，出口集中挂 `/org/data-source/*` 等）。"""
 
 
@@ -135,7 +135,7 @@ async def test_exit_endpoints_wrap_contract_shapes(service_app: FastAPI, client:
         # 雪花 id 在响应中按字符串序列化（前端按字符串消费）
         assert [int(item["id"]) for item in user_items] == [2001]
         assert user_items[0]["nickname"] == "张三"
-        assert "dept_id" not in user_items[0], "用户归属部门归 mdm `org_user_dept`，出口不再带该字段"
+        assert "dept_id" not in user_items[0], "用户归属部门归 mdm `mdm_user_dept`，出口不再带该字段"
 
         roles = await client.get(f"{EXIT_BASE}/user-roles", params={"user_id": 2001})
         assert roles.json()["data"] == {"role_ids": []}
@@ -198,7 +198,7 @@ async def test_user_dimension_degrades_when_platform_unreachable(service_app: Fa
         resp = await client.get(f"{EXIT_BASE}/data-source/users")
         assert resp.status_code == 200 and resp.json()["code"] == 330101
 
-        # 按用户解析角色不再依赖平台用户来源（部门链取本域 `org_user_dept`）→ 正常返回
+        # 按用户解析角色不再依赖平台用户来源（部门链取本域 `mdm_user_dept`）→ 正常返回
         roles = await client.get(f"{EXIT_BASE}/user-roles", params={"user_id": 2001})
         assert roles.json()["code"] == 0 and roles.json()["data"]["role_ids"] == []
 

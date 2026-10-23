@@ -15,7 +15,7 @@ constraint-dependencies = ["sqlalchemy>=2.0,<2.1"]
 # 共享基座库（bms 仓 `backend/libs/bms_core`）：锁提交 SHA 保证构建可精确复现，
 # 并与「bms 侧 `org` 标识已释放（11_01）」强绑定；升级须同步改 rev（人工或接入 Renovate）。
 # 凭据：仓库为内网 GitLab（只读 clone 无需凭据）；CI 内以 git `insteadOf` 注入 CI_JOB_TOKEN。
-bms-core = { git = "http://192.168.0.107:8080/bms/bms.git", subdirectory = "backend/libs/bms_core", rev = "3a32a138ff62a13820f7530b674c3d5a6d2fde9d" }
+bms-core = { git = "http://192.168.0.107:8080/bms/bms.git", subdirectory = "backend/libs/bms_core", rev = "d2ba8c488564d305e5b1da5136bc642b40d0e5f5" }
 # 跨仓工程化工具包（engkit 仓）：文档链接 / 文档口径 / 预检 / 重命令包装 / 用例登记的唯一实现，
 # 同样锁提交 SHA；升级只改此处 rev（与 `.gitlab-ci.yml` 无耦合，CI 走 `uv sync --frozen` 拉取）。
 engkit = { git = "http://192.168.0.107:8080/bms/engkit.git", rev = "959965a6b3b591626338b7e3bd7fd28f7a758d51" }
@@ -47,7 +47,7 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 [tool.ruff.lint.isort]
 # 工作区自有包与脚本区视为第一方（与第三方依赖分组稳定，避免归类漂移）
 known-first-party = [
-    "mdm_org",
+    "mdm",
     "services",
     "ops",
     "tests_support",
@@ -59,7 +59,7 @@ pythonVersion = "3.14"
 include = ["services"]
 # alembic 迁移脚本不纳入类型检查（含大量动态写法）
 ignore = ["alembic"]
-# src 布局：把服务源码根加入解析路径，供 `import mdm_org` 与严格类型检查
+# src 布局：把服务源码根加入解析路径，供 `import mdm` 与严格类型检查
 extraPaths = ["services/org/src"]
 # 共享基座 `bms-core` 为**跨仓安装包**（site-packages，未随包发布 `py.typed` 声明）：
 # 缺 stub 提示降级；自有代码仍按 strict 全量检查（基座侧以源码形式纳入其本仓检查）。

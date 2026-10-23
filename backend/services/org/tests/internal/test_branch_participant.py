@@ -13,10 +13,10 @@ from bms_core.transaction.base import BranchHandlerRegistry
 from fastapi import FastAPI
 from httpx import AsyncClient
 
-from mdm_org.repositories.dept import DeptRepository
-from mdm_org.repositories.user_dept import UserDeptRepository
-from mdm_org.services.branch_handlers import BRANCH_OPS, ROLE_DEPTS_OP, ROLE_POSTS_OP, USER_DEPTS_OP, USER_POSTS_OP
-from mdm_org.services.user_dept import UserDeptService
+from mdm.repositories.dept import DeptRepository
+from mdm.repositories.user_dept import UserDeptRepository
+from mdm.services.branch_handlers import BRANCH_OPS, ROLE_DEPTS_OP, ROLE_POSTS_OP, USER_DEPTS_OP, USER_POSTS_OP
+from mdm.services.user_dept import UserDeptService
 from tests_support import org_env
 
 BRANCH_PATHS = (

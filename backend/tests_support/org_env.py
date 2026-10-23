@@ -24,43 +24,43 @@ from sqlalchemy import Table
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from mdm_org.errors import OrgSourceUnavailableError
-from mdm_org.events import register_product_event_contracts
-from mdm_org.org.base import DEFAULT_ORG_PAGE_SIZE, BaseOrgUserSource, OrgUser
-from mdm_org.org.default import DbOrgDataSource, DbOrgNameResolver
-from mdm_org.repositories.dept import DeptRepository
-from mdm_org.repositories.post import PostRepository
-from mdm_org.repositories.role_dept import RoleDeptRepository
-from mdm_org.repositories.role_post import RolePostRepository
-from mdm_org.repositories.user_dept import UserDeptRepository
-from mdm_org.repositories.user_post import UserPostRepository
-from mdm_org.services.dept import DeptService
-from mdm_org.services.open_read import OpenReadService
-from mdm_org.services.post import PostService
-from mdm_org.services.role_dept import RoleDeptService
-from mdm_org.services.role_post import RolePostService
-from mdm_org.services.user_dept import UserDeptService
-from mdm_org.services.user_post import UserPostService
+from mdm.errors import OrgSourceUnavailableError
+from mdm.events import register_product_event_contracts
+from mdm.org.base import DEFAULT_ORG_PAGE_SIZE, BaseOrgUserSource, OrgUser
+from mdm.org.default import DbOrgDataSource, DbOrgNameResolver
+from mdm.repositories.dept import DeptRepository
+from mdm.repositories.post import PostRepository
+from mdm.repositories.role_dept import RoleDeptRepository
+from mdm.repositories.role_post import RolePostRepository
+from mdm.repositories.user_dept import UserDeptRepository
+from mdm.repositories.user_post import UserPostRepository
+from mdm.services.dept import DeptService
+from mdm.services.open_read import OpenReadService
+from mdm.services.post import PostService
+from mdm.services.role_dept import RoleDeptService
+from mdm.services.role_post import RolePostService
+from mdm.services.user_dept import UserDeptService
+from mdm.services.user_post import UserPostService
 from services.table_registry import register as register_product_tables
 
-DEPT_TREE_MAX_DEPTH_KEY = "org.dept_tree_max_depth"
+DEPT_TREE_MAX_DEPTH_KEY = "mdm.dept_tree_max_depth"
 """部门树最大深度参数键。"""
 
-DEPT_MAX_CHILDREN_KEY = "org.dept_max_children"
-DEPT_MAX_PER_USER_KEY = "org.dept_max_per_user"
+DEPT_MAX_CHILDREN_KEY = "mdm.dept_max_children"
+DEPT_MAX_PER_USER_KEY = "mdm.dept_max_per_user"
 """同级子部门数上限参数键。"""
 
-POST_CODE_PATTERN_KEY = "org.post_code_pattern"
-DEPT_CODE_PATTERN_KEY = "org.dept_code_pattern"
+POST_CODE_PATTERN_KEY = "mdm.post_code_pattern"
+DEPT_CODE_PATTERN_KEY = "mdm.dept_code_pattern"
 """岗位码格式参数键。"""
 
-POST_MAX_PER_USER_KEY = "org.post_max_per_user"
+POST_MAX_PER_USER_KEY = "mdm.post_max_per_user"
 """单用户岗位数上限参数键。"""
 
-DATA_SOURCE_MAX_FILTER_IDS_KEY = "org.data_source_max_filter_ids"
+DATA_SOURCE_MAX_FILTER_IDS_KEY = "mdm.data_source_max_filter_ids"
 """组织只读出口部门过滤候选集上限参数键。"""
 
-USER_ROLES_CACHE_TTL_KEY = "org.user_roles_cache_ttl"
+USER_ROLES_CACHE_TTL_KEY = "mdm.user_roles_cache_ttl"
 """按用户解析角色结果缓存 TTL 参数键。"""
 
 
@@ -328,7 +328,7 @@ def _match_user(
 
 
 async def make_session() -> tuple[AsyncSession, AsyncEngine]:
-    """建内存 SQLite 会话并创建 `org:tenant` 链表集（org 五表 + 基础设施三表）。
+    """建内存 SQLite 会话并创建 `mdm:tenant` 链表集（org 五表 + 基础设施三表）。
 
     Returns:
         tuple[AsyncSession, AsyncEngine]: （会话，引擎）。
@@ -341,8 +341,8 @@ async def make_session() -> tuple[AsyncSession, AsyncEngine]:
     )
     # 表归属产品注入（bms 12_04）：链表集派生依赖注入记录，故建表前先注册
     register_product_tables()
-    import_models("org")
-    names = sorted(chain_tables("org", "tenant"))
+    import_models("mdm")
+    names = sorted(chain_tables("mdm", "tenant"))
     tables = [cast("Table", Base.metadata.tables[name]) for name in names]
     async with engine.begin() as connection:
         await connection.run_sync(lambda conn: Base.metadata.create_all(conn, tables=tables))
@@ -666,7 +666,7 @@ def make_user_source(users: ConcurrentStableList[OrgUser] | None = None) -> Stub
     return StubUserSource(users)
 
 
-def make_cache(domain: str = "mdm_org") -> MemoryCacheRegion:
+def make_cache(domain: str = "mdm") -> MemoryCacheRegion:
     """构造内存缓存域（用例级独立实例，避免跨用例串味）。
 
     Args:
