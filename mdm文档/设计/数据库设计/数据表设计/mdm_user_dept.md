@@ -1,19 +1,19 @@
-# org_user_dept（用户-部门关联）
+# mdm_user_dept（用户-部门关联）
 
 > mdm · 数据库设计 · 数据表设计
 
-[文档首页](../../../文档首页.md) › [数据库设计总览](../01_数据库设计_总览.md) › [已设计数据表登记](../01_数据库设计_总览.md#tables-registry) › org_user_dept
+[文档首页](../../../文档首页.md) › [数据库设计总览](../01_数据库设计_总览.md) › [已设计数据表登记](../01_数据库设计_总览.md#tables-registry) › mdm_user_dept
 
 ## 1. 归属与依据 <a id="meta"></a>
 
 | 项 | 值 |
 | --- | --- |
-| 归属库 | mdm 租户库 `mdm_org_{code}`（归属服务 `org`） |
+| 归属库 | mdm 租户库 `mdm_{code}`（归属服务 `mdm`） |
 | 覆盖模块 | 03-部门管理（用户-部门多对多关联 + 主要部门） |
 | 上游依据 | 《[概要设计 · 部门管理](../../概要设计/03_概要设计_部门管理.md)》、《[架构设计 · 总览](../../架构设计/01_架构设计_总览.md)》「域服务划分与数据边界」节 |
-| ORM 模型 | `mdm_org/models/user_dept.py::OrgUserDept` |
+| ORM 模型 | `mdm/models/user_dept.py::OrgUserDept` |
 | 状态 | 已设计（需求 `01-2` / 任务 `01_02` 嵌套子任务 `02`，2026-10-09；跨仓来源 bms 阶段七需求 `07-11`） |
-| 相关节点 | [数据库设计总览](../01_数据库设计_总览.md)、[org_dept](org_dept.md)、[org_user_post](org_user_post.md) |
+| 相关节点 | [数据库设计总览](../01_数据库设计_总览.md)、[mdm_dept](mdm_dept.md)、[mdm_user_post](mdm_user_post.md) |
 
 ## 2. 字段 <a id="fields"></a>
 
@@ -23,7 +23,7 @@
 | --- | --- | --- | --- | --- |
 | `id` | BIGINT | 否 | 主键，雪花 ID | 主键 |
 | `user_id` | BIGINT | 否 | 与 `dept_id` + `deleted_at` 复合唯一 | 用户 id（逻辑外键 → bms `sys_user.id`，**跨服务**） |
-| `dept_id` | BIGINT | 否 | 与 `user_id` + `deleted_at` 复合唯一 | 部门 id（逻辑外键 → `org_dept.id`，同库） |
+| `dept_id` | BIGINT | 否 | 与 `user_id` + `deleted_at` 复合唯一 | 部门 id（逻辑外键 → `mdm_dept.id`，同库） |
 | `is_primary` | BOOLEAN | 否 | 默认假 | **主要部门**标记（该用户所属部门以主要项为准；同用户至多一个） |
 | `created_at` | DATETIME | 否 | 审计 | 创建时间（UTC） |
 | `created_by` | BIGINT | 是 | 审计 | 创建人 |
@@ -40,10 +40,10 @@
 
 | 名称 | 类型 | 列 | 说明 |
 | --- | --- | --- | --- |
-| `uq_org_user_dept_user_dept_deleted_at` | 唯一 | `(user_id, dept_id, deleted_at)` | 多对多防重（软删除后可重绑） |
-| `idx_org_user_dept_dept_id` | 普通 | `dept_id` | 部门下用户反查（`user_id` 为唯一索引先导列，不再单列） |
+| `uq_mdm_user_dept_user_dept_deleted_at` | 唯一 | `(user_id, dept_id, deleted_at)` | 多对多防重（软删除后可重绑） |
+| `idx_mdm_user_dept_dept_id` | 普通 | `dept_id` | 部门下用户反查（`user_id` 为唯一索引先导列，不再单列） |
 
-- 无物理外键；`user_id` 指向 bms `sys_user.id`（**跨服务逻辑外键**），`dept_id` 指向 `org_dept.id`（同库）。
+- 无物理外键；`user_id` 指向 bms `sys_user.id`（**跨服务逻辑外键**），`dept_id` 指向 `mdm_dept.id`（同库）。
 - **用户删除补偿**：bms 用户删除经 `sys.user.deleted` 事件驱动本域清理其关联行（不跨库强约束）。
 - 主要项查询（取该用户主要部门）由 `user_id` 前导的唯一索引覆盖，**不额外建索引**。
 
@@ -51,12 +51,13 @@
 
 - **分片**：不分片（关联关系随主数据常驻）。
 - **归档**：不归档。
-- **迁移**：随 **`org:tenant` 链**迁移落地（`0004_user_dept_and_primary`，实现在任务 `01_02` 嵌套子任务 `02`）。
+- **迁移**：随 **`mdm:tenant` 链**迁移落地（`0004_user_dept_and_primary`，实现在任务 `01_02` 嵌套子任务 `02`）。
 
 ## 5. 变更记录 <a id="revlog"></a>
 
 | 日期 | 版本 | 变更 | 作者 |
 | --- | --- | --- | --- |
 | 2026-10-09 | v1 | 新建表结构（mdm 组织域；用户-部门多对多 + 主要部门标记；跨仓来源 bms 阶段七需求 `07-11`） | minjian |
+| 2026-10-23 | v2 | 服务标识归并（任务 `01_05`）：表名 `org_*` → `mdm_*`、迁移链 `org:tenant` → `mdm:tenant`、库 `mdm_org_{code}` → `mdm_{code}`；约束 / 索引名同步为 `uq_mdm_*` / `idx_mdm_*` | minjian |
 
 > 数据表设计 · 与 bms《数据库开发规范》「数据表文件规范」节配套
