@@ -8,7 +8,7 @@
 //    宿主未提供 ⇒ 旧口径兜底：**确定即自提交**（全量覆盖、立即生效），不回归可用性；
 // ④ 移除「解绑」列：移除分配＝在弹窗内取消勾选后提交（草稿语义天然覆盖）；
 // ⑤ 降级：上下文缺失 / 无权限 / 请求能力未注入 → 不请求、给出明确提示。
-import { EmptyState, SectionContainer } from '@bms/ui-ep'
+import { EmptyState, SectionContainer } from '@bms/ui_ep'
 import { ElButton, ElDialog, ElRadio, ElTable, ElTableColumn } from 'element-plus'
 import { ref, watch } from 'vue'
 

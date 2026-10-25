@@ -2,7 +2,7 @@
 // 部门管理页：组织架构树 + 选中部门详情（**页内编辑**：修改 / 保存 / 取消，只读态↔编辑态）+
 // 工具栏（新建子部门 / 移动 / 启停 / 刷新）+ 只读的直属用户与角色 + `ancestors` 链展示。
 // 数据经**产品域寻址** `api.product('mdm', 'mdm')`（见 services/org-service）；模块不自建 HTTP、不自拼前缀。
-import { EmptyState, PageContainer, SectionContainer } from '@bms/ui-ep'
+import { EmptyState, PageContainer, SectionContainer } from '@bms/ui_ep'
 import {
   ElButton,
   ElForm,

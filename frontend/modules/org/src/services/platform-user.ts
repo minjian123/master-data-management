@@ -2,10 +2,10 @@
  * 平台用户查询服务（**平台服务通道**：`api.get('platform', '/users')`）。
  *
  * 用户主数据归平台（`sys_user` 在 bms 侧），mdm 组织域只持有**用户-岗位关联**；
- * 插件的选择用户弹窗与已分配回显经平台契约取数，类型取平台生成类型 `@bms/api-types`（与 bms 侧同源）。
+ * 插件的选择用户弹窗与已分配回显经平台契约取数，类型取平台生成类型 `@bms/api_types`（与 bms 侧同源）。
  */
 
-import type { platform } from '@bms/api-types'
+import type { platform } from '@bms/api_types'
 
 import { requiredHostApi } from '../runtime'
 

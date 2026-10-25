@@ -2,8 +2,8 @@
 // 岗位管理页：关键字 / 所属部门（含子级）/ 状态筛选 + 列表（多选批量删除 / 行内编辑·启停·删除）+
 // 「绑定角色」入口（**只读**：岗位侧角色绑定写端点属角色分配域，见按钮说明）+ 双击行打开岗位表单页。
 // 列表与分页复用平台件 `DataTable`（与服务端分页契约 `{ list, total, page, size }` 对齐）。
-import { DataTable, PageContainer, SectionContainer } from '@bms/ui-ep'
-import type { DataTableColumn } from '@bms/ui-ep'
+import { DataTable, PageContainer, SectionContainer } from '@bms/ui_ep'
+import type { DataTableColumn } from '@bms/ui_ep'
 import { ElButton, ElDialog, ElInput, ElMessage, ElMessageBox, ElOption, ElSelect, ElTag } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'

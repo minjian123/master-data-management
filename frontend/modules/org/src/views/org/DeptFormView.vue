@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 部门表单页（新建 / 编辑）：`/org/depts/form/:id?`（不进菜单）。
-import { PageContainer, SectionContainer } from '@bms/ui-ep'
+import { PageContainer, SectionContainer } from '@bms/ui_ep'
 import { ElButton, ElForm, ElFormItem, ElInput, ElInputNumber, ElMessage, ElOption, ElSelect } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

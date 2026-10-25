@@ -5,7 +5,7 @@
 // 宿主页经插槽件 `context` 注入角色标识，插件经 `useModuleSlotField('roleId')` **只读取得**；
 // 缺失即降级（不请求），不阻塞宿主页其余部分。分配经弹窗（部门筛选 + 岗位多选）、全量覆盖、即时提交。
 import { ElCheckbox, ElOption, ElSelect } from 'element-plus'
-import { useModuleSlotField } from '@bms/ui-ep'
+import { useModuleSlotField } from '@bms/ui_ep'
 import { onMounted, ref, watch } from 'vue'
 
 import { useOrgI18n } from '../../composables/useOrgI18n'

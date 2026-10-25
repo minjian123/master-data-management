@@ -4,7 +4,7 @@
 // 与「岗位分配」同一上下文通道（**显式上下文注入**，`roleId`）；差别在目标为**部门**，
 // 且语义为**精确匹配、不含下级**——弹窗内以部门树多选呈现（`check-strictly` 不级联）。
 import { ElTree } from 'element-plus'
-import { useModuleSlotField } from '@bms/ui-ep'
+import { useModuleSlotField } from '@bms/ui_ep'
 import { onMounted, ref, watch } from 'vue'
 
 import { useOrgI18n } from '../../composables/useOrgI18n'

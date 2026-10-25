@@ -6,7 +6,7 @@
  */
 
 import type { ModuleApi, ModuleApiScope } from '@bms/core'
-import { MODULE_SLOT_CONTEXT_KEY } from '@bms/ui-ep'
+import { MODULE_SLOT_CONTEXT_KEY } from '@bms/ui_ep'
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'

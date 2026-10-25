@@ -6,7 +6,7 @@
 // （`check-strictly` 不级联，精确匹配不含下级）。改动**进草稿**：宿主提供提交器通道时随宿主保存，
 // 无通道时弹窗「确定」即自提交（见 AssignPanel / useAssignment）。
 import { ElTree } from 'element-plus'
-import { useModuleSlotField } from '@bms/ui-ep'
+import { useModuleSlotField } from '@bms/ui_ep'
 import { onMounted, ref, watch } from 'vue'
 
 import { useOrgI18n } from '../../composables/useOrgI18n'

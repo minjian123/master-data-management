@@ -5,7 +5,7 @@
 // 插件经模块持有的宿主注入 `router`（只读）读取——宿主页不感知插件、插件不 import 宿主页。
 // 分配经**弹窗**（部门筛选 + 岗位多选）、**全量覆盖**、**即时提交**；单条解绑带二次确认（见 AssignPanel）。
 import { ElCheckbox, ElOption, ElSelect } from 'element-plus'
-import { useModuleSlotField } from '@bms/ui-ep'
+import { useModuleSlotField } from '@bms/ui_ep'
 import { onMounted, ref, watch } from 'vue'
 
 import { useOrgI18n } from '../../composables/useOrgI18n'
