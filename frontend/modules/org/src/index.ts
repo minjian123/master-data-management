@@ -18,7 +18,7 @@ import { applyHostContext } from './runtime'
 
 /** mdm 组织域模块（清单 `name` / `version` 须与平台清单条目严格一致；版本构建期注入）。 */
 export const orgModule = defineModule({
-  manifest: { name: 'mdm-org', version: __BMS_MODULE_VERSION__, contractVersion: MODULE_CONTRACT_VERSION },
+  manifest: { name: 'mdm_org', version: __BMS_MODULE_VERSION__, contractVersion: MODULE_CONTRACT_VERSION },
   setup: (context) => {
     // 只经注入上下文访问宿主能力（只读快照）：记录请求能力与只读路由、据权限码派生可写态；缺失项自行降级。
     applyHostContext(context)
@@ -57,7 +57,7 @@ export const orgModule = defineModule({
       ],
       regions: [
         {
-          key: 'mdm-org:user-posts',
+          key: 'mdm_org:user-posts',
           area: 'sys.user.detail.tabs',
           component: () => import('./components/slots/UserPostsPanel.vue'),
           order: 20,
@@ -65,7 +65,7 @@ export const orgModule = defineModule({
           perm: 'mdm:update',
         },
         {
-          key: 'mdm-org:user-depts',
+          key: 'mdm_org:user-depts',
           area: 'sys.user.detail.tabs',
           component: () => import('./components/slots/UserDeptsPanel.vue'),
           order: 30,
@@ -73,7 +73,7 @@ export const orgModule = defineModule({
           perm: 'mdm:update',
         },
         {
-          key: 'mdm-org:role-posts',
+          key: 'mdm_org:role-posts',
           area: 'sys.role.detail.assign',
           component: () => import('./components/slots/RolePostsPanel.vue'),
           order: 20,
@@ -81,7 +81,7 @@ export const orgModule = defineModule({
           perm: 'mdm:update',
         },
         {
-          key: 'mdm-org:role-depts',
+          key: 'mdm_org:role-depts',
           area: 'sys.role.detail.assign',
           component: () => import('./components/slots/RoleDeptsPanel.vue'),
           order: 30,
@@ -90,8 +90,8 @@ export const orgModule = defineModule({
         },
       ],
       i18nPacks: [
-        { key: 'mdm-org:zh-cn', messages: ORG_MESSAGES_ZH_CN },
-        { key: 'mdm-org:en', messages: ORG_MESSAGES_EN },
+        { key: 'mdm_org:zh-cn', messages: ORG_MESSAGES_ZH_CN },
+        { key: 'mdm_org:en', messages: ORG_MESSAGES_EN },
       ],
     }
   },

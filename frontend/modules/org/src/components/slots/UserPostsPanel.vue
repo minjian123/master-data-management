@@ -114,7 +114,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mdm-org-slot" data-test="slot-user-posts">
+  <div class="mdm_org-slot" data-test="slot-user-posts">
     <assign-panel
       title-key="mdmOrg.slot.userPosts.title"
       target-label="岗位"
@@ -134,7 +134,7 @@ onMounted(() => {
       @reload="reload"
     >
       <template #picker>
-        <div class="mdm-org-slot__filter">
+        <div class="mdm_org-slot__filter">
           <el-select
             v-model="deptFilter"
             clearable
@@ -144,10 +144,10 @@ onMounted(() => {
             <el-option v-for="item in deptOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </div>
-        <p class="mdm-org-slot__hint" data-test="slot-user-posts-chain">
+        <p class="mdm_org-slot__hint" data-test="slot-user-posts-chain">
           {{ t('mdmOrg.slot.userPosts.chain') }}
         </p>
-        <div class="mdm-org-slot__candidates" data-test="slot-user-posts-candidates">
+        <div class="mdm_org-slot__candidates" data-test="slot-user-posts-candidates">
           <el-checkbox
             v-for="item in options"
             :key="item.value"
@@ -170,17 +170,17 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.mdm-org-slot__filter {
+.mdm_org-slot__filter {
   margin-bottom: var(--bms-space-2);
 }
 
-.mdm-org-slot__hint {
+.mdm_org-slot__hint {
   margin: 0 0 var(--bms-space-2);
   color: var(--bms-color-text-secondary);
   font-size: var(--bms-font-size-sm);
 }
 
-.mdm-org-slot__candidates {
+.mdm_org-slot__candidates {
   display: flex;
   flex-direction: column;
   gap: var(--bms-space-1);

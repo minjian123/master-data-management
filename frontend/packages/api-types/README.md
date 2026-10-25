@@ -4,7 +4,7 @@
 
 ## 定位
 
-- 消费产品契约快照生成前端类型，供 mdm 模块（当前 `@mdm/module-org`）与后续消费方共享同一套接口类型。
+- 消费产品契约快照生成前端类型，供 mdm 模块（当前 `@mdm/module_org`）与后续消费方共享同一套接口类型。
 - **事实源是产品契约快照**：`mdm/deploy/contracts/<域>.json`（由后端 `ops.contract_snapshot export` 产出）。
   与 bms 侧 `@bms/api_types` 的关系：**并列、互不混用**——平台服务契约类型取 bms 包，产品契约类型取本包。
 - **生成物不手改**：`src/*.ts` 由 `scripts/generate.mjs` 产出；后端端点变更后重生成。

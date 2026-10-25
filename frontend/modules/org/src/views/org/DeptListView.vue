@@ -252,7 +252,7 @@ onMounted(load)
 <template>
   <page-container :title="t('mdmOrg.dept.list.title')" :description="t('mdmOrg.dept.list.description')">
     <section-container>
-      <div class="mdm-org-dept__toolbar">
+      <div class="mdm_org-dept__toolbar">
         <el-button v-if="canUpdate" type="primary" data-test="dept-create" @click="openCreate">
           {{ t('mdmOrg.dept.list.create') }}
         </el-button>
@@ -263,15 +263,15 @@ onMounted(load)
           {{ selected?.status === 'enabled' ? t('mdmOrg.common.disabled') : t('mdmOrg.common.enabled') }}
         </el-button>
         <el-button data-test="dept-refresh" @click="load">{{ t('mdmOrg.common.refresh') }}</el-button>
-        <span v-if="selected !== null" class="mdm-org-dept__current" data-test="dept-current">
+        <span v-if="selected !== null" class="mdm_org-dept__current" data-test="dept-current">
           {{ t('mdmOrg.dept.current', { name: selected.name }) }}
         </span>
       </div>
-      <p v-if="notice !== ''" class="mdm-org-dept__notice" data-test="dept-notice">{{ notice }}</p>
+      <p v-if="notice !== ''" class="mdm_org-dept__notice" data-test="dept-notice">{{ notice }}</p>
     </section-container>
 
     <section-container>
-      <div class="mdm-org-dept__body">
+      <div class="mdm_org-dept__body">
         <el-tree
           :data="tree"
           :props="treeProps"
@@ -281,10 +281,10 @@ onMounted(load)
           data-test="dept-tree"
           @node-click="onSelect"
         />
-        <div class="mdm-org-dept__detail" data-test="dept-detail">
+        <div class="mdm_org-dept__detail" data-test="dept-detail">
           <empty-state v-if="selected === null" type="data" :title="t('mdmOrg.common.empty')" />
           <template v-else>
-            <div class="mdm-org-dept__actions">
+            <div class="mdm_org-dept__actions">
               <el-button v-if="canUpdate && !editing" data-test="dept-edit" @click="startEdit">
                 {{ t('mdmOrg.common.edit') }}
               </el-button>
@@ -292,18 +292,18 @@ onMounted(load)
                 {{ t('mdmOrg.common.delete') }}
               </el-button>
               <el-button data-test="dept-form-page" @click="openFormPage">{{ t('mdmOrg.dept.form.open') }}</el-button>
-              <el-button v-if="editing" class="mdm-org-dept__spacer" @click="cancelEdit">
+              <el-button v-if="editing" class="mdm_org-dept__spacer" @click="cancelEdit">
                 {{ t('mdmOrg.common.cancel') }}
               </el-button>
               <el-button v-if="editing" type="primary" data-test="dept-save" @click="saveEdit">
                 {{ t('mdmOrg.common.save') }}
               </el-button>
-              <span class="mdm-org-dept__mode" data-test="dept-mode">
+              <span class="mdm_org-dept__mode" data-test="dept-mode">
                 {{ editing ? t('mdmOrg.dept.mode.editing') : t('mdmOrg.dept.mode.readonly') }}
               </span>
             </div>
 
-            <el-form label-width="120px" class="mdm-org-dept__form" data-test="dept-inline-form">
+            <el-form label-width="120px" class="mdm_org-dept__form" data-test="dept-inline-form">
               <el-form-item :label="t('mdmOrg.dept.form.parent')">
                 <el-select v-model="form.parentId" :disabled="!editing" clearable :placeholder="t('mdmOrg.dept.form.root')">
                   <el-option v-for="item in parentOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -335,9 +335,9 @@ onMounted(load)
                 <span data-test="dept-detail-users">{{ userIds.length }}</span>
               </el-form-item>
               <el-form-item :label="t('mdmOrg.dept.roles.title')">
-                <el-tag v-for="role in roleIds" :key="role" class="mdm-org-dept__role" size="small">{{ role }}</el-tag>
+                <el-tag v-for="role in roleIds" :key="role" class="mdm_org-dept__role" size="small">{{ role }}</el-tag>
                 <span v-if="roleIds.length === 0" data-test="dept-detail-roles">0</span>
-                <span class="mdm-org-dept__hint">{{ t('mdmOrg.dept.roles.hint') }}</span>
+                <span class="mdm_org-dept__hint">{{ t('mdmOrg.dept.roles.hint') }}</span>
               </el-form-item>
             </el-form>
           </template>
@@ -348,50 +348,50 @@ onMounted(load)
 </template>
 
 <style scoped>
-.mdm-org-dept__toolbar {
+.mdm_org-dept__toolbar {
   display: flex;
   align-items: center;
   gap: var(--bms-space-2);
 }
 
-.mdm-org-dept__current,
-.mdm-org-dept__notice,
-.mdm-org-dept__mode,
-.mdm-org-dept__hint {
+.mdm_org-dept__current,
+.mdm_org-dept__notice,
+.mdm_org-dept__mode,
+.mdm_org-dept__hint {
   color: var(--bms-color-text-secondary);
   font-size: var(--bms-font-size-sm);
 }
 
-.mdm-org-dept__notice {
+.mdm_org-dept__notice {
   margin: var(--bms-space-2) 0 0;
 }
 
-.mdm-org-dept__body {
+.mdm_org-dept__body {
   display: flex;
   gap: var(--bms-space-4);
 }
 
-.mdm-org-dept__detail {
+.mdm_org-dept__detail {
   flex: 1;
   min-width: 0;
 }
 
-.mdm-org-dept__actions {
+.mdm_org-dept__actions {
   display: flex;
   align-items: center;
   gap: var(--bms-space-2);
   margin-bottom: var(--bms-space-3);
 }
 
-.mdm-org-dept__spacer {
+.mdm_org-dept__spacer {
   margin-left: auto;
 }
 
-.mdm-org-dept__role {
+.mdm_org-dept__role {
   margin-right: var(--bms-space-1);
 }
 
-.mdm-org-dept__form :deep(.el-form-item) {
+.mdm_org-dept__form :deep(.el-form-item) {
   margin-bottom: var(--bms-space-2);
 }
 </style>

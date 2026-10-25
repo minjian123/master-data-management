@@ -116,27 +116,27 @@ watch(
     />
 
     <template v-else>
-      <div class="mdm-org-assign__toolbar">
+      <div class="mdm_org-assign__toolbar">
         <el-button v-if="runtime.canUpdate" type="primary" data-test="assign-open" @click="openPicker">
           {{ t('mdmOrg.slot.pickTarget', { target: targetLabel }) }}
         </el-button>
         <el-button data-test="assign-reload" @click="emit('reload')">{{ t('mdmOrg.common.refresh') }}</el-button>
-        <span class="mdm-org-assign__summary" data-test="assign-summary">
+        <span class="mdm_org-assign__summary" data-test="assign-summary">
           {{ t('mdmOrg.slot.assigned', { count: assignedRows.length }) }}
         </span>
-        <span v-if="dirty === true" class="mdm-org-assign__dirty" data-test="assign-dirty">
+        <span v-if="dirty === true" class="mdm_org-assign__dirty" data-test="assign-dirty">
           {{ t('mdmOrg.slot.dirty') }}
         </span>
-        <span v-if="!runtime.canUpdate" class="mdm-org-assign__hint" data-test="assign-no-permission">
+        <span v-if="!runtime.canUpdate" class="mdm_org-assign__hint" data-test="assign-no-permission">
           {{ t('mdmOrg.slot.noPermission') }}
         </span>
       </div>
 
-      <p v-if="hostBound !== true" class="mdm-org-assign__hint" data-test="assign-self-submit">
+      <p v-if="hostBound !== true" class="mdm_org-assign__hint" data-test="assign-self-submit">
         {{ t('mdmOrg.slot.selfSubmitHint') }}
       </p>
 
-      <p v-if="loading === true" class="mdm-org-assign__hint" data-test="assign-loading">
+      <p v-if="loading === true" class="mdm_org-assign__hint" data-test="assign-loading">
         {{ t('mdmOrg.common.loading') }}
       </p>
 
@@ -171,7 +171,7 @@ watch(
         <el-table-column prop="description" :label="t('mdmOrg.slot.column.note')" min-width="160" />
       </el-table>
 
-      <p v-if="(errorText ?? '') !== ''" class="mdm-org-assign__error" data-test="assign-error">{{ errorText }}</p>
+      <p v-if="(errorText ?? '') !== ''" class="mdm_org-assign__error" data-test="assign-error">{{ errorText }}</p>
 
       <el-dialog
         v-model="pickerVisible"
@@ -200,25 +200,25 @@ watch(
 </template>
 
 <style scoped>
-.mdm-org-assign__toolbar {
+.mdm_org-assign__toolbar {
   display: flex;
   align-items: center;
   gap: var(--bms-space-2);
   margin-bottom: var(--bms-space-2);
 }
 
-.mdm-org-assign__summary,
-.mdm-org-assign__hint {
+.mdm_org-assign__summary,
+.mdm_org-assign__hint {
   color: var(--bms-color-text-secondary);
   font-size: var(--bms-font-size-sm);
 }
 
-.mdm-org-assign__dirty {
+.mdm_org-assign__dirty {
   color: var(--bms-color-warning);
   font-size: var(--bms-font-size-sm);
 }
 
-.mdm-org-assign__error {
+.mdm_org-assign__error {
   margin: var(--bms-space-2) 0 0;
   color: var(--bms-color-danger);
   font-size: var(--bms-font-size-sm);

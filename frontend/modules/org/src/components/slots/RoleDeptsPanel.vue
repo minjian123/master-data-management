@@ -87,7 +87,7 @@ defineExpose({ syncTreeChecked })
 </script>
 
 <template>
-  <div class="mdm-org-slot" data-test="slot-role-depts">
+  <div class="mdm_org-slot" data-test="slot-role-depts">
     <assign-panel
       title-key="mdmOrg.slot.roleDepts.title"
       target-label="部门"
@@ -104,7 +104,7 @@ defineExpose({ syncTreeChecked })
       @reload="reload"
     >
       <template #picker>
-        <p class="mdm-org-slot__hint" data-test="slot-role-depts-hint">{{ t('mdmOrg.slot.deptExactHint') }}</p>
+        <p class="mdm_org-slot__hint" data-test="slot-role-depts-hint">{{ t('mdmOrg.slot.deptExactHint') }}</p>
         <el-tree
           ref="treeRef"
           :data="treeData"
@@ -122,7 +122,7 @@ defineExpose({ syncTreeChecked })
 </template>
 
 <style scoped>
-.mdm-org-slot__hint {
+.mdm_org-slot__hint {
   margin: 0 0 var(--bms-space-2);
   color: var(--bms-color-text-secondary);
   font-size: var(--bms-font-size-sm);

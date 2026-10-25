@@ -12,8 +12,8 @@ import {
 } from '../../../../bms/frontend/scripts/module-meta.mjs'
 import { loadSharedDependencies } from '../../../../bms/frontend/scripts/shared-deps.mjs'
 
-/** 模块名（= 模块清单 `name` = MF 容器名；带产品前缀，防与平台模块重名）。 */
-const MODULE_NAME = 'mdm-org'
+/** 模块名（= 模块清单 `name` = MF 容器名；带产品前缀，防与平台模块重名；登记型标识一律 snake_case）。 */
+const MODULE_NAME = 'mdm_org'
 
 /** 远端容器入口文件名（契约常量 `MODULE_REMOTE_ENTRY_FILE` 同值，构建期须一致）。 */
 const REMOTE_ENTRY_FILE = 'remoteEntry.js'

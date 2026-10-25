@@ -19,7 +19,7 @@ const registration = await orgModule.setup({})
 describe('mdm 组织域模块注册面（01_05 · Kiwi 2348）', () => {
   it('默认导出与命名导出为同一模块定义', () => {
     expect(namedModule).toBe(orgModule)
-    expect(orgModule.manifest.name).toBe('mdm-org')
+    expect(orgModule.manifest.name).toBe('mdm_org')
   })
 
   it('路由页动态导入全部可达（部门 / 岗位管理页与两表单页）', async () => {
@@ -38,9 +38,9 @@ describe('mdm 组织域模块注册面（01_05 · Kiwi 2348）', () => {
     }
   })
 
-  it('文案包：中英两套，键位跟随模块名（`mdm-org:*`）', () => {
+  it('文案包：中英两套，键位跟随模块名（`mdm_org:*`）', () => {
     const packs = registration.i18nPacks ?? []
-    expect(packs.map((pack) => pack.key)).toEqual(['mdm-org:zh-cn', 'mdm-org:en'])
+    expect(packs.map((pack) => pack.key)).toEqual(['mdm_org:zh-cn', 'mdm_org:en'])
     expect(packs[0].messages).toBe(ORG_MESSAGES_ZH_CN)
     expect(packs[1].messages).toBe(ORG_MESSAGES_EN)
   })

@@ -1,5 +1,5 @@
 {
-  "name": "@mdm/module-org",
+  "name": "@mdm/module_org",
   "private": true,
   "version": "0.1.0",
   "type": "module",

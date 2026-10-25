@@ -4,7 +4,7 @@
  * 文案包键位 / 契约版本与平台同源。
  */
 
-import { MODULE_CONTRACT_VERSION } from '@bms/core'
+import { MODULE_CONTRACT_VERSION, MODULE_NAME_PATTERN } from '@bms/core'
 import { describe, expect, it } from 'vitest'
 
 import orgModule from '../src/index'
@@ -14,7 +14,9 @@ const registration = await orgModule.setup({})
 
 describe('mdm 组织域模块定义（01_04 · Kiwi 2261）', () => {
   it('清单身份：名称 / 版本 / 契约版本', () => {
-    expect(orgModule.manifest.name).toBe('mdm-org')
+    expect(orgModule.manifest.name).toBe('mdm_org')
+    // 宿主模块名约束：登记型标识一律 snake_case（bms `MODULE_NAME_PATTERN`）
+    expect(MODULE_NAME_PATTERN.test(orgModule.manifest.name)).toBe(true)
     expect(orgModule.manifest.version).toBe(__BMS_MODULE_VERSION__)
     expect(orgModule.manifest.contractVersion).toBe(MODULE_CONTRACT_VERSION)
   })
@@ -43,10 +45,10 @@ describe('mdm 组织域模块定义（01_04 · Kiwi 2261）', () => {
   it('区域项：四个具名插槽插件（用户侧 岗位分配 / 部门分配；角色侧 岗位分配 / 部门分配）键位与挂接位正确', () => {
     const regions = registration.regions ?? []
     expect(regions.map((region) => region.key)).toEqual([
-      'mdm-org:user-posts',
-      'mdm-org:user-depts',
-      'mdm-org:role-posts',
-      'mdm-org:role-depts',
+      'mdm_org:user-posts',
+      'mdm_org:user-depts',
+      'mdm_org:role-posts',
+      'mdm_org:role-depts',
     ])
     expect(regions.map((region) => region.area)).toEqual([
       'sys.user.detail.tabs',
@@ -67,7 +69,7 @@ describe('mdm 组织域模块定义（01_04 · Kiwi 2261）', () => {
 
   it('文案包：中文与英文各一份（键位 `<模块名>:<语言标识>`）', () => {
     const packs = registration.i18nPacks ?? []
-    expect(packs.map((pack) => pack.key)).toEqual(['mdm-org:zh-cn', 'mdm-org:en'])
+    expect(packs.map((pack) => pack.key)).toEqual(['mdm_org:zh-cn', 'mdm_org:en'])
     expect(Object.keys(packs[0]?.messages ?? {}).length).toBeGreaterThan(20)
   })
 

@@ -245,7 +245,7 @@ onMounted(async () => {
 <template>
   <page-container :title="t('mdmOrg.post.list.title')" :description="t('mdmOrg.post.list.description')">
     <section-container>
-      <div class="mdm-org-post__filters">
+      <div class="mdm_org-post__filters">
         <el-input
           v-model="keywordInput"
           clearable
@@ -345,8 +345,8 @@ onMounted(async () => {
     </section-container>
 
     <el-dialog v-model="rolesVisible" :title="t('mdmOrg.post.roles.title')" :width="480" :align-center="true">
-      <p class="mdm-org-post__hint" data-test="post-roles-hint">{{ t('mdmOrg.post.roles.readonlyHint') }}</p>
-      <el-tag v-for="role in boundRoleIds" :key="role" class="mdm-org-post__role" size="small">{{ role }}</el-tag>
+      <p class="mdm_org-post__hint" data-test="post-roles-hint">{{ t('mdmOrg.post.roles.readonlyHint') }}</p>
+      <el-tag v-for="role in boundRoleIds" :key="role" class="mdm_org-post__role" size="small">{{ role }}</el-tag>
       <span v-if="boundRoleIds.length === 0" data-test="post-roles-empty">{{ t('mdmOrg.common.empty') }}</span>
       <template #footer>
         <el-button data-test="post-roles-close" @click="rolesVisible = false">{{ t('mdmOrg.common.confirm') }}</el-button>
@@ -356,18 +356,18 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.mdm-org-post__filters {
+.mdm_org-post__filters {
   display: flex;
   gap: var(--bms-space-2);
 }
 
-.mdm-org-post__hint {
+.mdm_org-post__hint {
   margin: 0 0 var(--bms-space-2);
   color: var(--bms-color-text-secondary);
   font-size: var(--bms-font-size-sm);
 }
 
-.mdm-org-post__role {
+.mdm_org-post__role {
   margin-right: var(--bms-space-1);
 }
 </style>

@@ -100,7 +100,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mdm-org-slot" data-test="slot-role-posts">
+  <div class="mdm_org-slot" data-test="slot-role-posts">
     <assign-panel
       title-key="mdmOrg.slot.rolePosts.title"
       target-label="岗位"
@@ -117,7 +117,7 @@ onMounted(() => {
       @reload="reload"
     >
       <template #picker>
-        <div class="mdm-org-slot__filter">
+        <div class="mdm_org-slot__filter">
           <el-select
             v-model="deptFilter"
             clearable
@@ -127,7 +127,7 @@ onMounted(() => {
             <el-option v-for="item in deptOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </div>
-        <div class="mdm-org-slot__candidates" data-test="slot-role-posts-candidates">
+        <div class="mdm_org-slot__candidates" data-test="slot-role-posts-candidates">
           <el-checkbox
             v-for="item in options"
             :key="item.value"
@@ -150,11 +150,11 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.mdm-org-slot__filter {
+.mdm_org-slot__filter {
   margin-bottom: var(--bms-space-2);
 }
 
-.mdm-org-slot__candidates {
+.mdm_org-slot__candidates {
   display: flex;
   flex-direction: column;
   gap: var(--bms-space-1);

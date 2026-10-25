@@ -209,7 +209,7 @@ frontend-test:
     - pnpm run api-types:test
     # 模块用例 + 覆盖率采集（行 + 分支；门禁阈值口径见《AI开发规范》「覆盖率要求」节，
     # 本地按变更源文件 `--coverage.include=… --coverage.thresholds.lines=100 --coverage.thresholds.branches=100` 收口）
-    - pnpm --filter @mdm/module-org run test:cov
+    - pnpm --filter @mdm/module_org run test:cov
   coverage: '/^All files\s*\|\s*(\d+(?:\.\d+)?)/'
   artifacts:
     when: always
