@@ -70,7 +70,7 @@ asyncio_mode = "auto"
 # importlib 模式：多套同名 `tests` 目录互不冲突，测试模块按路径唯一命名
 # -p engkit.coverage_plugin：入口插件（跨仓工程化工具包）——**最早**启动覆盖率采集（导入期行可采），
 #   并挂上重命令 / 全量测试守卫；仓内不再另写采集或拦截实现（口径见 engkit《工程化工具包说明》§4.4）
-addopts = "--import-mode=importlib -p engkit.coverage_plugin"
+addopts = "--import-mode=importlib -p engkit.coverage_plugin --basetemp=.cache/pytest"
 testpaths = [
     "services/org/tests",
     "tests",
