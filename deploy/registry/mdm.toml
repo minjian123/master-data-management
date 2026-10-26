@@ -1,0 +1,153 @@
+# mdm 产品自持声明（平台装载 + 装载期校验；07B `02_01` 起为 toml，不再支持 json）
+#
+# 六段并列：产品档案 / 服务行 / 产品级路由 / 数据源 / 能力（第五类记录）/ 种子（第六类记录）。
+# - 口径：基座 `bms_core.registry.products`（同源、同装载入口、同视图族、同唯一性纪律）。
+# - 校验：`ops.check_modules` 与平台装配期复用同一实现（能力重名 / 业务域 / 归属 /
+#   访问面契约定位 / 版本兼容 / 种子入口）；任一不满足即拒启。
+# - 本文件与代码清单（`backend/services/module_registry.py`）逐字段同值，由 `ops.check_modules` 断言。
+
+product_key = "mdm"
+
+[[products]]
+product_key = "mdm"
+name = "主数据管理"
+frontend_package_source = "mdm#frontend"
+status = "enabled"
+
+[[services]]
+module_key = "mdm"
+service_key = "mdm"
+name = "mdm 主数据服务"
+table_prefix = "mdm_"
+business_code = "mdm"
+errcode_segment = "33"
+event_domain = "mdm"
+service_group = "product"
+build_batch = 3
+service_version = "0.1.0"
+contract_version = "0.1.0"
+product_key = "mdm"
+status = "enabled"
+
+[[product_routes]]
+product_key = "mdm"
+domain = "mdm"
+service_key = "mdm"
+description = "mdm 主数据服务（对外 /api/mdm/v1/mdm/...）"
+
+[[data_sources]]
+data_source_key = "mdm_dept"
+name = "部门"
+kind = "dict"
+data_source = "mdm.mdm.dept"
+origin = "product"
+product_key = "mdm"
+path = "/data-source/dept-tree"
+allowlist = ["code", "label"]
+cascade = true
+strategies = ["select", "region", "match"]
+status = "enabled"
+
+[[data_sources]]
+data_source_key = "mdm_post"
+name = "岗位"
+kind = "dict"
+data_source = "mdm.mdm.post"
+origin = "product"
+product_key = "mdm"
+path = "/data-source/posts"
+allowlist = ["code", "label"]
+cascade = false
+strategies = ["select", "match"]
+status = "enabled"
+
+# ---- 能力（第五类记录）----
+# 能力名 = {产品}.{业务域}.{能力}；domain 是**业务域**（org），不是服务标识（mdm）。
+# 访问面须能在本仓公开契约 `deploy/contracts/mdm.json` 的 paths 中定位（参数名归一化比较）。
+
+[[collaborations]]
+name = "mdm.org.user-roles"
+domain = "org"
+kind = "read"
+path = "/api/v1/mdm/user-roles"
+contract_version = "0.1.0"
+default_consumers = ["platform"]
+
+[[collaborations]]
+name = "mdm.org.user-posts.assign"
+domain = "org"
+kind = "txn-branch"
+path = "/api/v1/mdm/internal/user-posts/{user_id}"
+branch_id = "m"
+branch_op = "mdm.user-posts.assign"
+contract_version = "0.1.0"
+default_consumers = ["platform"]
+
+[[collaborations]]
+name = "mdm.org.user-depts.assign"
+domain = "org"
+kind = "txn-branch"
+path = "/api/v1/mdm/internal/user-depts/{user_id}"
+branch_id = "m"
+branch_op = "mdm.user-depts.assign"
+contract_version = "0.1.0"
+default_consumers = ["platform"]
+
+[[collaborations]]
+name = "mdm.org.role-posts.assign"
+domain = "org"
+kind = "txn-branch"
+path = "/api/v1/mdm/internal/role-posts/{role_id}"
+branch_id = "m"
+branch_op = "mdm.role-posts.assign"
+contract_version = "0.1.0"
+default_consumers = ["platform"]
+
+[[collaborations]]
+name = "mdm.org.role-depts.assign"
+domain = "org"
+kind = "txn-branch"
+path = "/api/v1/mdm/internal/role-depts/{role_id}"
+branch_id = "m"
+branch_op = "mdm.role-depts.assign"
+contract_version = "0.1.0"
+default_consumers = ["platform"]
+
+[[collaborations]]
+name = "mdm.org.dept-data"
+domain = "org"
+kind = "dataset"
+path = "/api/v1/mdm/data-source/dept-tree"
+data_source_key = "mdm_dept"
+frontend_prefix = "mdm"
+contract_version = "0.1.0"
+default_consumers = ["platform"]
+
+[[collaborations]]
+name = "mdm.org.post-data"
+domain = "org"
+kind = "dataset"
+path = "/api/v1/mdm/data-source/posts"
+data_source_key = "mdm_post"
+frontend_prefix = "mdm"
+contract_version = "0.1.0"
+default_consumers = ["platform"]
+
+[[collaborations]]
+name = "mdm.org.admin-codes"
+domain = "org"
+kind = "codes"
+permission_codes = ["mdm:query", "mdm:create", "mdm:update", "mdm:delete"]
+contract_version = "0.1.0"
+default_consumers = ["platform"]
+
+# ---- 种子（第六类记录）----
+# 声明即「模块路径 + 入口 + 依赖顺序」；执行归平台种子编排（07B `02_03`），本任务只落可调用入口。
+
+[[seeds]]
+name = "mdm-admin-codes"
+module = "mdm.seeds.permissions"
+entry = "seed_admin_codes"
+after = []
+description = "管理面业务码与权限码（业务码 mdm + 查询 / 新建 / 修改 / 删除）"
+status = "enabled"

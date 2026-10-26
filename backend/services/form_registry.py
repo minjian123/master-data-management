@@ -7,7 +7,7 @@
   （`app.state.form_registry`，`GET /api/v1/form-keys` 取该视图）；无进程级注册表、不改常量。
 - **取值口径**（2026-10-22 拍板，2026-10-23 随服务标识归并同步）：`form_key` ＝ 表名同名
   （`mdm_dept` / `mdm_post`），`data_source_key` 与 `form_key` **同名闭合**（1:1），与产品登记
-  清单 `deploy/registry/mdm.json` 的 `data_sources` 两条条目对齐（bms `DATA_SOURCE_CATALOG`
+  清单 `deploy/registry/mdm.toml` 的 `data_sources` 两条条目对齐（bms `DATA_SOURCE_CATALOG`
   不再登记产品条目），供通用页面路由直接解析。
 - **不落范围**：明细表、多对多关联表（`mdm_user_dept` / `mdm_role_dept` / `mdm_role_post` /
   `mdm_user_post`）与基础设施表不登记（口径见 bms《数据库开发规范》「系统字段」节）。

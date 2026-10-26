@@ -1,23 +1,25 @@
-"""产品侧分链迁移 CLI：按「服务 × 数据源 × 租户」遍历执行 Alembic 迁移（幂等）。
+"""产品侧分域迁移 CLI：按「业务域 × 数据源 × 服务库」遍历执行 Alembic 迁移（幂等）。
 
 用法：
 
 ```bash
 cd backend
 uv run python -m ops.migrate --dry-run                      # 清单预演（不建连）
-uv run python -m ops.migrate                                # 各在运服务 × 平台服务库 + 归档库
+uv run python -m ops.migrate                                # 各在运服务库 × 平台 + 归档
 uv run python -m ops.migrate --target platform              # 仅平台服务库
-uv run python -m ops.migrate --code demo --code acme        # 追加服务租户库（库键 tenant_org_{code}）
+uv run python -m ops.migrate --code demo --code acme        # 追加服务租户库（库键 tenant_mdm_{code}）
 uv run python -m ops.migrate --target tenant --url "dm+dmPython://SYSDBA:pass@host:5236" --schema MDM_MIGRCHECK
 ```
 
+- **维度分工（07C）**：迁移清单按**业务域 × 数据源**组织（`org:platform` / `org:tenant`），
+  业务域是架构边界；**服务标识只用于库键**（`mdm` / `mdm_{code}`），两者解耦；
 - **服务维度**：缺省取本产品清单在运服务（`local_service_keys()`）；`--service` 可重复显式指定；
 - **租户维度**：`--code`（可重复，库名基 = 编码）。**不读租户注册库**——`platform_tenant` 库归平台
   `tenant` 服务，产品侧不跨服务直读；租户全集编排由平台侧负责（bms `ops.migrate_tenants`）；
-- **链映射**：平台服务库 `mdm_{service}` → 链 `{service}:platform`；服务租户库 `mdm_{service}_{code}`
-  → 链 `{service}:tenant`；归档库 `mdm_archive` → 链 `platform:archive`（归档库不服务化）；
-- **执行**：逐库经基座 `upgrade_chain`（`command.upgrade(cfg, "head")`）；
-- **幂等**：目标 `alembic_version` 已为链 head → 「已是最新（跳过）」；链无脚本 → 「无脚本（跳过）」；
+- **清单映射**：平台服务库 `mdm_{service}` → 清单 `org:platform`；服务租户库 `mdm_{service}_{code}`
+  → 清单 `org:tenant`；归档库 `mdm_archive` → 清单 `platform:archive`（归档库不服务化）；
+- **执行**：逐库经基座 `upgrade_series`（`command.upgrade(cfg, "head")`）；
+- **幂等**：目标版本表已为清单 head → 「已是最新（跳过）」；清单无脚本 → 「无脚本（跳过）」；
 - **失败不中断**：单库失败记 ERROR 并继续，末尾汇总；存在失败退出码 1；
 - **`--dry-run`**：仅打印清单（连接串脱敏）与库数量统计，不建连、不迁移。
 """
@@ -37,17 +39,18 @@ from bms_core.db.migration import (
     DATASOURCE_ARCHIVE,
     DATASOURCE_PLATFORM,
     DATASOURCE_TENANT,
-    MigrationChain,
-    archive_chain,
-    build_chain_name,
+    MigrationSeries,
+    archive_series,
+    build_series_name,
     current_revision,
     head_revision,
-    resolve_chain,
-    upgrade_chain,
+    resolve_series,
+    upgrade_series,
 )
 from sqlalchemy.engine import make_url
 
 from services.module_registry import local_service_keys
+from services.table_registry import ORG_DOMAIN
 from services.table_registry import register as register_product_tables
 
 # 表归属**产品注入**（bms 12_04）：迁移链表集派生需先注册本产品表归属（幂等）
@@ -58,9 +61,9 @@ TARGETS = ("all", "platform", "tenants", "tenant", "archive")
 
 @dataclass(frozen=True)
 class MigrationTask(BaseValueObject):
-    """单个迁移任务（链 / 展示名 / 连接串 / 模式）。"""
+    """单个迁移任务（清单 / 展示名 / 连接串 / 模式）。"""
 
-    chain: MigrationChain
+    series: MigrationSeries
     label: str
     url: str
     schema: str = ""
@@ -157,12 +160,13 @@ def service_tasks(
     resolved = settings or get_settings()
     factory = EngineFactory(resolved, allow_cross_service=True)  # 运维通道：批量迁移按各服务库执行
     tasks: ConcurrentStableList[MigrationTask] = ConcurrentStableList()
+    platform_series = resolve_series(build_series_name(ORG_DOMAIN, DATASOURCE_PLATFORM))
+    tenant_series = resolve_series(build_series_name(ORG_DOMAIN, DATASOURCE_TENANT))
     for service in services:
         if include_platform:
-            chain = resolve_chain(build_chain_name(service, DATASOURCE_PLATFORM))
             tasks.add(
                 MigrationTask(
-                    chain=chain,
+                    series=platform_series,
                     label=build_platform_db_key(service),
                     url=factory.resolved_url(build_platform_db_key(service)),
                 )
@@ -170,11 +174,10 @@ def service_tasks(
         if not include_tenants:
             continue
         for code in codes:
-            chain = resolve_chain(build_chain_name(service, DATASOURCE_TENANT))
             key = build_tenant_db_key(code, service=service)
-            tasks.add(MigrationTask(chain=chain, label=key, url=factory.resolved_url(key)))
+            tasks.add(MigrationTask(series=tenant_series, label=key, url=factory.resolved_url(key)))
     if include_archive:
-        tasks.add(MigrationTask(chain=archive_chain(), label="archive", url=factory.resolved_url("archive")))
+        tasks.add(MigrationTask(series=archive_series(), label="archive", url=factory.resolved_url("archive")))
     return tasks
 
 
@@ -198,22 +201,21 @@ def build_tasks(args: argparse.Namespace) -> ConcurrentStableList[MigrationTask]
     if args.target == "tenant":
         if not args.url:
             raise ConfigError("`--target tenant` 需显式 `--url`（单库模式：演练 / 指定库）")
-        service = services[0]
-        chain = resolve_chain(build_chain_name(service, DATASOURCE_TENANT))
-        return ConcurrentStableList([MigrationTask(chain=chain, label="tenant", url=args.url, schema=args.schema)])
+        series = resolve_series(build_series_name(ORG_DOMAIN, DATASOURCE_TENANT))
+        return ConcurrentStableList([MigrationTask(series=series, label="tenant", url=args.url, schema=args.schema)])
 
     if args.target == "archive":
         url = args.url or factory.resolved_url("archive")
         return ConcurrentStableList(
-            [MigrationTask(chain=archive_chain(), label="archive", url=url, schema=args.schema)]
+            [MigrationTask(series=archive_series(), label="archive", url=url, schema=args.schema)]
         )
 
     if args.target == "platform":
         if args.url:  # 单库模式（演练）：指定服务的平台服务库
             service = services[0]
-            chain = resolve_chain(build_chain_name(service, DATASOURCE_PLATFORM))
+            series = resolve_series(build_series_name(ORG_DOMAIN, DATASOURCE_PLATFORM))
             return ConcurrentStableList(
-                [MigrationTask(chain=chain, label=build_platform_db_key(service), url=args.url, schema=args.schema)]
+                [MigrationTask(series=series, label=build_platform_db_key(service), url=args.url, schema=args.schema)]
             )
         return service_tasks(services, ConcurrentStableList(), settings=settings, include_tenants=False)
 
@@ -242,25 +244,25 @@ async def run_tasks(tasks: ConcurrentStableList[MigrationTask]) -> MigrationSumm
     skipped: ConcurrentStableList[str] = ConcurrentStableList()
     failed: ConcurrentStableList[str] = ConcurrentStableList()
     for task in tasks:
-        chain = task.chain
-        head = head_revision(chain)
+        series = task.series
+        head = head_revision(series)
         if head is None:
             skipped.add(task.label)
-            print(f"[migrate] {chain.name} {task.label} → 无脚本（跳过）")
+            print(f"[migrate] {series.name} {task.label} → 无脚本（跳过）")
             continue
         try:
-            current = await current_revision(task.url, schema=task.schema)
+            current = await current_revision(task.url, version_table=series.version_table, schema=task.schema)
             if current == head:
                 skipped.add(task.label)
-                print(f"[migrate] {chain.name} {task.label} → 已是最新（跳过）")
+                print(f"[migrate] {series.name} {task.label} → 已是最新（跳过）")
                 continue
-            await asyncio.to_thread(upgrade_chain, chain, task.url, schema=task.schema)
+            await asyncio.to_thread(upgrade_series, series, task.url, schema=task.schema)
         except Exception as exc:  # 单库失败不中断整批
             failed.add(task.label)
-            print(f"[migrate] {chain.name} {task.label} → 失败：{type(exc).__name__}: {exc}")
+            print(f"[migrate] {series.name} {task.label} → 失败：{type(exc).__name__}: {exc}")
             continue
         succeeded.add(task.label)
-        print(f"[migrate] {chain.name} {task.label} → 迁移完成（{current or '未迁移'} → {head}）")
+        print(f"[migrate] {series.name} {task.label} → 迁移完成（{current or '未迁移'} → {head}）")
     return MigrationSummary(succeeded=tuple(succeeded), skipped=tuple(skipped), failed=tuple(failed))
 
 
@@ -278,7 +280,7 @@ def _counts(tasks: ConcurrentStableList[MigrationTask]) -> str:
         DATASOURCE_TENANT: "服务租户库",
         DATASOURCE_ARCHIVE: "归档库",
     }
-    counts = Counter(task.chain.datasource for task in tasks)
+    counts = Counter(task.series.datasource for task in tasks)
     detail = "、".join(f"{labels.get(name, name)} {count}" for name, count in sorted(counts.items()))
     return f"共 {len(tasks)} 个目标（{detail}）"
 
@@ -296,7 +298,7 @@ async def run(args: argparse.Namespace) -> int:
     print(f"[migrate] 待迁移 {len(tasks)} 个目标（target={args.target}）")
     for task in tasks:
         suffix = f" schema={task.schema}" if task.schema else ""
-        print(f"[migrate] {task.chain.name:<22} {task.label:<28} {_masked(task.url)}{suffix}")
+        print(f"[migrate] {task.series.name:<22} {task.label:<28} {_masked(task.url)}{suffix}")
     if args.dry_run:
         print(f"[migrate] 库数量：{_counts(tasks)}")
         print("[migrate] dry-run：不建连、不迁移")

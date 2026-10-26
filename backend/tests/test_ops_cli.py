@@ -35,6 +35,42 @@ def test_check_modules_cli_passes(capsys: pytest.CaptureFixture[str]) -> None:
     assert "校验通过" in capsys.readouterr().out
 
 
+def test_load_and_register_manifest_reports_errors(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """产品自持声明非法：返回明细且不注册（装载期拒启路径）。
+
+    Args:
+        tmp_path: 临时目录。
+        capsys: pytest 输出捕获夹具。
+    """
+    broken = tmp_path / "mdm.toml"
+    broken.write_text('product_key = "mdm"\n\n[[collaborations]]\nname = "mdm.org.x"\n', encoding="utf-8")
+
+    errors = check_modules.load_and_register_manifest(broken)
+
+    assert any("缺少必填字段" in error for error in errors)
+    assert capsys.readouterr().out == ""
+
+
+def test_load_and_register_manifest_prints_warnings(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """种子入口所在包不可导入：跳过并打印警示（不静默），不阻断装载。
+
+    Args:
+        tmp_path: 临时目录。
+        capsys: pytest 输出捕获夹具。
+    """
+    manifest = tmp_path / "warn.toml"
+    manifest.write_text(
+        'product_key = "mdm"\n\n[[seeds]]\nname = "mdm-absent-seed"\n'
+        'module = "absentpkg.seeds.permissions"\nentry = "run"\n',
+        encoding="utf-8",
+    )
+
+    errors = check_modules.load_and_register_manifest(manifest)
+
+    assert errors == []
+    assert "跳过入口校验" in capsys.readouterr().out
+
+
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 def test_check_modules_parser_defaults() -> None:
     """CLI 参数：`--offline` 为口径兼容开关（mdm 产品侧恒离线）。"""
@@ -279,38 +315,38 @@ def test_migrate_service_tasks_without_platform(monkeypatch: pytest.MonkeyPatch)
         include_platform=False,
         include_archive=True,
     )
-    chain_names = [task.chain.name for task in tasks]
-    assert all(not name.startswith("mdm:platform") for name in chain_names)
-    assert any(name.startswith("mdm:tenant") for name in chain_names)
-    assert any(name.startswith("platform:archive") for name in chain_names)
+    series_names = [task.series.name for task in tasks]
+    assert all(not name.startswith("org:platform") for name in series_names)
+    assert any(name.startswith("org:tenant") for name in series_names)
+    assert any(name.startswith("archive:archive") for name in series_names)
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 async def test_migrate_run_tasks_reports_three_outcomes(monkeypatch: pytest.MonkeyPatch) -> None:
     """执行汇总：已最新（跳过）/ 迁移完成（成功）/ 抛错（失败）三类结果均如实登记。"""
-    chain = migrate.resolve_chain(migrate.build_chain_name("mdm", migrate.DATASOURCE_PLATFORM))
+    series = migrate.resolve_series(migrate.build_series_name(migrate.ORG_DOMAIN, migrate.DATASOURCE_PLATFORM))
     tasks = migrate.ConcurrentStableList(
-        [migrate.MigrationTask(chain=chain, label="mdm", url="sqlite+aiosqlite:///mdm_run.db")]
+        [migrate.MigrationTask(series=series, label="mdm", url="sqlite+aiosqlite:///mdm_run.db")]
     )
-    monkeypatch.setattr(migrate, "head_revision", lambda _chain: "rev_head")
+    monkeypatch.setattr(migrate, "head_revision", lambda _series: "rev_head")
 
-    async def _current(url: str, schema: str | None = None) -> str:
+    async def _current(url: str, *, version_table: str = "", schema: str = "") -> str:
         return "rev_head"
 
     monkeypatch.setattr(migrate, "current_revision", _current)
     summary = await migrate.run_tasks(tasks)
     assert summary.skipped == ("mdm",)
 
-    async def _stale(url: str, schema: str | None = None) -> str:
+    async def _stale(url: str, *, version_table: str = "", schema: str = "") -> str:
         return "rev_old"
 
     upgrades: list[str] = []
     monkeypatch.setattr(migrate, "current_revision", _stale)
-    monkeypatch.setattr(migrate, "upgrade_chain", lambda _chain, _url, schema=None: upgrades.append(_url))
+    monkeypatch.setattr(migrate, "upgrade_series", lambda _series, _url, schema=None: upgrades.append(_url))
     summary = await migrate.run_tasks(tasks)
     assert summary.succeeded == ("mdm",) and upgrades
 
-    async def _boom(url: str, schema: str | None = None) -> str:
+    async def _boom(url: str, *, version_table: str = "", schema: str = "") -> str:
         raise RuntimeError("连不上库")
 
     monkeypatch.setattr(migrate, "current_revision", _boom)

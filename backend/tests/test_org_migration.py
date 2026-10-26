@@ -1,4 +1,4 @@
-"""mdm:tenant 迁移链（Kiwi 2255）：链头 / 表集与模型零漂移 / 升降级往返。"""
+"""org:tenant 迁移清单（Kiwi 2255）：清单头 / 表集与模型零漂移 / 升降级往返（07C 按业务域）。"""
 
 import asyncio
 from datetime import UTC, datetime
@@ -8,14 +8,14 @@ import pytest
 import sqlalchemy as sa
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
-from bms_core.db.migration import chain_metadata, has_revisions, head_revision, resolve_chain, upgrade_chain
-from bms_core.services.table_registry import chain_tables
+from bms_core.db.migration import has_revisions, head_revision, resolve_series, series_metadata, upgrade_series
+from bms_core.services.table_registry import series_tables, unit_tables
 from sqlalchemy import Connection, Engine, create_engine, inspect
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from services.table_registry import register
+from services.table_registry import ORG_DOMAIN, register
 
-_CHAIN = "mdm:tenant"
+_SERIES = "org:tenant"
 
 _ORG_TABLES = ("mdm_dept", "mdm_post", "mdm_user_post", "mdm_user_dept", "mdm_role_post", "mdm_role_dept")
 _ORG_TABLES_BASE = ("mdm_dept", "mdm_post", "mdm_user_post", "mdm_role_post", "mdm_role_dept")
@@ -35,7 +35,10 @@ def _table_names(connection: Connection) -> set[str]:
 
 
 def _metadata_diff(connection: Connection) -> list[str]:
-    """迁移后库结构 vs 链元数据的逐项差异（零漂移断言用）。
+    """迁移后库结构 vs 清单元数据的逐项差异（零漂移断言用）。
+
+    **基础设施表不进域清单元数据**（每库一份，由部署单元级建表集管理；架构 39 §4.1 例外），
+    故此处只比对 org 域表，`sys_outbox` 等由迁移脚本建的表不计入差异。
 
     Args:
         connection: 同步连接。
@@ -44,7 +47,10 @@ def _metadata_diff(connection: Connection) -> list[str]:
         list[str]: 差异明细（空表示零漂移）。
     """
     context = MigrationContext.configure(connection, opts={"compare_type": True})
-    return [str(item) for item in compare_metadata(context, chain_metadata(resolve_chain(_CHAIN)))]
+    diffs = [str(item) for item in compare_metadata(context, series_metadata(resolve_series(_SERIES)))]
+    # 版本记录表（`alembic_version_{domain}`）同样不进域清单元数据
+    ignored = (*_INFRA_TABLES, "alembic_version")
+    return [item for item in diffs if not any(name in item for name in ignored)]
 
 
 def _upgrade(url: str) -> None:
@@ -53,7 +59,7 @@ def _upgrade(url: str) -> None:
     Args:
         url: 目标库连接串。
     """
-    upgrade_chain(resolve_chain(_CHAIN), url)
+    upgrade_series(resolve_series(_SERIES), url)
 
 
 def _downgrade(url: str, revision: str) -> None:
@@ -69,7 +75,7 @@ def _downgrade(url: str, revision: str) -> None:
 
     from alembic import command
 
-    config = alembic_config(resolve_chain(_CHAIN))
+    config = alembic_config(resolve_series(_SERIES))
     config.cmd_opts = SimpleNamespace(x=[f"url={url}"])  # pyright: ignore[reportAttributeAccessIssue]
     command.downgrade(config, revision)
 
@@ -94,19 +100,21 @@ def _sync_table_names(url: str) -> set[str]:
 
 
 @pytest.mark.kiwi_id(2255)
-def test_org_tenant_chain_registered() -> None:
-    """链注册：`mdm:tenant` 有脚本、链头为 `0005_mdm_form_key`、表集含六表 + 基础设施三表。"""
+def test_org_tenant_series_registered() -> None:
+    """清单注册：`org:tenant` 有脚本、清单头为 `0005_mdm_form_key`、域表集为六表（基础设施另计）。"""
     register()
-    chain = resolve_chain(_CHAIN)
-    assert has_revisions(chain)
-    assert head_revision(chain) == "0005_mdm_form_key"
-    tables = chain_tables("mdm", "tenant")
-    assert all(name in tables for name in (*_ORG_TABLES, *_INFRA_TABLES))
+    series = resolve_series(_SERIES)
+    assert has_revisions(series)
+    assert head_revision(series) == "0005_mdm_form_key"
+    tables = series_tables(ORG_DOMAIN, "tenant")
+    assert all(name in tables for name in _ORG_TABLES)
+    unit = unit_tables((ORG_DOMAIN,), "tenant")
+    assert all(name in unit for name in (*_ORG_TABLES, *_INFRA_TABLES))
 
 
 @pytest.mark.kiwi_id(2255)
 async def test_org_tenant_migration_upgrades_with_zero_drift(tmp_path: Path) -> None:
-    """迁移：`mdm:tenant` 升到 head 建齐八表，且库结构与模型元数据零漂移。"""
+    """迁移：`org:tenant` 升到 head 建齐八表，且库结构与模型元数据零漂移。"""
     register()
     url = f"sqlite+aiosqlite:///{tmp_path / 'mdm.db'}"
     await asyncio.to_thread(_upgrade, url)

@@ -25,12 +25,12 @@ from alembic.ddl.impl import DefaultImpl
 from bms_core.core.config import get_settings
 from bms_core.core.exceptions import ConfigError
 from bms_core.db.migration import (
-    MigrationChain,
+    MigrationSeries,
     apply_session_schema,
-    chain_metadata,
-    chain_url,
     has_revisions,
-    resolve_chain_from_section,
+    resolve_series_from_section,
+    series_metadata,
+    series_url,
 )
 from sqlalchemy import Connection, Engine, create_engine, pool
 from sqlalchemy.engine import make_url
@@ -42,7 +42,7 @@ from services.table_registry import register as register_product_tables
 
 config = context.config
 
-# 表归属**产品注入**（bms 12_04）：迁移期链派生（`chain_tables`）与元数据子集需先注册本产品表归属
+# 表归属**产品注入**（bms 12_04）：迁移期链派生（`series_tables`）与元数据子集需先注册本产品表归属
 register_product_tables()
 
 _SYNC_ONLY_DIALECTS = frozenset({"dm"})
@@ -94,23 +94,23 @@ def _x_args() -> Mapping[str, str]:
     return x_args
 
 
-def _chain() -> MigrationChain:
+def _series() -> MigrationSeries:
     """取当前迁移链（配置段名派生：`[alembic]` → 缺省租户链；`[alembic:<链名>]` → 该链）。
 
     Returns:
-        MigrationChain: 链定义。
+        MigrationSeries: 链定义。
 
     Raises:
         ConfigError: 配置段未登记。
     """
-    return resolve_chain_from_section(config.config_ini_section)
+    return resolve_series_from_section(config.config_ini_section)
 
 
-def _database_url(chain: MigrationChain) -> str:
+def _database_url(series: MigrationSeries) -> str:
     """取迁移目标连接串（显式参数 > 环境变量 > 配置）。
 
     Args:
-        chain: 链定义。
+        series: 链定义。
 
     Returns:
         str: 数据库 URL。
@@ -124,7 +124,7 @@ def _database_url(chain: MigrationChain) -> str:
         return env_url
     db_key = x_args.get("db_key") or None
     # 命令行显式指定库键 = 运维通道（允许跨服务键，如 platform_tenant / tenant_org_acme）
-    return chain_url(chain, get_settings(), db_key=db_key, allow_cross_service=bool(db_key))
+    return series_url(series, get_settings(), db_key=db_key, allow_cross_service=bool(db_key))
 
 
 def _schema_name() -> str:
@@ -144,13 +144,14 @@ def _schema_name() -> str:
 
 def run_migrations_offline() -> None:
     """离线模式：仅生成 SQL，不连接数据库。"""
-    chain = _chain()
-    if not has_revisions(chain):
-        print(f"[alembic] 链 {chain.name} 暂无迁移脚本（跳过）")
+    series = _series()
+    if not has_revisions(series):
+        print(f"[alembic] 链 {series.name} 暂无迁移脚本（跳过）")
         return
     context.configure(
-        url=_database_url(chain),
-        target_metadata=chain_metadata(chain),
+        url=_database_url(series),
+        target_metadata=series_metadata(series),
+        version_table=series.version_table,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
@@ -158,12 +159,12 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def _do_run_migrations(connection: Connection, chain: MigrationChain, schema: str) -> None:
+def _do_run_migrations(connection: Connection, series: MigrationSeries, schema: str) -> None:
     """在线迁移主体（同步回调，由 `run_sync` 调用）。
 
     Args:
         connection: 同步连接（异步连接的同步封装）。
-        chain: 链定义。
+        series: 链定义。
         schema: 目标模式名（仅达梦生效）。
     """
     apply_session_schema(connection, schema)
@@ -172,56 +173,57 @@ def _do_run_migrations(connection: Connection, chain: MigrationChain, schema: st
     # 版本表检查 / 建表 / 读写均限定在目标模式内。
     context.configure(
         connection=connection,
-        target_metadata=chain_metadata(chain),
+        target_metadata=series_metadata(series),
+        version_table=series.version_table,
         version_table_schema=schema or None,
     )
     with context.begin_transaction():
         context.run_migrations()
 
 
-async def _run_async_migrations(url: str, chain: MigrationChain, schema: str) -> None:
+async def _run_async_migrations(url: str, series: MigrationSeries, schema: str) -> None:
     """在线模式（异步引擎）：连接并执行迁移。
 
     Args:
         url: 数据库 URL。
-        chain: 链定义。
+        series: 链定义。
         schema: 目标模式名（仅达梦生效）。
     """
     engine = create_async_engine(url, poolclass=pool.NullPool)
     async with engine.connect() as connection:
-        await connection.run_sync(partial(_do_run_migrations, chain=chain, schema=schema))
+        await connection.run_sync(partial(_do_run_migrations, series=series, schema=schema))
     await engine.dispose()
 
 
-def _run_sync_migrations(url: str, chain: MigrationChain, schema: str) -> None:
+def _run_sync_migrations(url: str, series: MigrationSeries, schema: str) -> None:
     """在线模式（同步引擎，达梦等无异步方言的驱动）：连接并执行迁移。
 
     Args:
         url: 数据库 URL。
-        chain: 链定义。
+        series: 链定义。
         schema: 目标模式名（仅达梦生效）。
     """
     engine: Engine = create_engine(url, poolclass=pool.NullPool)
     try:
         with engine.connect() as connection:
-            _do_run_migrations(connection, chain, schema)
+            _do_run_migrations(connection, series, schema)
     finally:
         engine.dispose()
 
 
 def run_migrations_online() -> None:
     """在线模式入口（按方言分支：达梦同步、其余异步）。"""
-    chain = _chain()
-    if not has_revisions(chain):
-        print(f"[alembic] 链 {chain.name} 暂无迁移脚本（跳过）")
+    series = _series()
+    if not has_revisions(series):
+        print(f"[alembic] 链 {series.name} 暂无迁移脚本（跳过）")
         return
-    url = _database_url(chain)
+    url = _database_url(series)
     schema = _schema_name()
     dialect = make_url(url).get_backend_name()
     if dialect in _SYNC_ONLY_DIALECTS:
-        _run_sync_migrations(url, chain, schema)
+        _run_sync_migrations(url, series, schema)
         return
-    asyncio.run(_run_async_migrations(url, chain, schema))
+    asyncio.run(_run_async_migrations(url, series, schema))
 
 
 if context.is_offline_mode():

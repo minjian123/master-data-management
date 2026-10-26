@@ -10,17 +10,20 @@ uv run python -m ops.check_modules --offline  # 显式声明离线（与 bms 侧
 
 校验面（全部离线，无库依赖）：
 
-1. **清单与产品维度**：`services.module_registry.validate_local_catalog()`——合并视图（平台清单 +
+1. **产品自持声明**（toml，07B `02_01`）：`deploy/registry/mdm.toml` 经基座同一实现
+   （`inspect_product_manifests`）解析并做**六类校验**——能力重名 / 提供方业务域登记 /
+   归属一致 / 访问面在对端契约中定位 / 契约版本兼容 / 种子入口可解析；跳过项与降级提示一律打印
+   （不静默）；通过后注册进运行期视图（供产品维度断言使用）；
+2. **清单与产品维度**：`services.module_registry.validate_local_catalog()`——合并视图（平台清单 +
    产品清单记录）经 `ModuleRegistry.validate()` 校验注册要素唯一与格式 / 分组 / 版本 / 产品归属 /
    产品级路由映射；产品维度四条断言；
-2. **产品登记清单**：`deploy/registry/mdm.json` 可解析且与服务清单同值（平台侧按此装载）；
 3. **服务包契约声明**：扫描 `services/*/src/mdm_*/__init__.py` 的 `CONTRACT_VERSION`（AST 静态读取，
    不导入服务包），与清单登记值比对主版本；服务工程与清单**双向核对**（工程存在但未登记即失败）。
 
 冲突 / 非法 → 打印明细并退出码 1；通过 → 退出码 0。
 
 > **为何无接库对账**：平台库 `sys_module` / `sys_product` 归平台 `platform` 服务库（bms 侧
-> `ops.check_modules` 对账），产品侧不跨服务直读；mdm 侧以离线清单 + 产品登记清单为门禁。
+> `ops.check_modules` 对账），产品侧不跨服务直读；mdm 侧以离线清单 + 产品自持声明为门禁。
 """
 
 import argparse
@@ -30,7 +33,7 @@ from pathlib import Path
 
 from bms_core.core.concurrent import ConcurrentStableDict, ConcurrentStableList
 from bms_core.core.version import contract_major
-from bms_core.registry.products import load_product_manifests
+from bms_core.registry.products import inspect_product_manifests, register_manifest
 from bms_core.services.module_registry import SERVICE_CATALOG, ModuleRecord
 
 from services.module_registry import (
@@ -43,8 +46,8 @@ from services.module_registry import (
 _SERVICES_DIR = Path(__file__).resolve().parents[1] / "services"
 """服务工程根（`backend/services`）。"""
 
-_MANIFEST = Path(__file__).resolve().parents[2] / "deploy" / "registry" / "mdm.json"
-"""产品登记清单（平台侧按 `[registry].product_manifests` 装载的同一份）。"""
+_MANIFEST = Path(__file__).resolve().parents[2] / "deploy" / "registry" / "mdm.toml"
+"""产品自持声明（toml；平台侧按 `[registry].product_manifests` 装载的同一份）。"""
 
 _CONTRACT_CONSTANT = "CONTRACT_VERSION"
 """服务包自报契约版本常量名。"""
@@ -144,8 +147,30 @@ def check_service_declarations(
     return errors
 
 
+def load_and_register_manifest(manifest_path: Path = _MANIFEST) -> ConcurrentStableList[str]:
+    """装载并校验产品自持声明（toml），通过后注册进运行期视图。
+
+    校验复用基座同一实现（`inspect_product_manifests`，含能力 / 种子两段六类校验）；
+    跳过项与降级提示（如产品包不可导入时的种子入口校验）直接打印，不计入失败。
+
+    Args:
+        manifest_path: 产品自持声明路径。
+
+    Returns:
+        ConcurrentStableList[str]: 阻断性问题（空列表表示已注册成功）。
+    """
+    inspection = inspect_product_manifests([manifest_path])
+    for warning in inspection.warnings:
+        print(f"[服务目录] {warning}")
+    if inspection.errors:
+        return ConcurrentStableList(inspection.errors)
+    for manifest in inspection.manifests:
+        register_manifest(manifest)
+    return ConcurrentStableList()
+
+
 def check_offline(services_dir: Path = _SERVICES_DIR) -> ConcurrentStableList[str]:
-    """离线校验：产品清单 / 产品维度 / 两侧同值 + 服务包声明比对。
+    """离线校验：产品自持声明 / 产品维度 / 两侧同值 + 服务包声明比对。
 
     Args:
         services_dir: 服务工程根。
@@ -153,8 +178,8 @@ def check_offline(services_dir: Path = _SERVICES_DIR) -> ConcurrentStableList[st
     Returns:
         ConcurrentStableList[str]: 冲突 / 非法明细。
     """
-    load_product_manifests([_MANIFEST])
-    errors = validate_local_catalog()
+    errors = load_and_register_manifest()
+    errors.update(validate_local_catalog())
     errors.update(check_service_declarations(MDM_SERVICE_RECORDS, resolve_service_contracts(services_dir)))
     return errors
 
@@ -176,7 +201,10 @@ def main(argv: ConcurrentStableList[str] | None = None) -> int:
         print(f"[服务目录] 校验失败（{len(errors)} 项）")
         return 1
     scope = f"产品清单 {len(MDM_SERVICE_RECORDS)} 项（产品 {PRODUCT_KEY} / 运行服务 {SERVICE_KEY}）"
-    print(f"[服务目录] 校验通过（{scope} + 平台清单 {len(SERVICE_CATALOG)} 行合并 + 产品登记清单 + 服务包声明）")
+    print(
+        f"[服务目录] 校验通过（{scope} + 平台清单 {len(SERVICE_CATALOG)} 行合并 + 产品自持声明"
+        "（含能力 / 种子段）+ 服务包声明）"
+    )
     return 0
 
 

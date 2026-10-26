@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "domains": [
+    {
+      "domain_key": "org",
+      "name": "组织主数据",
+      "service_key": "mdm",
+      "status": "placement",
+      "paths": [
+        "backend/services/org/src/mdm/org/**/*.py",
+        "backend/services/org/src/mdm/models/**/*.py",
+        "backend/services/org/src/mdm/repositories/**/*.py",
+        "backend/services/org/src/mdm/schemas/**/*.py",
+        "backend/services/org/src/mdm/services/**/*.py"
+      ],
+      "public_api": ["mdm.org"]
+    }
+  ],
+  "shared_paths": []
+}

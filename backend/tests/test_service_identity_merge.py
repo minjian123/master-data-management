@@ -7,11 +7,11 @@
 3. `form_key` / `table` / `data_source_key` 三者同名闭合；
 4. 事件契约 6 条全部落在 `mdm.` 域（无 `org.` 残留）；
 5. 公开契约快照文件名 = 服务标识（`deploy/contracts/mdm.json` 在、旧名不在）；
-6. 产品登记清单 `deploy/registry/mdm.json` 的服务行与代码清单逐字段同值；
+6. 产品自持声明 `deploy/registry/mdm.toml` 的服务行与代码清单逐字段同值（07B `02_01` 起为 toml）；
 7. 库名派生：`[database].name_prefix` 等于服务标识时去重（`mdm` / `mdm_{租户}`），不等于时保持拼接。
 """
 
-import json
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -28,8 +28,8 @@ KIWI_CASE_ID = 2348
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 """mdm 仓根（本文件位于 `backend/tests/`）。"""
 
-_MANIFEST = _REPO_ROOT / "deploy" / "registry" / "mdm.json"
-"""产品登记清单（平台侧按 `[registry].product_manifests` 装载的同一份）。"""
+_MANIFEST = _REPO_ROOT / "deploy" / "registry" / "mdm.toml"
+"""产品自持声明（toml；平台侧按 `[registry].product_manifests` 装载的同一份）。"""
 
 _CONTRACTS_DIR = _REPO_ROOT / "deploy" / "contracts"
 """公开契约快照目录。"""
@@ -99,8 +99,8 @@ def test_public_contract_snapshot_named_after_service() -> None:
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 def test_product_manifest_service_row_matches_code_catalog() -> None:
-    """产品登记清单的服务行与代码清单逐字段同值（零漂移，手改 JSON 即红）。"""
-    payload = json.loads(_MANIFEST.read_text(encoding="utf-8"))
+    """产品自持声明的服务行与代码清单逐字段同值（零漂移，手改 toml 即红）。"""
+    payload = tomllib.loads(_MANIFEST.read_text(encoding="utf-8"))
     assert payload["product_key"] == PRODUCT_KEY
     assert len(payload["services"]) == len(MDM_SERVICE_RECORDS)
     row = MDM_SERVICE_RECORDS[0]

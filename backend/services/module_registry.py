@@ -4,7 +4,7 @@
   的登记出处，须与《[mdm 主数据管理规划](../../mdm文档/规划/mdm主数据管理规划.md)》「标识符登记」
   及《[mdm 英文简称规范](../../mdm文档/规范/英文简称规范.md)》一致（不一致以规划 / 规范为准）。
 - **产品自持 + 清单装载（2026-10-23 拍板）**：本清单同时写入产品登记清单
-  `deploy/registry/mdm.json`（服务行 / 产品档案 / 产品路由 / 数据源条目），平台侧按
+  `deploy/registry/mdm.toml`（服务行 / 产品档案 / 产品路由 / 数据源条目），平台侧按
   `[registry].product_manifests` 装载——**基座不再硬编码产品行**（机制同选项集装载时注册）。
 - **校验**：`validate_local_catalog()` 离线执行（模块键 / 表前缀 / 事件域 / 服务键 / 错误码段
   唯一与格式 + 产品维度四条断言），由 `ops.check_modules` 与用例调用。
@@ -27,7 +27,7 @@ from bms_core.services.module_registry import (
 )
 
 PRODUCT_KEY = "mdm"
-"""mdm 产品标识（须与产品登记清单 `deploy/registry/mdm.json` 及产品路由映射一致）。"""
+"""mdm 产品标识（须与产品登记清单 `deploy/registry/mdm.toml` 及产品路由映射一致）。"""
 
 SERVICE_KEY = "mdm"
 """运行服务标识（本产品当前唯一在运服务；产品维度校验的「含运行服务登记行」基准）。"""
@@ -47,7 +47,7 @@ MDM_SERVICE_RECORDS: tuple[ModuleRecord, ...] = (
         status=ModuleStatus.ENABLED,
     ),
 )
-"""mdm 产品服务清单（唯一在运服务 `mdm`；与 `deploy/registry/mdm.json` 的 `services` 段逐字段同值）。
+"""mdm 产品服务清单（唯一在运服务 `mdm`；与 `deploy/registry/mdm.toml` 的 `services` 段逐字段同值）。
 
 - 四要素：`service_key=mdm` / `module_key=mdm` / `table_prefix=mdm_` / `event_domain=mdm`；
 - 对外命名空间经平台侧产品路由映射为 `/api/mdm/v1/mdm/...`（域段与上游服务同名）；
@@ -62,7 +62,7 @@ MDM_PRODUCT_RECORDS: tuple[ProductRecord, ...] = (
         frontend_package_source="mdm#frontend",
     ),
 )
-"""mdm 产品档案（与 `deploy/registry/mdm.json` 的 `products` 段同值）。"""
+"""mdm 产品档案（与 `deploy/registry/mdm.toml` 的 `products` 段同值）。"""
 
 MDM_PRODUCT_ROUTES: tuple[ProductRouteRecord, ...] = (
     ProductRouteRecord(
@@ -72,7 +72,7 @@ MDM_PRODUCT_ROUTES: tuple[ProductRouteRecord, ...] = (
         description="mdm 主数据服务（对外 /api/mdm/v1/mdm/...）",
     ),
 )
-"""mdm 产品级路由映射（与 `deploy/registry/mdm.json` 的 `product_routes` 段同值）。"""
+"""mdm 产品级路由映射（与 `deploy/registry/mdm.toml` 的 `product_routes` 段同值）。"""
 
 # 装载时注册（模块导入即登记；迁移链派生 / 库键解析 / 表归属前缀校验 / 应用装配校验读合并视图）。
 # 幂等：同键同值覆盖，异值即拒。
@@ -140,7 +140,7 @@ def validate_local_catalog(
        产品归属与声明一致 / 含运行服务登记行。
 
     产品档案（`mdm`）与产品级路由由产品登记清单装载后进入校验基准，故校验前先装载
-    `deploy/registry/mdm.json`（`load_product_manifests`）；未装载时按产品维度断言报错（fail-closed）。
+    `deploy/registry/mdm.toml`（`load_product_manifests`）；未装载时按产品维度断言报错（fail-closed）。
 
     Args:
         service_key: 运行服务标识（缺省 `mdm`）。
