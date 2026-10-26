@@ -8,19 +8,13 @@
 
 workflow:
   rules:
-    # 指令驱动 + main 直推验证：push/MR 事件仅当文档/代码/CI 配置路径有变更时才建流水线（纯配置推送免 CI）。
+    # 触发口径（2026-10-26 用户拍板，与 bms / engkit 同口径）：**推送不触发流水线**——日常验证以推送前的
+    # 本地预检为准，CI 只作按需的全量 / 集成验证，**手工触发即全量**（GitLab 界面 Run pipeline 或
+    # `POST /projects/<id>/pipeline`；bms 仓 `scripts/tools/ci/trigger.py` 可按仓复用）。
+    # 因此推送**无需**再加 `-o ci.skip`。
     # 注意：bms文档 为工作区软链，CI 只 clone mdm 时不可用，故只校验 mdm 仓库自身内容。
     - if: $CI_PIPELINE_SOURCE == "web"
     - if: $CI_PIPELINE_SOURCE == "api"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"
-      changes:
-        paths:
-          - mdm文档/**/*
-          - backend/**/*
-          - frontend/**/*
-          - deploy/**/*
-          - engkit.toml
-          - .gitlab-ci.yml
 
 stages:
   - lint
