@@ -18,7 +18,7 @@ constraint-dependencies = ["sqlalchemy>=2.0,<2.1"]
 bms-core = { git = "http://192.168.0.107:8080/bms/bms.git", subdirectory = "backend/libs/bms_core", rev = "d2ba8c488564d305e5b1da5136bc642b40d0e5f5" }
 # 跨仓工程化工具包（engkit 仓）：文档链接 / 文档口径 / 预检 / 重命令包装 / 用例登记的唯一实现，
 # 同样锁提交 SHA；升级只改此处 rev（与 `.gitlab-ci.yml` 无耦合，CI 走 `uv sync --frozen` 拉取）。
-engkit = { git = "http://192.168.0.107:8080/bms/engkit.git", rev = "959965a6b3b591626338b7e3bd7fd28f7a758d51" }
+engkit = { git = "http://192.168.0.107:8080/bms/engkit.git", rev = "bb2199f26ef815a4f4ebaee72af28f97076837e2" }
 
 [dependency-groups]
 dev = [
@@ -26,9 +26,8 @@ dev = [
     "pytest-asyncio>=0.24",
     "httpx>=0.27",
     "pytest-cov>=5.0",
-    "ruff>=0.6",
-    "pyright>=1.1.380",
-    "engkit",
+    # 13_07 起 ruff / pyright 的**版本**随 engkit 的 [devtools] 组下发，本仓不再另行声明
+    "engkit[devtools]",
 ]
 
 [[tool.uv.index]]
@@ -36,13 +35,11 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
 [tool.ruff]
-line-length = 120
+# 规则段不在本仓声明：唯一来源是 engkit 仓 `toolchain/ruff-base.toml`（13_07），
+# 相对路径按本配置文件所在目录解析；基线缺失时 ruff 直接退出码 2（不静默回落），
+# 故本地与 CI 均需先有 engkit 克隆，仓内不留副本；本仓专属项仍写在此处。
+extend = "../../engkit/toolchain/ruff-base.toml"
 target-version = "py314"
-
-[tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
-# 中文标点为文档与注释的有意用法，关闭歧义字符检查
-ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.ruff.lint.isort]
 # 工作区自有包与脚本区视为第一方（与第三方依赖分组稳定，避免归类漂移）
