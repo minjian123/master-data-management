@@ -34,6 +34,10 @@ interpreter = "uv run python"
 
 # ---- 预检步骤（声明序即执行序；`--fast` 只跑 always，`--full` 追加 full）----
 [[preflight.steps]]
+label = "行尾：工作树 CRLF 检查（应为 LF 的文件不得残留 CRLF）"
+cmd = ["uv", "run", "engkit", "eol", "--quiet"]
+
+[[preflight.steps]]
 label = "门禁冒烟：Python 版本"
 cmd = ["{python}", "-c", "import sys; assert sys.version_info >= (3, 14), 'Python < 3.14'"]
 
