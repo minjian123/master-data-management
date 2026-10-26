@@ -81,6 +81,18 @@ label = "契约：event_contracts check（事件契约零漂移 + 兼容）"
 cmd = ["uv", "run", "python", "-m", "ops.event_contracts", "check"]
 cwd = "backend"
 
+# 文档一致性（`engkit base docs-status`）暂不接入：存量 4 处硬规则偏差待整改
+# （H6：01_02 / 01_05 / 01_06 未登记进计划表；H8：02_01 排期窗口为「待交付后安排」），
+# 整改完成后把 `cmd = ["uv", "run", "engkit", "base", "docs-status"]` 加回本段。
+
+[[preflight.steps]]
+label = "界面：check_prototype_review（本次改动含界面源码须有原型对照）"
+cmd = ["uv", "run", "engkit", "base", "prototype-review", "--changed", "origin/main"]
+
+[[preflight.steps]]
+label = "基座：check_env_example（环境变量模板键位）"
+cmd = ["uv", "run", "engkit", "base", "env-example"]
+
 [[preflight.steps]]
 label = "后端测试：定向（选测 + 覆盖率门禁 + 扩圈）"
 type = "scoped_tests"
@@ -99,3 +111,41 @@ window_seconds = 1800
 scripts = []
 repo_dirs = ["services", "ops", "alembic"]
 dir_test_threshold = 20
+
+
+# ---- 基座校验器规则（`engkit base <名>`；缺段 = 该校验器未启用）----
+
+[rules.env_example]
+private_key_marker = "PRIVATE KEY"
+placeholder_marker = "..."
+
+[[rules.env_example.templates]]
+path = "deploy/.env.example"
+required_keys = [
+  "PLATFORM_NETWORK",
+  "MDM_REGISTRY_IMAGE_PREFIX",
+  "MDM_TAG",
+  "BMS_DATABASE__PLATFORM__URL_TEMPLATE",
+  "BMS_REDIS__URL",
+  "BMS_SERVICE_TOKEN__KEYS",
+]
+
+[rules.docs_status]
+project_dir = "mdm文档/项目"
+stage = "01_mdm 产品奠基"
+statuses = ["未开始", "进行中", "部分完成", "已完成", "搁置"]
+todo_statuses = ["未开始", "进行中", "部分完成", "搁置"]
+done_status = "已完成"
+req_id_pattern = '^\d{2}-\d+$'
+task_id_pattern = '^\d{2}-\d+-\d+$'
+plan_id_pattern = '^\d{2}_\d{2}$'
+
+[rules.prototype]
+record_pattern = '^mdm文档/项目/[^/]+/任务/.+/测试/[^/]+\.md$'
+context_pattern = '^mdm文档/项目/[^/]+/任务/.+/(设计|实施|测试)/[^/]+\.md$'
+prototype_ref_pattern = '设计/((?:原型设计|组件设计)/[^\s()\[\]"`<>|]*\.html)'
+ui_patterns = ['^frontend/.*\.vue$']
+section_heading = '^##.*原型'
+screenshot_pattern = '\]\(([^)\s]+\.png)\)'
+unfinished_words = ["待补", "待对照", "待核", "未核对", "待定", "TODO", "待办"]
+base = "origin/main"
