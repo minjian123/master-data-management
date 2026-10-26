@@ -28,7 +28,8 @@ source_env = "MDM_COVERAGE_SOURCE"
 # 门禁阈值：行 + 分支 100%，与其他仓统一、不设例外（口径定义见《AI开发规范》「覆盖率要求」节）
 fail_under = 100
 plugin = "engkit.coverage_plugin"
-data_file = "backend/.coverage"
+# 采集数据落点：仓内缓存目录（`.cache/` 已忽略），不落仓库根 / `backend/` 根（2026-10-25 拍板）
+data_file = ".cache/coverage/.coverage"
 interpreter = "uv run python"
 
 # ---- 预检步骤（声明序即执行序；`--fast` 只跑 always，`--full` 追加 full）----
