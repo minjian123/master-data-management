@@ -76,7 +76,7 @@ mdm 以**产品服务（独立服务）**形态接入 BMS 平台（见 bms《平
 | 依赖能力 | 就绪状态 | 未就绪时的推进方式 |
 | --- | --- | --- |
 | 产品服务接入（微服务形态、服务目录登记） | **已就绪（2026-10-07）**：bms 需求域十二 `12_01`（产品注册机制）/ `12_02`（产品服务接入，含产品命名空间与域段映射登记）/ `12_03`（共享基座产品服务装配）后端侧已交付 | —（mdm `01_01` 已按其口径接入：产品档案 `mdm` 启用、产品路由 `mdm/mdm → mdm`、应用工厂注入产品服务清单；2026-10-23 起产品路由改由产品仓自持清单装载） |
-| 产品级注册（表前缀 / 错误码段 / 事件域） | **最终口径（2026-10-23，`01_05`）**：产品仓自持清单 `deploy/registry/mdm.json` + 平台装载时注册（`[registry].product_manifests`）；bms 三常量已删除产品字面量，平台侧不再保留同值行 | —（后续各域在同一服务 `mdm` 下按新增表 + 新错误码段登记，不再新增服务行） |
+| 产品级注册（表前缀 / 错误码段 / 事件域） | **最终口径（2026-10-23，`01_05`）**：产品仓自持清单 `deploy/registry/mdm.toml`（07B `02_01` 起由 json 改为 toml）+ 平台装载时注册（`[registry].product_manifests`）；bms 三常量已删除产品字面量，平台侧不再保留同值行 | —（后续各域在同一服务 `mdm` 下按新增表 + 新错误码段登记，不再新增服务行） |
 | 组织主数据查询基座（组织数据源 / 名称回显两契约） | **已迁入 mdm**（原 bms 跨阶段基座） | mdm 组织域按契约实现（归 `01_02` / `01_03`）；bms / biz 经契约消费 |
 | bms 组织服务（`services/org`）退役 | **已交付（2026-10-07）**：bms 需求域十一 `11_01` 执行——删除 `services/org` 工程、`org` 条目易主、网关服务级路由排除产品分组、基座库名前缀参数化 | —（`11_02` 组织只读出口迁出与 bms 调用方切换随 mdm `01_03` 就绪后推进） |
 | mdm 侧工程骨架与平台接入 | **已交付（2026-10-07）**：uv 工作区 + 服务工程 `services/org`（包 `mdm`）+ 产品服务装配 + 配置 / 迁移 / 运维脚本 / 部署编排 / CI | —（`01_02` 起为业务域实现） |
@@ -104,13 +104,13 @@ mdm 以**产品服务（独立服务）**形态接入 BMS 平台（见 bms《平
 | 业务码 | `mdm` | 域区分走目录与错误码段，不再走业务码 |
 | 错误码段 | 按域分配（`33xxxx` 起） | 段号注册制、不随服务名变更 |
 | 事件域 | `mdm` | 事件名 `mdm.{对象}.{动作}`；域归属由服务行声明 |
-| 迁移链 | `mdm:platform` / `mdm:tenant` / `mdm:archive` | 链名随服务标识 |
+| 迁移清单 | `org:platform` / `org:tenant`（归档用 `archive:archive`） | **清单名随业务域**（07C：业务域是架构边界，服务标识只用于库键）；版本记录表 `alembic_version_org` |
 | 库名 | `mdm` / `mdm_{租户}` / `mdm_archive` | `[database].name_prefix` 等于服务标识时基座派生去重 |
 | 对外命名空间 | `/api/mdm/v1/mdm/...` | 产品路由 `mdm/mdm → mdm`（产品清单登记） |
 
 - 业务动作码沿用通用动作码（query / create / update / delete / manage / grant / approve 等），域专属动作码按需登记（见《英文简称规范（mdm）》第 4 节）。
 - **服务目录归位（2026-10-07）**：bms 服务目录（`sys_module` 升格）中的 **org 条目随组织服务退役处置**。
-- **产品登记自持（2026-10-23 归并，最终口径）**：mdm 的服务行 / 产品档案 / 产品路由 / 数据源条目由**产品仓自持清单** [`deploy/registry/mdm.json`](../../deploy/registry/mdm.json) 声明，平台按 `[registry].product_manifests` 装载时注册（`load_product_manifests()`）——bms 的 `SERVICE_CATALOG` / `PRODUCT_ROUTES` / `DATA_SOURCE_CATALOG` 已删除产品字面量，**不再有「平台侧 + 产品侧同值并存」**。清单与代码清单（`services/module_registry.py`）的零漂移由 `ops.check_modules` 断言。
+- **产品登记自持（2026-10-23 归并，最终口径；2026-10-26 起为 toml）**：mdm 的服务行 / 产品档案 / 产品路由 / 数据源条目 / **能力** / **种子**由**产品仓自持清单** [`deploy/registry/mdm.toml`](../../deploy/registry/mdm.toml) 声明，平台按 `[registry].product_manifests` 装载时注册（`load_product_manifests()`）——bms 的 `SERVICE_CATALOG` / `PRODUCT_ROUTES` / `DATA_SOURCE_CATALOG` 已删除产品字面量，**不再有「平台侧 + 产品侧同值并存」**。清单与代码清单（`services/module_registry.py`）的零漂移由 `ops.check_modules` 断言；能力与种子段的六类装载校验同由基座同一实现承担（07B `02_01`）。
 
 ## 5. 设计体系 <a id="design"></a>
 
