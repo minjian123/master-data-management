@@ -18,7 +18,7 @@ constraint-dependencies = ["sqlalchemy>=2.0,<2.1"]
 bms-core = { git = "http://192.168.0.107:8080/bms/bms.git", subdirectory = "backend/libs/bms_core", rev = "d2ba8c488564d305e5b1da5136bc642b40d0e5f5" }
 # 跨仓工程化工具包（engkit 仓）：文档链接 / 文档口径 / 预检 / 重命令包装 / 用例登记的唯一实现，
 # 同样锁提交 SHA；升级只改此处 rev（与 `.gitlab-ci.yml` 无耦合，CI 走 `uv sync --frozen` 拉取）。
-engkit = { git = "http://192.168.0.107:8080/bms/engkit.git", rev = "bb2199f26ef815a4f4ebaee72af28f97076837e2" }
+engkit = { git = "http://192.168.0.107:8080/bms/engkit.git", rev = "a880f5660b108fa8d23ce317bd5990f359b25266" }
 
 [dependency-groups]
 dev = [
