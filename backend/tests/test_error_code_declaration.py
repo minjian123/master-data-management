@@ -8,9 +8,7 @@
 """
 
 # pyright: reportUnusedFunction=false
-# 基座 `bms-core` 为跨仓锁 rev 依赖：`ProductManifest.error_codes` 随 07B `02_05` 进入基座，
-# rev 前移前静态检查按已安装版本解析（运行时由 `hasattr` 守卫跳过），故本文件关闭该属性检查。
-# pyright: reportAttributeAccessIssue=false, reportUnknownMemberType=false, reportUnknownVariableType=false
+import dataclasses
 import inspect
 import tomllib
 from pathlib import Path
@@ -95,7 +93,7 @@ def test_manifest_loadable_by_platform(code: int) -> None:
     """
     from bms_core.registry.products import ProductManifest, load_product_manifest
 
-    if not hasattr(ProductManifest, "error_codes"):
+    if "error_codes" not in {item.name for item in dataclasses.fields(ProductManifest)}:
         pytest.skip("bms-core rev 待前移（07B 02_05 跨仓窗口）")
     manifest = load_product_manifest(_MANIFEST)
     records = {record.code: record for record in manifest.error_codes}

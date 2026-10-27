@@ -1,13 +1,17 @@
-# mdm 服务运行镜像（服务标识 `mdm`；服务工程目录保留分类 `services/org`；构建上下文为 backend/）
+# mdm 服务运行镜像（服务标识 `mdm`；服务工程目录保留分类 `services/org`；构建上下文为**仓根**）
 #
 # 构建：
-#   docker build --provenance=false -t <registry>/mdm:<sha> -f deploy/Dockerfile backend/
+#   docker build --provenance=false -t <registry>/mdm:<sha> -f deploy/Dockerfile .
 #   （--provenance=false：BuildKit 默认 attestation 清单推送会被 GitLab Registry 拒绝，报 blob unknown）
 # 运行：
 #   docker run --rm -p 8000:8000 -e BMS_ENV=<环境> <image>
 # 口径：
+# - 构建上下文为**仓根**（07B `02_05` 起）：镜像需自包含 `deploy/registry`（产品自持声明）、
+#   `deploy/boundaries`（域布局）与 `deploy/contracts`（公开契约），供启动期装载校验与
+#   「码 → 状态 / 文案键」渲染；上下文排除规则见仓根 `.dockerignore`；
 # - 依赖以 uv.lock 锁定（--frozen）；共享基座 `bms-core` 经 git 源拉取（pyproject 锁提交 SHA）；
 # - 工作目录 /opt/mdm/backend：`services` 产品清单模块、`alembic.ini` 与 `config*.toml` 均相对该根定位；
+#   声明目录相对该根的父级（`/opt/mdm/deploy/...`）；
 # - venv 落工作目录内（不设 UV_PROJECT_ENVIRONMENT）——共享基座经 site-packages 向上定位工程根
 #   （`bms_core.db.migration._find_backend_root`）依赖 `alembic.ini` 在 venv 祖先目录内；
 # - 启动入口 `python -m mdm`（服务包名 = 服务标识；前缀与服务同名时去重）。
@@ -29,19 +33,25 @@ WORKDIR /opt/mdm/backend
 # 工作区元数据：uv.lock 与各成员 pyproject（工作区解析需要；成员源码后续按目标服务 COPY）；
 # alembic.ini 供共享基座定位工程根（`bms_core.db.migration._find_backend_root` 向上搜根）；
 # config*.toml 为配置基线 / 环境分层（密钥不入配置文件，经 BMS_ 环境变量注入）
-COPY pyproject.toml uv.lock alembic.ini config.toml config.*.toml ./
-COPY services/org/pyproject.toml services/org/pyproject.toml
+COPY backend/pyproject.toml backend/uv.lock backend/alembic.ini backend/config.toml backend/config.*.toml ./
+COPY backend/services/org/pyproject.toml services/org/pyproject.toml
 # 第三方依赖层（不装工作区成员；锁文件零漂移；共享基座 `bms-core` 为 git 源依赖，随本层装齐）
 RUN uv sync --frozen --no-install-workspace --package mdm && rm -rf /root/.cache
 
 # 工作区成员源码（产品服务清单模块 + 目标服务）
-COPY services/module_registry.py services/module_registry.py
-COPY services/${SERVICE}/src services/${SERVICE}/src
+COPY backend/services/module_registry.py services/module_registry.py
+COPY backend/services/${SERVICE}/src services/${SERVICE}/src
 RUN uv sync --frozen --no-dev --package mdm && rm -rf /root/.cache
 
 # 迁移能力：分链迁移脚本 + 运维脚本（部署流程内一次性迁移容器复用本镜像，版本与发布一致）
-COPY alembic ./alembic
-COPY ops ./ops
+COPY backend/alembic ./alembic
+COPY backend/ops ./ops
+
+# 产品自持声明 / 域布局 / 公开契约（相对工作目录父级：/opt/mdm/deploy/...）
+# 装配期装载清单时据此定位对端契约与域布局；缺件即装载校验失败（拒启），不静默跳过
+COPY deploy/registry ../deploy/registry
+COPY deploy/boundaries ../deploy/boundaries
+COPY deploy/contracts ../deploy/contracts
 
 # 运行时移除 pip（base 镜像自带；其 vendored 依赖会被镜像扫描按包计洞，运行时不需要）
 RUN python -m pip uninstall -y pip
