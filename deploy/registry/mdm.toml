@@ -143,15 +143,25 @@ contract_version = "0.1.0"
 default_consumers = ["platform"]
 
 # ---- 种子（第六类记录）----
-# 声明即「模块路径 + 入口 + 依赖顺序」；执行归平台种子编排（07B `02_03`），本任务只落可调用入口。
+# 声明即「模块路径 + 入口 + 依赖顺序」；执行归平台统一编排（07B `02_03`）。
+# 入口签名 = 基座分支处理器范式 `async def entry(session, args) -> None`（不自行 commit）。
+#
+# 注意 db_key：权限码表（sys_business / sys_permission / sys_action）归**平台服务库**，
+# 故本种子写 platform_platform，而非 mdm 自己的库；服务身份仍是 mdm（产品声明、平台调度、产品执行）。
 
 [[seeds]]
 name = "mdm-admin-codes"
+service = "mdm"
+db_key = "platform_platform"
 module = "mdm.seeds.permissions"
 entry = "seed_admin_codes"
 after = []
 description = "管理面业务码与权限码（业务码 mdm + 查询 / 新建 / 修改 / 删除）"
 status = "enabled"
+
+[seeds.tables]
+business = "code"
+permission = "business_id,action_id"
 
 # ---- 错误码（第七类记录）----
 # 段位取自本文件服务行 `errcode_segment = "33"`（6 位码 = 2 位段 + 4 位序号，不手写段）；
