@@ -103,12 +103,15 @@ gate-smoke:
     - echo "gate ok"
 
 # ---- 后端门禁（backend/ 工作区）----
-# 依赖安装：`uv sync --frozen` 会按 pyproject 的 git 源拉取共享基座 `bms-core`（锁 bms 提交 SHA）；
-# runner 与本仓库同一内网 GitLab 时匿名只读即可，若需凭据可加：
-#   git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@<host>/".insteadOf "https://<host>/"
+# 依赖安装：`bms-core` 为**路径依赖**（2026-10-27 起，见 `backend/pyproject.toml` 的 `[tool.uv.sources]`），
+# `uv sync --frozen` 按 `../../bms/backend/libs/bms_core` 装基座 → 后端 job 必须先克隆 bms 到 `../bms`；
+# 基座 ref 由变量 `BMS_REF` 锁定（缺省 `main`；升级基座只改 CI 变量或本次触发变量，不改产品仓 pyproject）。
+# `engkit` 仍为 git 源依赖（锁提交 SHA），由 `engkit_setup.sh` + `uv sync` 两条路径分别满足。
 
 .backend-setup: &backend-setup
   - pip install --no-cache-dir uv
+  # bms 基座克隆（路径依赖前置）
+  - . scripts/tools/ci/bms_setup.sh
   # engkit 克隆（13_07）：ruff 规则基线在 engkit 仓 `toolchain/ruff-base.toml`，ruff 的 `extend` 读的是
   # **文件路径**（读不了安装包内资源），故后端 job 统一先克隆；脚本按锁定 SHA 检出并导出 ENGKIT_HOME。
   # `uv sync --frozen` 另按 pyproject 的 rev 拉 engkit 包（提供 ruff / pyright 版本）——两条路径都要有。

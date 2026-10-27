@@ -108,7 +108,7 @@ wheels = [
 [[package]]
 name = "bms-core"
 version = "0.1.0"
-source = { git = "http://192.168.0.107:8080/bms/bms.git?subdirectory=backend%2Flibs%2Fbms_core&rev=b5e0be40e246bf7030912620834e375ca516c662#b5e0be40e246bf7030912620834e375ca516c662" }
+source = { editable = "../../bms/backend/libs/bms_core" }
 dependencies = [
     { name = "aiomysql" },
     { name = "aiosqlite" },
@@ -138,6 +138,39 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "structlog" },
 ]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiomysql", specifier = ">=0.2" },
+    { name = "aiosqlite", specifier = ">=0.20" },
+    { name = "alembic", specifier = ">=1.13" },
+    { name = "authlib", specifier = ">=1.8" },
+    { name = "cryptography", specifier = ">=44.0" },
+    { name = "dmpython" },
+    { name = "dmsqlalchemy", specifier = ">=2.0" },
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "minio", marker = "extra == 'storage-minio'", specifier = ">=7.2" },
+    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.44.0" },
+    { name = "opentelemetry-instrumentation-celery", specifier = "==0.65b0" },
+    { name = "opentelemetry-instrumentation-fastapi", specifier = "==0.65b0" },
+    { name = "opentelemetry-instrumentation-httpx", specifier = "==0.65b0" },
+    { name = "opentelemetry-instrumentation-redis", specifier = "==0.65b0" },
+    { name = "opentelemetry-instrumentation-sqlalchemy", specifier = "==0.65b0" },
+    { name = "opentelemetry-sdk", specifier = ">=1.44.0" },
+    { name = "pillow", specifier = ">=11" },
+    { name = "prometheus-client", specifier = ">=0.26.0" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
+    { name = "pydantic", specifier = ">=2.9" },
+    { name = "pydantic-settings", specifier = ">=2.5" },
+    { name = "python-dotenv", specifier = ">=1.0" },
+    { name = "python-multipart", specifier = ">=0.0.9" },
+    { name = "redis", specifier = ">=5.0" },
+    { name = "sortedcontainers" },
+    { name = "sqlalchemy", specifier = ">=2.0" },
+    { name = "structlog", specifier = ">=24.1" },
+]
+provides-extras = ["storage-minio"]
 
 [[package]]
 name = "certifi"
@@ -755,7 +788,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bms-core", git = "http://192.168.0.107:8080/bms/bms.git?subdirectory=backend%2Flibs%2Fbms_core&rev=b5e0be40e246bf7030912620834e375ca516c662" },
+    { name = "bms-core", editable = "../../bms/backend/libs/bms_core" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
