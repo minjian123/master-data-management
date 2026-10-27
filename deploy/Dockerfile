@@ -41,8 +41,10 @@ WORKDIR /opt/mdm/backend
 # config*.toml 为配置基线 / 环境分层（密钥不入配置文件，经 BMS_ 环境变量注入）
 COPY mdm/backend/pyproject.toml mdm/backend/uv.lock mdm/backend/alembic.ini mdm/backend/config.toml mdm/backend/config.*.toml ./
 COPY mdm/backend/services/org/pyproject.toml services/org/pyproject.toml
-# 第三方依赖层（不装工作区成员；锁文件零漂移；共享基座按路径依赖就地安装，engkit 为 git 源随本层装齐）
-RUN uv sync --frozen --no-install-workspace --package mdm && rm -rf /root/.cache
+# 第三方依赖层（不装工作区成员；锁文件零漂移；共享基座按路径依赖就地安装）
+# `--no-dev`：dev 组含跨仓路径依赖 `engkit`（`../../engkit`），镜像内无该源码，运行镜像也不需要
+# 开发件（实测：路径依赖缺失时含 dev 的 sync 报错、`--no-dev` 正常）
+RUN uv sync --frozen --no-dev --no-install-workspace --package mdm && rm -rf /root/.cache
 
 # 工作区成员源码（产品服务清单模块 + 目标服务）
 COPY mdm/backend/services/module_registry.py services/module_registry.py

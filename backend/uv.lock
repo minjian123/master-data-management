@@ -10,7 +10,7 @@ constraints = [{ name = "sqlalchemy", specifier = ">=2.0,<2.1" }]
 
 [manifest.dependency-groups]
 dev = [
-    { name = "engkit", extras = ["devtools"], git = "http://192.168.0.107:8080/bms/engkit.git?rev=a880f5660b108fa8d23ce317bd5990f359b25266" },
+    { name = "engkit", extras = ["devtools"], editable = "../../engkit" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
@@ -509,7 +509,7 @@ wheels = [
 [[package]]
 name = "engkit"
 version = "0.2.0"
-source = { git = "http://192.168.0.107:8080/bms/engkit.git?rev=a880f5660b108fa8d23ce317bd5990f359b25266#a880f5660b108fa8d23ce317bd5990f359b25266" }
+source = { editable = "../../engkit" }
 dependencies = [
     { name = "pytest-xdist" },
 ]
@@ -518,6 +518,22 @@ dependencies = [
 devtools = [
     { name = "pyright" },
     { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pyright", marker = "extra == 'devtools'", specifier = "==1.1.414" },
+    { name = "pytest-xdist", specifier = ">=3.6" },
+    { name = "ruff", marker = "extra == 'devtools'", specifier = "==0.17.2" },
+]
+provides-extras = ["devtools"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "engkit", extras = ["devtools"] },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-asyncio", specifier = ">=0.24" },
+    { name = "pytest-cov", specifier = ">=5.0" },
 ]
 
 [[package]]
