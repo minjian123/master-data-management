@@ -1,9 +1,10 @@
 # mdm 产品自持声明（平台装载 + 装载期校验；07B `02_01` 起为 toml，不再支持 json）
 #
-# 六段并列：产品档案 / 服务行 / 产品级路由 / 数据源 / 能力（第五类记录）/ 种子（第六类记录）。
+# 七段并列：产品档案 / 服务行 / 产品级路由 / 数据源 / 能力（第五类记录）/ 种子（第六类记录）/
+# 错误码（第七类记录，07B `02_05`）。
 # - 口径：基座 `bms_core.registry.products`（同源、同装载入口、同视图族、同唯一性纪律）。
 # - 校验：`ops.check_modules` 与平台装配期复用同一实现（能力重名 / 业务域 / 归属 /
-#   访问面契约定位 / 版本兼容 / 种子入口）；任一不满足即拒启。
+#   访问面契约定位 / 版本兼容 / 种子入口 / 错误码段位与撞码）；任一不满足即拒启。
 # - 本文件与代码清单（`backend/services/module_registry.py`）逐字段同值，由 `ops.check_modules` 断言。
 
 product_key = "mdm"
@@ -151,3 +152,208 @@ entry = "seed_admin_codes"
 after = []
 description = "管理面业务码与权限码（业务码 mdm + 查询 / 新建 / 修改 / 删除）"
 status = "enabled"
+
+# ---- 错误码（第七类记录）----
+# 段位取自本文件服务行 `errcode_segment = "33"`（6 位码 = 2 位段 + 4 位序号，不手写段）；
+# 与 `backend/services/org/src/mdm/errors.py` 的 `OrgErrorCode` 枚举及异常类 `http_status_` 逐条对齐
+# （对账断言见 `backend/tests/test_error_code_declaration.py`）。文案键格式 `<product>.error.<snake>`。
+
+[[errcodes]]
+code = 330031
+domain = "org"
+http_status = 404
+message_key = "mdm.error.post_not_found"
+severity = "warning"
+description = "岗位不存在"
+
+[[errcodes]]
+code = 330032
+domain = "org"
+http_status = 200
+message_key = "mdm.error.post_code_exists"
+severity = "warning"
+description = "岗位 code 已存在"
+
+[[errcodes]]
+code = 330033
+domain = "org"
+http_status = 200
+message_key = "mdm.error.post_dept_unavailable"
+severity = "warning"
+description = "归属部门不存在或已停用"
+
+[[errcodes]]
+code = 330034
+domain = "org"
+http_status = 200
+message_key = "mdm.error.post_has_users"
+severity = "warning"
+description = "岗位仍关联用户，禁止删除"
+
+[[errcodes]]
+code = 330035
+domain = "org"
+http_status = 200
+message_key = "mdm.error.post_has_roles"
+severity = "warning"
+description = "岗位仍绑定角色，禁止删除"
+
+[[errcodes]]
+code = 330036
+domain = "org"
+http_status = 200
+message_key = "mdm.error.post_code_format"
+severity = "warning"
+description = "岗位 code 不符合格式约束"
+
+[[errcodes]]
+code = 330051
+domain = "org"
+http_status = 404
+message_key = "mdm.error.dept_not_found"
+severity = "warning"
+description = "部门不存在"
+
+[[errcodes]]
+code = 330052
+domain = "org"
+http_status = 200
+message_key = "mdm.error.dept_parent_unavailable"
+severity = "warning"
+description = "父部门不存在或已停用"
+
+[[errcodes]]
+code = 330053
+domain = "org"
+http_status = 200
+message_key = "mdm.error.dept_cycle"
+severity = "warning"
+description = "移动形成环：父部门不能是自身或其后代"
+
+[[errcodes]]
+code = 330054
+domain = "org"
+http_status = 200
+message_key = "mdm.error.dept_has_children"
+severity = "warning"
+description = "部门仍存在子部门，禁止删除"
+
+[[errcodes]]
+code = 330055
+domain = "org"
+http_status = 200
+message_key = "mdm.error.dept_referenced"
+severity = "warning"
+description = "部门仍被岗位 / 用户引用，禁止删除"
+
+[[errcodes]]
+code = 330056
+domain = "org"
+http_status = 200
+message_key = "mdm.error.dept_has_roles"
+severity = "warning"
+description = "部门仍存在角色分配，禁止删除"
+
+[[errcodes]]
+code = 330057
+domain = "org"
+http_status = 200
+message_key = "mdm.error.dept_depth_exceeded"
+severity = "warning"
+description = "部门树深度超出上限"
+
+[[errcodes]]
+code = 330058
+domain = "org"
+http_status = 200
+message_key = "mdm.error.dept_children_limit"
+severity = "warning"
+description = "同级子部门数超出上限"
+
+[[errcodes]]
+code = 330059
+domain = "org"
+http_status = 200
+message_key = "mdm.error.dept_name_exists"
+severity = "warning"
+description = "同父部门名称已存在"
+
+[[errcodes]]
+code = 330060
+domain = "org"
+http_status = 200
+message_key = "mdm.error.dept_code_exists"
+severity = "warning"
+description = "部门编码已存在（租户内唯一）"
+
+[[errcodes]]
+code = 330061
+domain = "org"
+http_status = 200
+message_key = "mdm.error.dept_code_format"
+severity = "warning"
+description = "部门编码不符合格式约束"
+
+[[errcodes]]
+code = 330071
+domain = "org"
+http_status = 404
+message_key = "mdm.error.user_post_not_found"
+severity = "warning"
+description = "用户-岗位关联不存在"
+
+[[errcodes]]
+code = 330072
+domain = "org"
+http_status = 200
+message_key = "mdm.error.user_post_limit_exceeded"
+severity = "warning"
+description = "单用户岗位数超出上限"
+
+[[errcodes]]
+code = 330081
+domain = "org"
+http_status = 404
+message_key = "mdm.error.role_post_not_found"
+severity = "warning"
+description = "角色-岗位分配不存在"
+
+[[errcodes]]
+code = 330091
+domain = "org"
+http_status = 404
+message_key = "mdm.error.role_dept_not_found"
+severity = "warning"
+description = "角色-部门分配不存在"
+
+[[errcodes]]
+code = 330101
+domain = "org"
+http_status = 200
+message_key = "mdm.error.org_source_unavailable"
+severity = "error"
+description = "用户来源不可达 / 未装配（组织只读出口的用户维度取数通道）"
+
+[[errcodes]]
+code = 330111
+domain = "org"
+http_status = 404
+message_key = "mdm.error.user_dept_not_found"
+severity = "warning"
+description = "用户-部门关联不存在"
+
+[[errcodes]]
+code = 330112
+domain = "org"
+http_status = 200
+message_key = "mdm.error.user_dept_limit_exceeded"
+severity = "warning"
+description = "单用户部门数超出上限"
+
+[[errcodes]]
+code = 330113
+domain = "org"
+http_status = 200
+message_key = "mdm.error.user_primary_not_assigned"
+severity = "warning"
+description = "主要项置位目标不在该用户已分配集合内"

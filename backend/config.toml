@@ -20,6 +20,12 @@ docs_enabled = true
 # 平台默认 bms；产品部署必须配为自有前缀，否则迁移链与开发库自动建表取不到产品模型（bms 12_04）
 package_prefix = "mdm"
 
+[registry]
+# 产品自持清单（**本产品自己的声明**，相对 `backend/` 解析）：服务行 / 路由 / 数据源 / 能力 / 种子 /
+# 错误码七段。产品进程装载自身清单后，错误码合并视图（`error_code_view()`）才含本产品码，
+# 错误响应才能按视图取 `http_status` 与文案键（07B `02_05`）。
+product_manifests = ["../deploy/registry/mdm.toml"]
+
 [server]
 # 监听地址与端口（容器内统一 8000，与网关 upstream `mdm:8000` 对齐）
 host = "0.0.0.0"
