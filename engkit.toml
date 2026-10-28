@@ -18,6 +18,25 @@ test_prefix = "test_"
 projects = ["services/org"]
 coverage_packages = ["mdm", "services", "ops"]
 
+[selection]
+# 开发环（`测试改动内容.sh`）的依赖深度：direct = 只认直接 import，不做传递闭包
+# 推送前预检固定用 closure（不受本项影响），口径见《AI开发规范》「开发环 / 推送环」
+depth = "direct"
+# 开发环只对改动文件跑 ruff（静态全量留推送前预检）
+ruff_cmd = "uv run --project backend ruff"
+ruff_config = "backend/pyproject.toml"
+
+[frontend]
+root = "frontend"
+groups = ["packages", "modules"]
+workspace_protocol = "workspace:"
+# 前端 workspace 根在 frontend/，`-C frontend` 让 pnpm 找到 pnpm-workspace.yaml
+test_cmd = "pnpm -C frontend --filter {package} test"
+
+[rules.frontend.global]
+exact = ["frontend/package.json", "frontend/pnpm-lock.yaml", "frontend/pnpm-workspace.yaml", "frontend/tsconfig.base.json", "frontend/.npmrc"]
+prefixes = ["frontend/scripts/"]
+
 [pytest]
 cmd = "uv run pytest"
 cwd = "backend"
