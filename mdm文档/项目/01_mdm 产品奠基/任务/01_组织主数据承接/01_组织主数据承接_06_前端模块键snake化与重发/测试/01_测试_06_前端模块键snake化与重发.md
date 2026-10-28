@@ -44,7 +44,7 @@
 | 清单核对 | `node scripts/check-module-manifest.mjs` | 通过：仓内 3 项 / 跨仓 1 项（`mdm_org`），版本发现一致、sourcemap 就位 |
 | 文档链接 | `uv run engkit links` | 断链 0、失效锚点 0 |
 | 文档口径 | `uv run engkit docs-scope` | 违规 0 处（60 份文档） |
-| 预检（快进档） | `engkit run-once -- engkit preflight --fast` | 全部通过（17.7s，退出码 0） |
+| 预检（快进档） | `engkit run_once -- engkit preflight --fast` | 全部通过（17.7s，退出码 0） |
 
 ## 4. 覆盖率 <a id="coverage"></a>
 

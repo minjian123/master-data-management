@@ -71,9 +71,9 @@ mdm/
 cd backend
 uv run engkit links --root ..          # 文档相对链接与锚点
 uv run engkit docs-scope --root ..     # 文档口径：进度类字段只允许落在阶段计划
-uv run engkit run-once --root .. -- uv run engkit preflight --root ..   # 预检：静态 + 契约门禁 + 定向用例 + 覆盖率
+uv run engkit run_once --root .. -- uv run engkit preflight --root ..   # 预检：静态 + 契约门禁 + 定向用例 + 覆盖率
 ```
 
 - 预检步骤、覆盖率阈值与拦截口径都在仓根 `engkit.toml`——改步骤即改配置，不改工具包代码；
-- 分钟级命令一律经 `run-once` 包装（窗口内命中即回放完整输出）；本地裸跑重命令（全量 `pytest`、无参数 `ruff` / `pyright`）会被守卫拦下，`ENGKIT_ALLOW_UNWRAPPED=1` 仅用于排查包装器自身问题；
+- 分钟级命令一律经 `run_once` 包装（窗口内命中即回放完整输出）；本地裸跑重命令（全量 `pytest`、无参数 `ruff` / `pyright`）会被守卫拦下，`ENGKIT_ALLOW_UNWRAPPED=1` 仅用于排查包装器自身问题；
 - 本地确需跑全量 pytest 须显式声明（`pytest --full`），口径见 engkit 仓《工程化工具包说明》§4.4。
