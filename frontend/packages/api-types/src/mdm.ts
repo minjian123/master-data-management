@@ -231,7 +231,7 @@ export interface paths {
         get?: never;
         /**
          * Internal Assign Role Depts
-         * @description 内部全量覆盖角色部门（服务身份 `platform`；角色侧无主要项语义）。
+         * @description 内部全量覆盖角色部门（须持有该项能力分配；角色侧无主要项语义）。
          */
         put: operations["internal_assign_role_depts_api_v1_mdm_internal_role_depts__role_id__put"];
         post?: never;
@@ -251,7 +251,7 @@ export interface paths {
         get?: never;
         /**
          * Internal Assign Role Posts
-         * @description 内部全量覆盖角色岗位（服务身份 `platform`；角色侧无主要项语义）。
+         * @description 内部全量覆盖角色岗位（须持有该项能力分配；角色侧无主要项语义）。
          */
         put: operations["internal_assign_role_posts_api_v1_mdm_internal_role_posts__role_id__put"];
         post?: never;
@@ -271,7 +271,7 @@ export interface paths {
         get?: never;
         /**
          * Internal Assign User Depts
-         * @description 内部全量覆盖用户部门 + 主要部门（服务身份 `platform`）。
+         * @description 内部全量覆盖用户部门 + 主要部门（须持有该项能力分配）。
          */
         put: operations["internal_assign_user_depts_api_v1_mdm_internal_user_depts__user_id__put"];
         post?: never;
@@ -291,7 +291,7 @@ export interface paths {
         get?: never;
         /**
          * Internal Assign User Posts
-         * @description 内部全量覆盖用户岗位 + 主要岗位（服务身份 `platform`）。
+         * @description 内部全量覆盖用户岗位 + 主要岗位（须持有该项能力分配）。
          *
          *     与公开面同源：上限 / 不存在 / 主项归属校验、事件与失效代一致；支持幂等键；响应回生效后集合与主要项。
          */
