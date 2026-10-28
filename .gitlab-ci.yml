@@ -142,6 +142,9 @@ docs-links:
   stage: lint
   script:
     - *backend-setup
+    # CI 只 clone mdm 时 `bms文档` 软链不存在，跨仓相对链接（`../bms文档/…`）会全判断链（2026-10-28 实测 155 处）；
+    # bms 已由 `bms_setup.sh` 克隆到 `../bms`，按本地工作区布局补软链再查（cwd 为 backend，软链建在 mdm 仓根）
+    - ln -sfn ../bms/bms文档 ../bms文档
     - uv run engkit links --root ..
 
 docs-scope:
