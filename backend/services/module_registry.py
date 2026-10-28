@@ -45,6 +45,7 @@ MDM_SERVICE_RECORDS: tuple[ModuleRecord, ...] = (
         build_batch=3,
         product_key=PRODUCT_KEY,
         status=ModuleStatus.ENABLED,
+        tenant_base=True,
     ),
 )
 """mdm 产品服务清单（唯一在运服务 `mdm`；与 `deploy/registry/mdm.toml` 的 `services` 段逐字段同值）。
@@ -52,7 +53,8 @@ MDM_SERVICE_RECORDS: tuple[ModuleRecord, ...] = (
 - 四要素：`service_key=mdm` / `module_key=mdm` / `table_prefix=mdm_` / `event_domain=mdm`；
 - 对外命名空间经平台侧产品路由映射为 `/api/mdm/v1/mdm/...`（域段与上游服务同名）；
 - `errcode_segment=33`（沿用组织域已登记段位 `33xxxx`，段号注册即定、不随服务名变更）；
-- `build_batch=3`（产品批次）、`status=enabled`（已接入）。
+- `build_batch=3`（产品批次）、`status=enabled`（已接入）；
+- `tenant_base=True`：租户恒开通（角色 / 用户组织归属的基座；07B `03_01` 起由产品自持清单声明）。
 """
 
 MDM_PRODUCT_RECORDS: tuple[ProductRecord, ...] = (

@@ -27,6 +27,7 @@ service_group = "product"
 build_batch = 3
 service_version = "0.1.0"
 contract_version = "0.1.0"
+tenant_base = true          # 租户恒开通（角色 / 用户组织归属依赖，关闭将使主体链不可用）
 product_key = "mdm"
 status = "enabled"
 
