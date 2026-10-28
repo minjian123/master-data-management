@@ -1,7 +1,11 @@
 """组织只读出口路由用例（Kiwi 2256）：鉴权双通道 / 响应包装形态 / 参数校验 / 用户来源降级。
 
-用法：出口正常路径覆写 `require_org_reader`（专注出口行为）；鉴权分支则**保留真实依赖**，只注入令牌
-校验替身，从 HTTP 面断言 401 与放行。
+用法：出口正常路径覆写出口鉴权依赖（`require_org_reader` / `require_user_roles_reader`，专注出口行为）；
+鉴权分支则**保留真实依赖**，只注入令牌校验替身（与 `/user-roles` 的授权视图来源替身），从 HTTP 面断言
+401 / 403 与放行。
+
+鉴权口径（07B `03_01`）：`/user-roles` 的服务身份改按能力分配判定（`mdm.org.user-roles`），
+其余出口（数据源 / 名称回显）仍按调用方白名单。
 """
 
 import pytest
@@ -20,10 +24,12 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mdm.api.open_read import dept_scope_from_predicate, require_org_reader
+from mdm.api.open_read import dept_scope_from_predicate, require_org_reader, require_user_roles_reader
+from mdm.capabilities import CAPABILITY_MDM_USER_ROLES
 from mdm.errors import OrgSourceUnavailableError
 from mdm.org.user_source import PlatformOrgUserSource
 from tests_support import org_env
+from tests_support.grants import StaticGrantSource
 
 EXIT_BASE = "/api/v1/mdm"
 """出口路径前缀（管面占 `/org/posts` 等，出口集中挂 `/org/data-source/*` 等）。"""
@@ -100,6 +106,7 @@ async def _prepare(
     service_app.dependency_overrides[get_service_client] = lambda: client
     if service_identity:
         service_app.dependency_overrides[require_org_reader] = lambda: None
+        service_app.dependency_overrides[require_user_roles_reader] = lambda: None
 
 
 @pytest.mark.kiwi_id(2256)
@@ -260,6 +267,69 @@ async def test_exit_service_identity_whitelist(service_app: FastAPI, client: Asy
         service_app.dependency_overrides[get_token_verifier] = lambda: _VerifierStub(service="")
         nameless = await client.get(f"{EXIT_BASE}/data-source/dept-tree", headers=headers)
         assert nameless.status_code == 401 and nameless.json()["code"] == 20001
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.kiwi_id(2256)
+async def test_user_roles_service_identity_uses_capability_grant(
+    service_app: FastAPI, client: AsyncClient, grant_source: StaticGrantSource
+) -> None:
+    """`/user-roles` 服务身份按能力分配判定：有分配放行、无分配 403、网关代发票据 403。"""
+    session, engine = await org_env.make_session()
+    try:
+        await org_env.seed_org_tree(session)
+        await _prepare(service_app, session, client=org_env.StubPlatformClient(), service_identity=False)
+        grant_source.grant(CAPABILITY_MDM_USER_ROLES, consumer="platform")
+        headers = {"Authorization": "Bearer stub-token"}
+
+        service_app.dependency_overrides[get_token_verifier] = lambda: _VerifierStub(service="platform")
+        allowed = await client.get(f"{EXIT_BASE}/user-roles", params={"user_id": 2001}, headers=headers)
+        assert allowed.status_code == 200 and allowed.json()["code"] == 0
+
+        # 白名单内但**无分配**的服务身份（identity）不再因"在白名单里"放行：403 + 能力名与消费方
+        service_app.dependency_overrides[get_token_verifier] = lambda: _VerifierStub(service="identity")
+        denied = await client.get(f"{EXIT_BASE}/user-roles", params={"user_id": 2001}, headers=headers)
+        assert denied.status_code == 403 and denied.json()["code"] == 30001
+        assert CAPABILITY_MDM_USER_ROLES in denied.json()["message"]
+        assert "identity" in denied.json()["message"]
+
+        # 网关代发的服务票据只代表「请求来自网关」：即便有分配也不得作为能力消费方
+        grant_source.grant(CAPABILITY_MDM_USER_ROLES, consumer="gateway")
+        service_app.dependency_overrides[get_token_verifier] = lambda: _VerifierStub(service="gateway")
+        gateway = await client.get(f"{EXIT_BASE}/user-roles", params={"user_id": 2001}, headers=headers)
+        assert gateway.status_code == 403 and gateway.json()["code"] == 30001
+        assert "网关代发" in gateway.json()["message"]
+
+        # 登录态通道不受影响：非服务令牌回落 `require_auth`，替身对 api 受众同样拒 → 401
+        service_app.dependency_overrides[get_token_verifier] = lambda: _VerifierStub()
+        fallback = await client.get(f"{EXIT_BASE}/user-roles", params={"user_id": 2001}, headers=headers)
+        assert fallback.status_code == 401 and fallback.json()["code"] == 20001
+
+        # 无任何凭证：直接回落登录态校验（不因「未识别为服务身份」而放行）
+        anonymous = await client.get(f"{EXIT_BASE}/user-roles", params={"user_id": 2001})
+        assert anonymous.status_code == 401 and anonymous.json()["code"] == 20001
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.kiwi_id(2256)
+async def test_user_roles_fails_closed_when_grant_source_unavailable(
+    service_app: FastAPI, client: AsyncClient, grant_source: StaticGrantSource
+) -> None:
+    """`/user-roles` 授权视图来源不可用：首访 fail-closed（40003），不放行也不当作无分配拒绝。"""
+    session, engine = await org_env.make_session()
+    try:
+        await org_env.seed_org_tree(session)
+        await _prepare(service_app, session, client=org_env.StubPlatformClient(), service_identity=False)
+        grant_source.fail = True
+        service_app.dependency_overrides[get_token_verifier] = lambda: _VerifierStub(service="platform")
+
+        response = await client.get(
+            f"{EXIT_BASE}/user-roles", params={"user_id": 2001}, headers={"Authorization": "Bearer stub-token"}
+        )
+
+        assert response.json()["code"] == 40003
     finally:
         await engine.dispose()
 

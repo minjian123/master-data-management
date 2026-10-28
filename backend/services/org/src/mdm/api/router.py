@@ -4,7 +4,8 @@
 01_02 登记部门 / 岗位 / 用户-岗位 / 角色-岗位 / 角色-部门五组管理面路由；
 01_02 嵌套子任务 `02` 追加用户-部门分配路由（`/org/user-depts`，含主要部门置位）；
 01_03 登记只读出口路由（组织数据源 / 名称回显 / 按用户解析角色，路径挂 `/org/data-source/*` 等）；
-01_02 嵌套子任务 `03` 追加**内部写通道**（`/org/internal/*`，服务身份白名单 `platform`，宿主编排用）。
+01_02 嵌套子任务 `03` 追加**内部写通道**（`/org/internal/*`，宿主编排用；07B `03_01` 起入站按
+**能力分配**判定，不再按调用方白名单）。
 """
 
 from bms_core.api.base import BaseRouter, mount_service_routers
@@ -23,6 +24,7 @@ api_router = mount_service_routers(
             role_post.router,
             role_dept.router,
             open_read.router,
+            open_read.router_user_roles,
             internal.router,
             # 跨服务事务参与端点（`/txn/branches*`；谁挂端点谁参与，嵌套子任务 `_03`）
             build_branch_router(),

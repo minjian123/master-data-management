@@ -5,10 +5,15 @@
 ③ 覆写 `form_records()` 返回本产品表单标识记录（`form_key` 清单）。基座据此形成应用级视图
 （平台清单 + 注入记录，**同键同值去重、异值即拒**）并做产品维度 fail-closed 校验。
 
+启动钩子（07B `03_01`）：登记**远端授权视图来源**并预热本服务承载域（`org`）的 `provider` 视图——
+本服务的内部写通道与 `/user-roles` 出口按能力分配判定，授权权威在平台库，只能经平台内部出口拉取；
+平台未就绪时告警降级（不拒启），被收编端点首访仍 fail-closed。
+
 运行工作目录为 `backend/`（`services` 产品清单模块与 `alembic.ini` 均相对该根定位）。
 """
 
-from bms_core.application import BaseServiceApplicationFactory
+from bms_core.application import BaseServiceApplicationFactory, StartupHook
+from bms_core.collaboration.bootstrap import bootstrap_remote_capability_grants
 from bms_core.core.concurrent import ConcurrentStableList
 from bms_core.core.config import Settings
 from bms_core.registry.forms import FormRecord
@@ -87,6 +92,19 @@ class ApplicationFactory(BaseServiceApplicationFactory):
             ConcurrentStableList[APIRouter]: 业务聚合路由。
         """
         return ConcurrentStableList([api_router])
+
+    def startup_hooks(self) -> ConcurrentStableList[StartupHook]:
+        """启动钩子：登记远端授权视图来源并预热 `org` 域的 `provider` 视图。
+
+        与平台侧「本库直读」来源相对：本服务是 `mdm.org.*` 能力的**提供方**，授权记录只在平台库，
+        故经平台内部出口 `/api/v1/internal/capability-grants` 拉取并缓存（TTL 由基座控制）。
+        预热失败只告警降级（`app.state.grant_view_degraded`），不阻断本服务启动——管面与登录态
+        出口不依赖授权面；被收编端点在视图缺失时抛 `CatalogError`（fail-closed，不留越权口子）。
+
+        Returns:
+            ConcurrentStableList[StartupHook]: 启动钩子（插入序）。
+        """
+        return ConcurrentStableList([bootstrap_remote_capability_grants])
 
     def configure_service(self, app: FastAPI, settings: Settings) -> None:
         """注入组织域专属 state：**XA 分支处理器登记表**（参与方能力）。

@@ -4,6 +4,9 @@
   `/org/user-roles`（管面占 `/org/posts` 等且带 `org:*` 权限码，两者语义与契约均不同）；
 - **鉴权双通道**（`require_org_reader`）：已登录用户经 `require_auth`（网关可信身份或本地用户令牌 +
   会话标记）；服务间调用经**服务 JWT**（`aud=service`）且签发方在调用方白名单内；
+- **`/user-roles` 按能力分配判定**（07B `03_01`）：该端点已纳入跨产品能力授权（`mdm.org.user-roles`），
+  服务身份改按**有效分配**判定（登录态通道不变，前端菜单取数不受影响）；单列一个路由组是因为
+  同一路由组内能力各不相同，不能挂组级依赖；
 - **数据范围与脱敏强制接入**：路由级 `get_dept_scope`（读基座 `DataScope` 并解析部门范围）与
   `Depends(get_masker)`（激活掩码上下文，`OrgUser.masked_fields` 生效）；调用方不可绕过（无旁路端点）；
 - 出口**不挂 `org:*` 权限码**（面向跨产品消费、与平台 RBAC 解耦）。
@@ -12,7 +15,7 @@
 from collections.abc import Iterable
 from typing import Annotated, cast
 
-from bms_core.api.base import BaseRouter, page_query, require_auth
+from bms_core.api.base import DEFAULT_GATEWAY_SERVICE_IDENTITY, BaseRouter, page_query, require_auth
 from bms_core.api.deps import (
     get_cache_region,
     get_config_source,
@@ -23,14 +26,16 @@ from bms_core.api.deps import (
     get_uow,
 )
 from bms_core.cache.base import CacheRegion
+from bms_core.collaboration.grant import check_capability_access
 from bms_core.config.base import BaseConfigSource
 from bms_core.core.concurrent import ConcurrentStableList
 from bms_core.core.config import Settings
-from bms_core.core.exceptions import AuthError, ParamError
+from bms_core.core.exceptions import AuthError, ParamError, PermissionError
 from bms_core.core.logging import get_logger
 from bms_core.core.plugin import resolve_plugin
 from bms_core.db.session import DbSession
 from bms_core.db.unit_of_work import UnitOfWork
+from bms_core.metrics.base import BaseMetrics, get_metrics
 from bms_core.oauth.token import TOKEN_AUDIENCE_SERVICE
 from bms_core.oauth.verify import BaseTokenVerifier
 from bms_core.schemas.common import ApiResponse
@@ -40,6 +45,7 @@ from bms_core.servicecall.base import BaseServiceClient
 from bms_core.session.base import BaseSessionStore
 from fastapi import Depends, Request
 
+from mdm.capabilities import CAPABILITY_MDM_USER_ROLES
 from mdm.org.base import OrgPost, OrgUser
 from mdm.org.default import DbOrgDataSource, DbOrgNameResolver
 from mdm.org.user_source import PlatformOrgUserSource
@@ -96,6 +102,40 @@ async def require_org_reader(
     await require_auth(request, verifier, store)
 
 
+async def require_user_roles_reader(
+    request: Request,
+    verifier: Annotated[BaseTokenVerifier, Depends(get_token_verifier)],
+    store: Annotated[BaseSessionStore, Depends(get_session_store)],
+    metrics: Annotated[BaseMetrics, Depends(get_metrics)],
+) -> None:
+    """`/user-roles` 出口鉴权：服务身份按**能力分配**判定，未被识别为服务身份时回落登录态校验。
+
+    与 `require_org_reader` 的差别只有一处：服务间调用不再按调用方白名单，而是判定该服务对
+    `mdm.org.user-roles` 是否有有效分配（`07B 03_01` 收编口径）；登录态通道（前端菜单取数）不变。
+
+    Args:
+        request: 请求对象。
+        verifier: 统一令牌校验器。
+        store: 会话标记存储。
+        metrics: 指标器（按「调用方 × 能力」打点）。
+
+    Raises:
+        AuthError: 缺少 / 无效凭证（20001 / 401）。
+        PermissionError: 服务身份无有效分配 / 授权已过期 / 网关代发票据（30001 / 403）。
+        CatalogError: 能力未登记或授权视图来源未装配（配置漂移，拒启级）。
+        SessionAuthError: 登录态会话标记缺失 / 不一致（20012 / 401）。
+    """
+    token = _bearer_token(request.headers.get("Authorization"))
+    if token is not None:
+        service = await _service_identity(verifier, token)
+        if service is not None:
+            if service == DEFAULT_GATEWAY_SERVICE_IDENTITY:
+                raise PermissionError(f"网关代发的服务票据不得作为能力消费方：{CAPABILITY_MDM_USER_ROLES}")
+            await check_capability_access(CAPABILITY_MDM_USER_ROLES, service, metrics=metrics)
+            return
+    await require_auth(request, verifier, store)
+
+
 async def get_dept_scope(request: Request) -> ConcurrentStableList[int] | None:
     """数据范围依赖：读基座 `DataScope` 并解析为「限定部门 id 集合」。
 
@@ -122,6 +162,15 @@ router = BaseRouter(
     tags=["org-open-read"],
     dependencies=[Depends(require_org_reader), Depends(get_masker)],
 )
+"""出口路由组（服务身份白名单）：数据源 / 名称回显（未纳入能力授权的出口面）。"""
+
+router_user_roles = BaseRouter(
+    key="org_open_read_user_roles",
+    prefix="/mdm",
+    tags=["org-open-read"],
+    dependencies=[Depends(require_user_roles_reader), Depends(get_masker)],
+)
+"""按用户解析角色（已纳入能力授权：`mdm.org.user-roles`）。"""
 
 UowDep = Annotated[UnitOfWork, Depends(get_uow)]
 ConfigDep = Annotated[BaseConfigSource, Depends(get_config_source)]
@@ -218,7 +267,7 @@ async def resolve_names(
     return ApiResponse.ok(OrgNameRefs(items=await service.resolve_names(target, _parse_ids(id_in))))
 
 
-@router.get("/user-roles")
+@router_user_roles.get("/user-roles")
 async def get_user_roles(
     scope: ScopeDep,
     uow: UowDep,
@@ -419,5 +468,7 @@ __all__ = [
     "dept_scope_from_predicate",
     "get_dept_scope",
     "require_org_reader",
+    "require_user_roles_reader",
     "router",
+    "router_user_roles",
 ]

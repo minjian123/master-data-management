@@ -1,8 +1,9 @@
 """组织域**内部写通道**路由（`/api/v1/mdm/internal/*`；宿主编排以服务身份写入）。
 
-- **鉴权**：仅接受**服务身份**（服务 JWT，`aud=service`）且签发方在调用方白名单内＝`platform`
-  （bms 平台服务，宿主编排发起方）；登录态令牌与其它服务身份一律拒（`10010` / `20001`）。
-  **不挂 `org:*` 权限码**（与只读出口双通道同构，东西向不经网关、无旁路）。
+- **鉴权**：按**能力分配**判定（07B `03_01`）——四个端点各声明一项 `mdm.org.*.assign` 能力，
+  调用方须持有该项能力的有效分配（当前唯一消费方为 `platform`，由 mdm 清单
+  `default_consumers` 声明并经平台落库）；登录态令牌、网关代发票据与无分配服务一律拒
+  （`10010` / `20001` / `30001`）。**不挂 `org:*` 权限码**（东西向不经网关、无旁路）。
 - **幂等**：接受 `Idempotency-Key`（宿主编排生成的同一业务幂等键，按 `tenant` 归一）；同键重复提交
   返回**同结果**（载荷回放，不重复写入）。
 - **口径不放松**：复用**同一套服务层**（校验 / 事务 / 事件 / `user-roles` 失效代 / 审计），
@@ -13,7 +14,8 @@
 
 from typing import Annotated, cast
 
-from bms_core.api.base import BaseRouter, require_service
+from bms_core.api.base import BaseRouter
+from bms_core.api.capability import require_capability
 from bms_core.api.deps import (
     get_audit_capturer,
     get_cache_region,
@@ -35,6 +37,12 @@ from bms_core.outbox.base import BaseOutboxStore
 from bms_core.schemas.common import ApiResponse
 from fastapi import Depends, Header
 
+from mdm.capabilities import (
+    CAPABILITY_ORG_ROLE_DEPTS_ASSIGN,
+    CAPABILITY_ORG_ROLE_POSTS_ASSIGN,
+    CAPABILITY_ORG_USER_DEPTS_ASSIGN,
+    CAPABILITY_ORG_USER_POSTS_ASSIGN,
+)
 from mdm.repositories.dept import DeptRepository
 from mdm.repositories.post import PostRepository
 from mdm.repositories.role_dept import RoleDeptRepository
@@ -61,8 +69,8 @@ router = BaseRouter(
     key="org_internal_assign",
     prefix="/mdm/internal",
     tags=["org-internal"],
-    dependencies=[Depends(require_service("platform"))],
 )
+"""内部写通道路由（**逐路由**声明能力：同一路由组内四项能力互不相同，不能挂组级依赖）。"""
 
 UowDep = Annotated[UnitOfWork, Depends(get_uow)]
 ConfigDep = Annotated[BaseConfigSource, Depends(get_config_source)]
@@ -127,7 +135,7 @@ async def _user_dept_ids(service: UserDeptService, user_id: int) -> UserDeptIds:
     )
 
 
-@router.put("/user-posts/{user_id}")
+@router.put("/user-posts/{user_id}", dependencies=[Depends(require_capability(CAPABILITY_ORG_USER_POSTS_ASSIGN))])
 async def internal_assign_user_posts(
     user_id: int,
     req: InternalUserPostRequest,
@@ -139,7 +147,7 @@ async def internal_assign_user_posts(
     idempotency: IdempotencyDep,
     idempotency_key: IdempotencyKeyHeader = None,
 ) -> ApiResponse[UserPostIds]:
-    """内部全量覆盖用户岗位 + 主要岗位（服务身份 `platform`）。
+    """内部全量覆盖用户岗位 + 主要岗位（须持有该项能力分配）。
 
     与公开面同源：上限 / 不存在 / 主项归属校验、事件与失效代一致；支持幂等键；响应回生效后集合与主要项。
     """
@@ -160,7 +168,7 @@ async def internal_assign_user_posts(
     return ApiResponse.ok(result)
 
 
-@router.put("/user-depts/{user_id}")
+@router.put("/user-depts/{user_id}", dependencies=[Depends(require_capability(CAPABILITY_ORG_USER_DEPTS_ASSIGN))])
 async def internal_assign_user_depts(
     user_id: int,
     req: InternalUserDeptRequest,
@@ -172,7 +180,7 @@ async def internal_assign_user_depts(
     idempotency: IdempotencyDep,
     idempotency_key: IdempotencyKeyHeader = None,
 ) -> ApiResponse[UserDeptIds]:
-    """内部全量覆盖用户部门 + 主要部门（服务身份 `platform`）。"""
+    """内部全量覆盖用户部门 + 主要部门（须持有该项能力分配）。"""
     key = build_idempotency_key(key=idempotency_key, tenant=current_tenant_id_str()) if idempotency_key else ""
     if key and not await idempotency.begin(key):
         payload = await idempotency.load(key)
@@ -190,7 +198,7 @@ async def internal_assign_user_depts(
     return ApiResponse.ok(result)
 
 
-@router.put("/role-posts/{role_id}")
+@router.put("/role-posts/{role_id}", dependencies=[Depends(require_capability(CAPABILITY_ORG_ROLE_POSTS_ASSIGN))])
 async def internal_assign_role_posts(
     role_id: int,
     req: InternalRolePostRequest,
@@ -201,7 +209,7 @@ async def internal_assign_role_posts(
     idempotency: IdempotencyDep,
     idempotency_key: IdempotencyKeyHeader = None,
 ) -> ApiResponse[RolePostIds]:
-    """内部全量覆盖角色岗位（服务身份 `platform`；角色侧无主要项语义）。"""
+    """内部全量覆盖角色岗位（须持有该项能力分配；角色侧无主要项语义）。"""
     key = build_idempotency_key(key=idempotency_key, tenant=current_tenant_id_str()) if idempotency_key else ""
     if key and not await idempotency.begin(key):
         payload = await idempotency.load(key)
@@ -217,7 +225,7 @@ async def internal_assign_role_posts(
     return ApiResponse.ok(result)
 
 
-@router.put("/role-depts/{role_id}")
+@router.put("/role-depts/{role_id}", dependencies=[Depends(require_capability(CAPABILITY_ORG_ROLE_DEPTS_ASSIGN))])
 async def internal_assign_role_depts(
     role_id: int,
     req: InternalRoleDeptRequest,
@@ -228,7 +236,7 @@ async def internal_assign_role_depts(
     idempotency: IdempotencyDep,
     idempotency_key: IdempotencyKeyHeader = None,
 ) -> ApiResponse[RoleDeptIds]:
-    """内部全量覆盖角色部门（服务身份 `platform`；角色侧无主要项语义）。"""
+    """内部全量覆盖角色部门（须持有该项能力分配；角色侧无主要项语义）。"""
     key = build_idempotency_key(key=idempotency_key, tenant=current_tenant_id_str()) if idempotency_key else ""
     if key and not await idempotency.begin(key):
         payload = await idempotency.load(key)

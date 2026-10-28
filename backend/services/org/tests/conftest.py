@@ -7,10 +7,12 @@ from tests_support.fixtures import (
     reset_request_context,
     service_app,
 )
+from tests_support.grants import grant_source
 
 __all__ = [
     "client",
     "fake_tenant_source",
+    "grant_source",
     "isolate_settings",
     "reset_request_context",
     "service_app",

@@ -1,7 +1,8 @@
 """组织域内部分配端点用例：四组「全量覆盖 + 主要项」写通道的 HTTP 全链路与幂等回放。
 
-口径：内部面鉴权由**服务身份白名单**决定（`require_service("platform")`），故用例替换令牌校验器
-（返回 `service=platform` 的服务身份）后走真实依赖链；库为临时文件 SQLite，每请求独立会话
+口径：内部面鉴权按**能力分配**判定（07B `03_01`；四个端点各一项 `mdm.org.*.assign`），故用例在
+应用启动后登记授权视图来源替身（`grant_source`，覆盖远端来源）并授予四项能力，再替换令牌校验器
+（返回 `service=platform` 的服务身份）走真实依赖链；库为临时文件 SQLite，每请求独立会话
 （不复用同一 session，避免跨请求残留事务）。
 数据准备走管理面路由（仅替换认证依赖），不直接操作仓储。
 """
@@ -21,7 +22,9 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from mdm.capabilities import ORG_CAPABILITIES
 from services.table_registry import register as register_product_tables
+from tests_support.grants import StaticGrantSource
 
 BASE = "/api/v1/mdm/internal"
 """内部写通道前缀。"""
@@ -92,12 +95,15 @@ async def prepared_db(isolate_settings: None) -> AsyncIterator[None]:
 
 
 @pytest.fixture
-def overrides(service_app: FastAPI) -> None:
-    """放行管理面认证并注入服务身份校验器。
+def overrides(service_app: FastAPI, grant_source: StaticGrantSource) -> None:
+    """放行管理面认证、注入服务身份校验器，并授予四组内部分配能力。
 
     Args:
         service_app: 应用实例。
+        grant_source: 授权视图来源替身（授予 `platform` 四项 `mdm.org.*.assign` 能力）。
     """
+    for capability in ORG_CAPABILITIES:
+        grant_source.grant(capability)
     service_app.dependency_overrides[require_auth] = lambda: None
     service_app.dependency_overrides[get_token_verifier] = lambda: _PlatformVerifier()
 

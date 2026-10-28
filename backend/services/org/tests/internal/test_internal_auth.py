@@ -1,7 +1,9 @@
-"""组织域内部写通道**鉴权矩阵与幂等回放**用例（Kiwi 2274）。
+"""组织域内部写通道**鉴权矩阵**用例（Kiwi 2274）。
 
-口径：内部面**只换鉴权、不换语义**——故鉴权分支保留**真实依赖**（`require_service("platform")`），
-只注入令牌校验替身，从 HTTP 面断言 401 与放行；放行后断言「同 `Idempotency-Key` 重复提交返回同结果」。
+口径：内部面**只换鉴权、不换语义**——鉴权分支保留**真实依赖**（`require_capability`），
+只注入令牌校验替身与授权视图来源替身，从 HTTP 面断言：
+① 无凭证 401（20001）；② 登录态令牌 401（10010）；③ 服务身份无有效分配 403（30001，信息含能力名与消费方）；
+④ 有有效分配放行（`platform` + `mdm.org.user-depts.assign`）。
 """
 
 import pytest
@@ -14,7 +16,9 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from mdm.capabilities import CAPABILITY_ORG_USER_DEPTS_ASSIGN
 from tests_support import org_env
+from tests_support.grants import StaticGrantSource
 
 INTERNAL_USER_DEPTS = "/api/v1/mdm/internal/user-depts/{user_id}"
 """内部写端点（用户-部门，含主要项）。"""
@@ -74,13 +78,20 @@ async def _seed_dept(session: AsyncSession) -> int:
 
 
 @pytest.mark.kiwi_id(2274)
-async def test_internal_rejects_non_whitelisted_service(service_app: FastAPI, client: AsyncClient) -> None:
-    """非白名单服务身份（`org` 之外的调用方）被拒：`401`（`20001`）。"""
+async def test_internal_rejects_unauthorized_service(
+    service_app: FastAPI, client: AsyncClient, grant_source: StaticGrantSource
+) -> None:
+    """服务身份无有效分配：`403`（`30001`），信息含能力名与消费方（可定位越界方）。"""
+    grant_source.grant(CAPABILITY_ORG_USER_DEPTS_ASSIGN, consumer="platform")
     service_app.dependency_overrides[get_token_verifier] = lambda: _VerifierStub(service="other")
 
     response = await client.put(INTERNAL_USER_DEPTS.format(user_id=1), json={"dept_ids": []}, headers=AUTH_HEADER)
 
-    assert response.status_code == 401
+    assert response.status_code == 403
+    body = response.json()
+    assert body["code"] == 30001
+    assert CAPABILITY_ORG_USER_DEPTS_ASSIGN in body["message"]
+    assert "other" in body["message"]
 
 
 @pytest.mark.kiwi_id(2274)
@@ -94,8 +105,23 @@ async def test_internal_rejects_user_audience_token(service_app: FastAPI, client
 
 
 @pytest.mark.kiwi_id(2274)
-async def test_internal_platform_writes_with_primary(service_app: FastAPI, client: AsyncClient) -> None:
-    """白名单 `platform` 放行：内部写生效——全量覆盖部门并置位主要部门（复用公开面服务层语义）。
+async def test_internal_fails_closed_when_grant_source_unavailable(
+    service_app: FastAPI, client: AsyncClient, grant_source: StaticGrantSource
+) -> None:
+    """授权视图来源不可用：首访 fail-closed（40003 / 配置漂移级），既不误放行也不当作「无分配」拒绝。"""
+    grant_source.fail = True
+    service_app.dependency_overrides[get_token_verifier] = lambda: _VerifierStub(service="platform")
+
+    response = await client.put(INTERNAL_USER_DEPTS.format(user_id=1), json={"dept_ids": []}, headers=AUTH_HEADER)
+
+    assert response.json()["code"] == 40003
+
+
+@pytest.mark.kiwi_id(2274)
+async def test_internal_platform_writes_with_primary(
+    service_app: FastAPI, client: AsyncClient, grant_source: StaticGrantSource
+) -> None:
+    """有有效分配（`platform` × `mdm.org.user-depts.assign`）放行：内部写生效——全量覆盖部门并置位主要部门。
 
     说明：本轮从 HTTP 面只断言「一次写入的响应内容」；**幂等键载荷回放**与**重复提交同结果**属续做
     （见实施记录 §4 遗留 2）——在 DI 覆写夹具下幂等存储与工作单元共用会话会冲突
@@ -105,6 +131,7 @@ async def test_internal_platform_writes_with_primary(service_app: FastAPI, clien
     try:
         dept_id = await _seed_dept(session)
         await session.rollback()
+        grant_source.grant(CAPABILITY_ORG_USER_DEPTS_ASSIGN)
         service_app.dependency_overrides[get_token_verifier] = lambda: _VerifierStub(service="platform")
         service_app.dependency_overrides[get_uow] = lambda: org_env.make_uow(session)
 
