@@ -161,8 +161,8 @@ description = "管理面业务码与权限码（业务码 mdm + 查询 / 新建 
 status = "enabled"
 
 [seeds.tables]
-business = "code"
-permission = "business_id,action_id"
+sys_business = "code"
+sys_permission = "business_id,action_id"
 
 # ---- 错误码（第七类记录）----
 # 段位取自本文件服务行 `errcode_segment = "33"`（6 位码 = 2 位段 + 4 位序号，不手写段）；
