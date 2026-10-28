@@ -61,7 +61,8 @@ def test_load_and_register_manifest_prints_warnings(tmp_path: Path, capsys: pyte
     manifest = tmp_path / "warn.toml"
     manifest.write_text(
         'product_key = "mdm"\n\n[[seeds]]\nname = "mdm-absent-seed"\n'
-        'module = "absentpkg.seeds.permissions"\nentry = "run"\n',
+        'module = "absentpkg.seeds.permissions"\nentry = "run"\n'
+        'service = "mdm"\ndb_key = "platform_mdm"\n',
         encoding="utf-8",
     )
 

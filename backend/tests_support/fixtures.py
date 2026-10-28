@@ -43,10 +43,17 @@ _PROVIDER_KEYS = (
 )
 """需关闭真实实现的外部 provider 段（单测不引入全局导出线程、不真实外呼、不连 Redis）。"""
 
+_KEPT_ENV_PREFIXES = ("BMS_TEST_", "BMS_BACKEND_ROOT")
+"""清环境变量时**保留**的键前缀（`BMS_TEST_` 是测试专用前缀；`BMS_BACKEND_ROOT` 是工程根定位覆盖）。"""
+
 
 @pytest.fixture(autouse=True)
 def isolate_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
     """隔离配置：清 `BMS_` 环境变量 → 固定 test 环境 → 临时 SQLite 库 → 关闭外部真实实现。
+
+    注意 `BMS_BACKEND_ROOT` **必须保留**：它由 `mdm` 包导入期声明（路径依赖接入 bms 源码后，
+    基座按它定位本仓 `config.toml` / 迁移链）。清掉会让配置定位回落到 bms 仓的 `config.toml`
+    （Redis 幂等存储 / 缓存等真实实现被启用），用例随后连不上 Redis 而报 503。
 
     Args:
         monkeypatch: pytest monkeypatch 夹具。
@@ -56,7 +63,7 @@ def isolate_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterato
         None: 用例运行期。
     """
     for key in list(os.environ):
-        if key.startswith("BMS_") and not key.startswith("BMS_TEST_"):
+        if key.startswith("BMS_") and not key.startswith(_KEPT_ENV_PREFIXES):
             monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("BMS_ENV", "test")
     # 临时库：清 sqlite_dir 基址与连接串模板，使显式 URL 生效
@@ -65,6 +72,9 @@ def isolate_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterato
     monkeypatch.setenv("BMS_DATABASE__TENANTS__URL_TEMPLATE", "")
     monkeypatch.setenv("BMS_DATABASE__PLATFORM__URL", f"sqlite+aiosqlite:///{tmp_path / 'mdm_platform.db'}")
     monkeypatch.setenv("BMS_DATABASE__TENANTS__URL", f"sqlite+aiosqlite:///{tmp_path / 'mdm_tenant_demo.db'}")
+    # 单测不走上报 / 拉取注册表的启动链（基座 `registry.register_on_startup` 文档口径：单测置 false）。
+    # 生产 / 部署态仍为 true：启动期上报本仓清单并投影平台权威快照，失败拒启。
+    monkeypatch.setenv("BMS_REGISTRY__REGISTER_ON_STARTUP", "false")
     for key in _PROVIDER_KEYS:
         monkeypatch.setenv(f"BMS_{key}__PROVIDER", "")
     monkeypatch.setitem(Settings.model_config, "env_file", None)

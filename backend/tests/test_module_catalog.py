@@ -206,6 +206,10 @@ def test_resolve_service_contracts_non_literal_and_missing(tmp_path: Path) -> No
     _write_contract_package(tmp_path, "other", "import os\n")
     (tmp_path / "empty").mkdir()
     (tmp_path / ".hidden").mkdir()
+    # 编译缓存目录同样跳过（其 `__init__.py` 不是服务包声明，误读会造出伪服务键）
+    pycache = tmp_path / "mdm" / "src" / "__pycache__"
+    pycache.mkdir(parents=True, exist_ok=True)
+    (pycache / "__init__.py").write_text("CONTRACT_VERSION = '9.9.9'\n", encoding="utf-8")
     declarations = resolve_service_contracts(tmp_path)
     assert dict(declarations) == {"mdm": None, "other": None}
 
