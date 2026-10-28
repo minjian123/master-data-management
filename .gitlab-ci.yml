@@ -111,6 +111,10 @@ gate-smoke:
 # `engkit` 仍为 git 源依赖（锁提交 SHA），由 `engkit_setup.sh` + `uv sync` 两条路径分别满足。
 
 .backend-setup: &backend-setup
+  # python:3.14-slim 不含 git，而 `bms_setup.sh` / `engkit_setup.sh` 都要 git 克隆（2026-10-28 修复：
+  # 先前 job 直接 `git: command not found` 退出 127）；apt 走清华镜像，避免 deb.debian.org 慢
+  - sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources
+  - apt-get update && apt-get install -y --no-install-recommends git ca-certificates
   - pip install --no-cache-dir uv
   # bms 基座克隆（路径依赖前置）
   - . scripts/tools/ci/bms_setup.sh
