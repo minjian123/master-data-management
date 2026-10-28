@@ -105,7 +105,9 @@ gate-smoke:
 # ---- 后端门禁（backend/ 工作区）----
 # 依赖安装：`bms-core` 为**路径依赖**（2026-10-27 起，见 `backend/pyproject.toml` 的 `[tool.uv.sources]`），
 # `uv sync --frozen` 按 `../../bms/backend/libs/bms_core` 装基座 → 后端 job 必须先克隆 bms 到 `../bms`；
-# 基座 ref 由变量 `BMS_REF` 锁定（缺省 `main`；升级基座只改 CI 变量或本次触发变量，不改产品仓 pyproject）。
+# 基座 ref 由变量 `BMS_REF` 指定（**缺省 main = 每次取 bms 远端 main 头，日常零维护**；`latest-tag` 取最新
+# `vX.Y.Z` 标签；也可给分支 / tag / SHA 钉版本，见 `scripts/tools/ci/bms_setup.sh` 与 bms 仓
+# `scripts/tools/ci/bms_ref.py`）。
 # `engkit` 仍为 git 源依赖（锁提交 SHA），由 `engkit_setup.sh` + `uv sync` 两条路径分别满足。
 
 .backend-setup: &backend-setup
@@ -175,19 +177,16 @@ backend-modules:
 
 # ---- 前端门禁（frontend/ 工作区）----
 # **构建前提（跨仓）**：平台基座包（`@bms/core` / `@bms/ui_ep` / `@bms/api_types`）经 `file:` 引工作区
-# **bms 克隆**，且 bms 前端包纳入本工作区成员（见任务 01_04 详细设计 §3.2）——故前端作业先克隆 bms 到
-# 与 mdm **同级**目录（`../bms`）。同一内网 GitLab 时匿名 / `CI_JOB_TOKEN` 只读即可，亦可用
-# `BMS_REPO_URL` 覆写（例如换 SSH 或镜像地址）。
+# **bms 克隆**，且 bms 前端包纳入本工作区成员（见任务 01_04 详细设计 §3.2）——故前端作业先经
+# `scripts/tools/ci/bms_setup.sh` 克隆 bms 到与 mdm **同级**目录（`../bms`），与后端作业**同一份 ref 口径**
+# （`BMS_REF` 缺省跟随 bms main 头；`latest-tag` / 分支 / tag / SHA 可钉）。`BMS_REPO_URL` 可覆写仓库地址。
 #
 # 门禁面：契约类型零漂移 / 类型检查 / lint / 用例 / 模块构建（体积预算 + 产物面隔离）。
 
 .frontend-setup: &frontend-setup
   - corepack enable
   - node --version
-  - >-
-    git clone --depth 1
-    "${BMS_REPO_URL:-http://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/bms/bms.git}"
-    ../bms
+  - . scripts/tools/ci/bms_setup.sh
   - cd frontend
   - pnpm install --frozen-lockfile
 
