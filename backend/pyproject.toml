@@ -21,7 +21,7 @@ constraint-dependencies = ["sqlalchemy>=2.0,<2.1"]
 bms-core = { path = "../../bms/backend/libs/bms_core", editable = true }
 # 跨仓工程化工具包（engkit 仓）：文档链接 / 文档口径 / 预检 / 重命令包装 / 用例登记的唯一实现，
 # 同样改**路径依赖**（2026-10-27 拍板，与 bms 同构）；CI 先经 `scripts/tools/ci/engkit_setup.sh`
-# 克隆到 `../engkit`（ref 由 `ENGKIT_REV` 锁定）；运行镜像 `--no-dev` 不装本依赖。
+# 克隆到 `../engkit`（缺省跟随 engkit main 头，需要钉版本时给 `ENGKIT_REV` 分支 / tag / SHA）；运行镜像 `--no-dev` 不装本依赖。
 engkit = { path = "../../engkit", editable = true }
 
 [dependency-groups]
