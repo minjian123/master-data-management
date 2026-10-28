@@ -37,6 +37,12 @@ if [ ! -d "${BMS_CLONE_DIR}/.git" ]; then
     git clone --quiet --no-checkout "${BMS_URL}" "${BMS_CLONE_DIR}"
 fi
 
+# 复用目录里 origin 存的是**上一次 job** 的 URL（含当时的 CI_JOB_TOKEN，每个 job 都不同），
+# 直接 fetch 会 401/403（2026-10-28 #1281 同类问题）——先刷新 remote URL。
+if [ -n "${BMS_URL}" ]; then
+    git -C "${BMS_CLONE_DIR}" remote set-url origin "${BMS_URL}"
+fi
+
 # 差分门禁基线：origin/main 始终刷新（失败不阻断——主目标仍由下面的解析决定）
 git -C "${BMS_CLONE_DIR}" fetch --quiet --prune origin "+refs/heads/main:refs/remotes/origin/main" || true
 
