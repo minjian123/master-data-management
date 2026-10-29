@@ -97,7 +97,7 @@ class ApplicationFactory(BaseServiceApplicationFactory):
         """启动钩子：登记远端授权视图来源并预热 `org` 域的 `provider` 视图。
 
         与平台侧「本库直读」来源相对：本服务是 `mdm.org.*` 能力的**提供方**，授权记录只在平台库，
-        故经平台内部出口 `/api/v1/internal/capability-grants` 拉取并缓存（TTL 由基座控制）。
+        故经平台内部出口 `/api/v1/platform/internal/capability-grants` 拉取并缓存（TTL 由基座控制）。
         预热失败只告警降级（`app.state.grant_view_degraded`），不阻断本服务启动——管面与登录态
         出口不依赖授权面；被收编端点在视图缺失时抛 `CatalogError`（fail-closed，不留越权口子）。
 
