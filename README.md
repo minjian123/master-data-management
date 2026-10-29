@@ -71,7 +71,7 @@ mdm/
 cd backend
 uv run engkit links --root ..          # 文档相对链接与锚点
 uv run engkit docs-scope --root ..     # 文档口径：进度类字段只允许落在阶段计划
-uv run engkit run_once --root .. -- uv run engkit preflight --root ..   # 预检：静态 + 契约门禁 + 定向用例 + 覆盖率
+uv run engkit run_once --root .. -- uv run engkit preflight --root .. --push   # 预检：静态 + 契约门禁 + 定向用例 + 覆盖率（须先提交：脏树即拒）
 ```
 
 - 预检步骤、覆盖率阈值与拦截口径都在仓根 `engkit.toml`——改步骤即改配置，不改工具包代码；

@@ -5,7 +5,7 @@
 - 后端：直接依赖选测（不做传递 import 闭包），不跑覆盖率、不退化工程级全量；
 - 前端：只跑受影响包（`pnpm -C frontend --filter <包> test`，不带覆盖率）；
 - 静态：只对改动文件跑 `ruff check` + `ruff format --check`；
-- 推送前预检（`engkit preflight`）仍按传递闭包 + 100% 覆盖率执行。
+- 推送前预检（`engkit preflight --push`）仍按传递闭包 + 100% 覆盖率执行，且只在工作树干净（已提交）时放行。
 
 mdm 以路径依赖装 engkit，故本入口只做 `uv run engkit run-changed` 的参数与退出码转发。
 
