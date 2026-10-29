@@ -368,3 +368,25 @@ http_status = 200
 message_key = "mdm.error.user_primary_not_assigned"
 severity = "warning"
 description = "主要项置位目标不在该用户已分配集合内"
+
+
+# ---- 业务域布局（第九类记录；07B `04_02` 重开）----
+#
+# 域布局的唯一信息源。`deploy/boundaries/domain_layout.json` 由本段渲染（生成物，勿手改）：
+#   python -m ops.check_modules --render-domain-layout
+#
+# 字段口径见 07C《03_01 业务域级边界护栏》详细设计 §3.1.1。
+
+[[domains]]
+domain_key = "org"
+name = "组织主数据"
+service_key = "mdm"
+status = "placement"
+paths = [
+  "backend/services/org/src/mdm/org/**/*.py",
+  "backend/services/org/src/mdm/models/**/*.py",
+  "backend/services/org/src/mdm/repositories/**/*.py",
+  "backend/services/org/src/mdm/schemas/**/*.py",
+  "backend/services/org/src/mdm/services/**/*.py",
+]
+public_api = ["mdm.org"]

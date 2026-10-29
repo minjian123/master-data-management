@@ -28,6 +28,7 @@ uv run python -m ops.check_modules --offline  # 显式声明离线（与 bms 侧
 
 import argparse
 import ast
+import json
 import sys
 from pathlib import Path
 
@@ -47,7 +48,10 @@ _SERVICES_DIR = Path(__file__).resolve().parents[1] / "services"
 """服务工程根（`backend/services`）。"""
 
 _MANIFEST = Path(__file__).resolve().parents[2] / "deploy" / "registry" / "mdm.toml"
-"""产品自持声明（toml；平台侧按 `[registry].product_manifests` 装载的同一份）。"""
+"""产品自持声明（toml；由 `bms_core.registry.products.local_manifest_paths` 自动发现装载）。"""
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+"""仓库根（`backend/ops/check_modules.py` 上两级）。"""
 
 _CONTRACT_CONSTANT = "CONTRACT_VERSION"
 """服务包自报契约版本常量名。"""
@@ -64,6 +68,16 @@ def build_parser() -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(description="mdm 产品服务目录校验（离线清单 + 产品维度 + 两侧同值）")
     parser.add_argument("--offline", action="store_true", help="离线校验（mdm 产品侧恒离线，本开关为口径兼容）")
+    parser.add_argument(
+        "--render-domain-layout",
+        action="store_true",
+        help="由本仓清单第九类 [[domains]] 渲染 deploy/boundaries/domain_layout.json（生成物）",
+    )
+    parser.add_argument(
+        "--check-domain-layout",
+        action="store_true",
+        help="比对 deploy/boundaries/domain_layout.json 与清单渲染结果（不一致即失败；不写文件）",
+    )
     return parser
 
 
@@ -184,6 +198,82 @@ def check_offline(services_dir: Path = _SERVICES_DIR) -> ConcurrentStableList[st
     return errors
 
 
+
+
+DOMAIN_LAYOUT_PATH = Path("deploy/boundaries/domain_layout.json")
+"""域布局生成物路径（相对仓根；07B `04_02` 重开：由清单第九类渲染，勿手改）。"""
+
+
+def render_domain_layout() -> dict[str, object]:
+    """由本仓清单第九类 `[[domains]]` 渲染域布局文档（生成物内容）。
+
+    Returns:
+        dict[str, object]: 与既有 `domain_layout.json` 逐字段同构的文档。
+    """
+    from bms_core.registry.products import load_product_manifests
+
+    loaded = list(load_product_manifests(ConcurrentStableList()))
+    domains: list[dict[str, object]] = []
+    shared: list[str] = []
+    seen_domain: set[str] = set()
+    seen_shared: set[str] = set()
+    for manifest in loaded:
+        for entry in manifest.domains:
+            if entry.domain_key in seen_domain:
+                continue
+            seen_domain.add(entry.domain_key)
+            item: dict[str, object] = {"domain_key": entry.domain_key}
+            if entry.name:
+                item["name"] = entry.name
+            item.update(
+                {
+                    "service_key": entry.service_key,
+                    "status": entry.status,
+                    "paths": list(entry.paths),
+                    "public_api": list(entry.public_api),
+                }
+            )
+            domains.append(item)
+        for path in manifest.domain_shared_paths:
+            if path in seen_shared:
+                continue
+            seen_shared.add(path)
+            shared.append(path)
+    return {"version": 1, "domains": domains, "shared_paths": shared}
+
+
+def _run_domain_layout(args: argparse.Namespace) -> int:
+    """域布局生成物：渲染（`--render-domain-layout`）或比对（`--check-domain-layout`）。
+
+    Args:
+        args: 命令行参数。
+
+    Returns:
+        int: 退出码（0 通过 / 1 不一致）。
+    """
+    document = render_domain_layout()
+    target = _REPO_ROOT / DOMAIN_LAYOUT_PATH
+    if args.render_domain_layout:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        payload = json.dumps(document, ensure_ascii=False, indent=2)
+        target.write_text(payload + "\n", encoding="utf-8", newline="\n")
+        print(f"[域布局] 已渲染：{target}（{len(document['domains'])} 域 / {len(document['shared_paths'])} 域外路径）")
+        return 0
+    if not target.is_file():
+        print(f"[域布局] 生成物缺失：{target}（跑 --render-domain-layout 生成）")
+        return 1
+    try:
+        current = json.loads(target.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        print(f"[域布局] 生成物 JSON 非法：{target}（{exc}）")
+        return 1
+    expected = json.loads(json.dumps(document, ensure_ascii=False))
+    if current != expected:
+        print(f"[域布局] 生成物与清单不一致：{target}（手改过或清单已变更；跑 --render-domain-layout 重新生成）")
+        return 1
+    print(f"[域布局] 生成物与清单一致：{target}")
+    return 0
+
 def main(argv: ConcurrentStableList[str] | None = None) -> int:
     """入口：离线校验（唯一模式）。
 
@@ -193,7 +283,9 @@ def main(argv: ConcurrentStableList[str] | None = None) -> int:
     Returns:
         int: 退出码（0 通过 / 1 失败）。
     """
-    build_parser().parse_args(argv)
+    args = build_parser().parse_args(argv)
+    if args.render_domain_layout or args.check_domain_layout:
+        return _run_domain_layout(args)
     errors = check_offline()
     if errors:
         for error in errors:

@@ -13,7 +13,9 @@
         "backend/services/org/src/mdm/schemas/**/*.py",
         "backend/services/org/src/mdm/services/**/*.py"
       ],
-      "public_api": ["mdm.org"]
+      "public_api": [
+        "mdm.org"
+      ]
     }
   ],
   "shared_paths": []

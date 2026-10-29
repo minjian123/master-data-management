@@ -56,3 +56,21 @@ options = {}
 provider = "http"
 # 出站附自签服务 JWT（服务身份 = 本组织服务键）+ tenant claim；目标服务按白名单校验调用方服务标识
 options = { attach_service_token = true }
+
+[service_token]
+# 服务 JWT 自签实现选择（与平台仓同口径，07B `04_02` 跨仓同窗口补齐）
+# 空串 = null 占位不签真 JWT —— 但 `attach_service_token = true` 时出站会附占位令牌，
+# 平台侧验签必然失败（20001 票据验签失败），故产品进程必须启用真实自签。
+provider = "jwt"
+# 自签签发方（服务 JWT 的 `iss`；须与平台一致，跨进程验签才成立）
+issuer = "bms"
+# 服务 JWT 默认有效期（秒）
+ttl_seconds = 300
+# 当前签名密钥 kid（多把签名私钥时必填；密钥经 BMS_SERVICE_TOKEN__KEYS 环境变量注入）
+active_kid = ""
+
+[service_token.keys]
+
+[token_verifier]
+# 统一校验实现选择（与平台仓同口径）：按 aud 分流——service 走本地服务 JWKS，api 走本地用户 JWKS
+provider = "unified"
