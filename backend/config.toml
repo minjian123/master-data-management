@@ -21,10 +21,14 @@ docs_enabled = true
 package_prefix = "mdm"
 
 [registry]
-# 产品自持清单（**本产品自己的声明**，相对 `backend/` 解析）：服务行 / 路由 / 数据源 / 能力 / 种子 /
-# 错误码七段。产品进程装载自身清单后，错误码合并视图（`error_code_view()`）才含本产品码，
+# 产品自持清单（**本产品自己的声明**）：服务行 / 路由 / 数据源 / 能力 / 种子 / 错误码七段。
+# 产品进程装载自身清单后，错误码合并视图（`error_code_view()`）才含本产品码，
 # 错误响应才能按视图取 `http_status` 与文案键（07B `02_05`）。
-product_manifests = ["../deploy/registry/mdm.toml"]
+#
+# 07B `04_02`：`product_manifests` 配置键已退役（与 bms 仓同口径）——清单取源固定为
+# **本仓** `deploy/registry/*.toml` 自动发现（`bms_core.registry.products.local_manifest_paths`，
+# 基准为后端工程根的父级即仓根）。本仓声明由 `mdm/deploy/registry/mdm.toml` 自动装载，
+# 无需在此配置；配了该键会因 `extra="forbid"` 报「Extra inputs are not permitted」而拒启。
 
 [server]
 # 监听地址与端口（容器内统一 8000，与网关 upstream `mdm:8000` 对齐）
