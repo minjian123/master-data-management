@@ -51,13 +51,19 @@ plugin = "engkit.coverage_plugin"
 data_file = ".cache/coverage/.coverage"
 interpreter = "uv run python"
 
-# ---- 场景闸门（2026-10-29 拍板）：预检是**推送前门禁**，工作树有未提交改动（含未跟踪文件）即拒绝执行、
-# 零步骤执行——开发中改完即测走开发环入口（`测试改动内容.sh`）；确需在脏树上验证护栏本身，显式加
-# `--allow-dirty`（**只对快速档开放**；定向 / 全量档必须干净树），并记入审计。
-# 审计：真跑 / 被拒 / 绕过三类事件，一行一条 JSON（落 `.cache/`，不进 git）；写盘失败 fail-open。
+# ---- 场景闸门（2026-10-29 拍板）：预检是**推送的内部步骤**（`engkit push`），本地不再有独立入口；
+# 工作树有未提交改动（含未跟踪文件）即拒绝执行、零步骤执行——开发中改完即测走开发环入口（`测试改动内容.sh`）。
+# 审计：真跑 / 被拒两类事件，一行一条 JSON（落 `.cache/`，不进 git）；写盘失败 fail-open。
 [preflight.gate]
 dirty_tree = true
 audit_file = ".cache/preflight/audit.jsonl"
+
+# ---- 推送入口（`engkit push` / `scripts/tools/preflight/推送.sh`）：预检通过后自动推送 ----
+# 档位按**待推提交**自动选：全为 doc_globs 命中的文档 → 快速档；含代码 → 定向档。
+[push]
+remote = "origin"
+branch = "main"
+doc_globs = ["*.md", "*.txt", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.svg", "*.webp", "*.pdf"]
 
 # ---- 预检步骤（声明序即执行序；`--fast` 只跑 always，`--full` 追加 full）----
 [[preflight.steps]]
