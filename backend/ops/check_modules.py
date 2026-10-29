@@ -198,8 +198,6 @@ def check_offline(services_dir: Path = _SERVICES_DIR) -> ConcurrentStableList[st
     return errors
 
 
-
-
 DOMAIN_LAYOUT_PATH = Path("deploy/boundaries/domain_layout.json")
 """域布局生成物路径（相对仓根；07B `04_02` 重开：由清单第九类渲染，勿手改）。"""
 
@@ -273,6 +271,7 @@ def _run_domain_layout(args: argparse.Namespace) -> int:
         return 1
     print(f"[域布局] 生成物与清单一致：{target}")
     return 0
+
 
 def main(argv: ConcurrentStableList[str] | None = None) -> int:
     """入口：离线校验（唯一模式）。

@@ -1,0 +1,20 @@
+# 本机裸跑规格（`../bms/scripts/tools/dev/本地全套.py` 装载；**不参与**容器部署）
+#
+# 口径与平台仓 `bms/deploy/local_stack.toml` 一致：各仓自持本机运行规格、固定路径
+# （仓根 `deploy/local_stack.toml`），本机全套脚本扫「自身仓 + 工作区平级仓」装载。
+# 产品仓因此不需要平台仓知道自己，平台仓脚本里也不出现产品仓字面。
+#
+# 本服务：组织主数据服务（`python -m mdm`），与平台三服务同形——统一 8000 端口 +
+# 回环别名区分；库落工作区根 `database/mdm`（相对 backend/ 上两级）。
+# 服务间寻址（含本服务回访平台内部出口）由脚本注入 `[service_client].endpoints`，
+# 不依赖系统 hosts 别名。
+
+[[services]]
+key = "mdm"
+module = "mdm"
+backend = "backend"
+host = "127.0.0.6"
+db_dir = "../database/mdm"
+# 启动前置：本服务启动期要向平台**上报自身声明并拉取权威快照**（`bootstrap_declarations`），
+# 平台未就绪即报「服务不可用：platform（transport）」拒启 —— 故必须等平台健康后再起。
+after = ["platform"]
