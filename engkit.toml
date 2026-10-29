@@ -80,6 +80,13 @@ label = "门禁：check_modules（模块清单零漂移）"
 cmd = ["uv", "run", "python", "-m", "ops.check_modules"]
 cwd = "backend"
 
+# 域布局生成物（deploy/boundaries/domain_layout.json）：07B 04_02 重开后由本仓清单第九类
+# [[domains]] 渲染，生成物只读、不得手改；清单改了须跑 --render-domain-layout 重新生成。
+[[preflight.steps]]
+label = "门禁：域布局生成物零漂移（清单第九类 [[domains]] 渲染，勿手改）"
+cmd = ["uv", "run", "python", "-m", "ops.check_modules", "--check-domain-layout"]
+cwd = "backend"
+
 [[preflight.steps]]
 label = "门禁：check_forms（系统字段 form_key 双向一致）"
 cmd = ["uv", "run", "python", "-m", "ops.check_forms"]
