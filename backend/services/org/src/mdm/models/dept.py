@@ -1,7 +1,7 @@
 """部门模型（`mdm_dept`）：组织架构树（`ancestors` 祖先路径 + 父子自引用）。"""
 
-from bms_core.models.base import BaseModel
-from sqlalchemy import BigInteger, Index, Integer, String, UniqueConstraint
+from bms_core.models.base import BaseModel, SnowflakeId
+from sqlalchemy import Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 ROOT_ANCESTORS = "/"
@@ -38,7 +38,7 @@ class OrgDept(BaseModel):
         String(64), comment="部门编码（租户内唯一；格式受 mdm.dept_code_pattern 约束；可修改）"
     )
     parent_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, comment="父部门 id（逻辑外键 → 本表 id，同库）；根部门为空"
+        SnowflakeId, nullable=True, comment="父部门 id（逻辑外键 → 本表 id，同库）；根部门为空"
     )
     ancestors: Mapped[str] = mapped_column(
         String(512), default=ROOT_ANCESTORS, comment="祖先 id 路径（如 /1/5/9/），供子树查询"

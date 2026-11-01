@@ -1,7 +1,7 @@
 """角色-部门分配模型（`mdm_role_dept`）：`role_id` 为跨服务逻辑外键。"""
 
-from bms_core.models.base import BaseModel
-from sqlalchemy import BigInteger, Index, UniqueConstraint
+from bms_core.models.base import BaseModel, SnowflakeId
+from sqlalchemy import Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -14,5 +14,5 @@ class OrgRoleDept(BaseModel):
         Index("idx_mdm_role_dept_dept_id", "dept_id"),
     )
 
-    role_id: Mapped[int] = mapped_column(BigInteger, comment="角色 id（逻辑外键 → bms sys_role.id，跨服务）")
-    dept_id: Mapped[int] = mapped_column(BigInteger, comment="部门 id（逻辑外键 → mdm_dept.id，同库）")
+    role_id: Mapped[int] = mapped_column(SnowflakeId, comment="角色 id（逻辑外键 → bms sys_role.id，跨服务）")
+    dept_id: Mapped[int] = mapped_column(SnowflakeId, comment="部门 id（逻辑外键 → mdm_dept.id，同库）")

@@ -1,7 +1,7 @@
 """岗位模型（`mdm_post`）：归属部门 + 租户内唯一岗位码。"""
 
-from bms_core.models.base import BaseModel
-from sqlalchemy import BigInteger, Index, Integer, String, UniqueConstraint
+from bms_core.models.base import BaseModel, SnowflakeId
+from sqlalchemy import Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mdm.models.dept import STATUS_ENABLED
@@ -28,12 +28,12 @@ class OrgPost(BaseModel):
 
     form_key: Mapped[str] = mapped_column(String(64), default=POST_FORM_KEY, comment="表单标识（全局唯一；保存后不变）")
     parent_id: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, comment="上级字典 ID（自引用同表 id；非层级字典保留冗余，顶层为空）"
+        SnowflakeId, nullable=True, comment="上级字典 ID（自引用同表 id；非层级字典保留冗余，顶层为空）"
     )
     code: Mapped[str] = mapped_column(
         String(64), comment="岗位码（租户内唯一；格式受 mdm.post_code_pattern 约束；可修改）"
     )
     name: Mapped[str] = mapped_column(String(128), comment="岗位名称")
-    dept_id: Mapped[int] = mapped_column(BigInteger, comment="归属部门 id（逻辑外键 → mdm_dept.id，同库）")
+    dept_id: Mapped[int] = mapped_column(SnowflakeId, comment="归属部门 id（逻辑外键 → mdm_dept.id，同库）")
     sort: Mapped[int] = mapped_column(Integer, default=0, comment="排序")
     status: Mapped[str] = mapped_column(String(16), default=STATUS_ENABLED, comment="状态（enabled / disabled）")

@@ -1,7 +1,7 @@
 """用户-部门关联模型（`mdm_user_dept`）：多对多 + 主要部门标记；`user_id` 为跨服务逻辑外键。"""
 
-from bms_core.models.base import BaseModel
-from sqlalchemy import BigInteger, Boolean, Index, UniqueConstraint
+from bms_core.models.base import BaseModel, SnowflakeId
+from sqlalchemy import Boolean, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -18,6 +18,6 @@ class OrgUserDept(BaseModel):
         Index("idx_mdm_user_dept_dept_id", "dept_id"),
     )
 
-    user_id: Mapped[int] = mapped_column(BigInteger, comment="用户 id（逻辑外键 → bms sys_user.id，跨服务）")
-    dept_id: Mapped[int] = mapped_column(BigInteger, comment="部门 id（逻辑外键 → mdm_dept.id，同库）")
+    user_id: Mapped[int] = mapped_column(SnowflakeId, comment="用户 id（逻辑外键 → bms sys_user.id，跨服务）")
+    dept_id: Mapped[int] = mapped_column(SnowflakeId, comment="部门 id（逻辑外键 → mdm_dept.id，同库）")
     is_primary: Mapped[bool] = mapped_column(Boolean, default=False, comment="主要部门标记（同用户至多一个）")

@@ -35,6 +35,8 @@ __all__ = [
     "client",
     "fake_tenant_source",
     "isolate_settings",
+    "isolated_platform_db_url",
+    "isolated_tenant_db_url",
     "ns",
     "platform_db_prepare",
     "reset_request_context",
@@ -70,12 +72,14 @@ def isolate_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterato
     （Redis 幂等存储 / 缓存等真实实现被启用），用例随后连不上 Redis 而报 503。
 
     **单库化开关（04-6-2）**：切共享库只需把下面两行 URL 换成 `shared_platform_db_url` /
-    `shared_tenant_db_url` 两个夹具（并加进函数签名）；准备集实现已就位（`tests_support.shared_db`），
-    待 mdm 全仓用例按命名空间改造完成后再打开——否则用例的「空库起点 / 整表计数」假设会红。
+    `shared_tenant_db_url` 两个夹具（并加进函数签名）；准备集（`tests_support.shared_db`）与
+    独占库夹具（`isolated_*_db_url`）已就位。打开前需先按命名空间改造余下用例——已知 6 类失败模式：
+    固定业务编码 / `form_key` 取单行（`MultipleResultsFound`）、授权视图与权限码叠加（30001）、
+    内置种子行被当作用例自造行。
 
     Args:
         monkeypatch: pytest monkeypatch 夹具。
-        tmp_path: 用例级临时目录（临时 SQLite 库落此，不写仓库、不依赖平台租户注册库）。
+        tmp_path: 用例级临时目录（临时 SQLite 库落此）。
 
     Yields:
         None: 用例运行期。
@@ -123,6 +127,38 @@ def tenant_db_prepare() -> Callable[[str], None]:
     from tests_support.shared_db import prepare_tenant
 
     return prepare_tenant
+
+
+@pytest.fixture
+def isolated_platform_db_url(tmp_path: Path, platform_db_prepare: Callable[[str], None]) -> str:
+    """白名单（`own_db`）用例专用**独占**平台库：每用例一份 tmp 库 + 播种。
+
+    Args:
+        tmp_path: 用例级临时目录。
+        platform_db_prepare: 共享平台库准备集（种子租户与主键对齐同源）。
+
+    Returns:
+        str: 独占平台库连接串。
+    """
+    url = f"sqlite+aiosqlite:///{tmp_path / 'mdm_platform_isolated.db'}"
+    platform_db_prepare(url)
+    return url
+
+
+@pytest.fixture
+def isolated_tenant_db_url(tmp_path: Path, tenant_db_prepare: Callable[[str], None]) -> str:
+    """白名单（`own_db`）用例专用**独占**租户库：每用例一份 tmp 库 + 参数种子。
+
+    Args:
+        tmp_path: 用例级临时目录。
+        tenant_db_prepare: 共享租户库准备集。
+
+    Returns:
+        str: 独占租户库连接串。
+    """
+    url = f"sqlite+aiosqlite:///{tmp_path / 'mdm_tenant_isolated.db'}"
+    tenant_db_prepare(url)
+    return url
 
 
 @pytest.fixture(autouse=True)

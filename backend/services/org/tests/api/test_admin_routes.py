@@ -19,21 +19,51 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from services.table_registry import register as register_product_tables
 
+pytestmark = pytest.mark.own_db(
+    "管理面路由用例以固定业务编码与 `form_key` 构造组织树，需每例空库起点；"
+    "共享库行数叠加会让按 `form_key` 取单行命中多行（MultipleResultsFound）"
+)
+
 BASE = "/api/v1/mdm"
 """管理面路由前缀。"""
 
 
 @pytest.fixture(autouse=True)
-async def prepared_db(isolate_settings: None) -> AsyncIterator[None]:
+def isolated_dbs(
+    isolate_settings: None,
+    isolated_platform_db_url: str,
+    isolated_tenant_db_url: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:  # pyright: ignore[reportUnusedFunction]
+    """本文件用例的**独占库**（平台库 + 租户库各一份 tmp 库）。
+
+    管理面路由用例以固定业务编码（`hq` / `dev`）与 `form_key`（`mdm_dept`）构造组织树，
+    共享库上行数叠加会让「按 form_key 取单行」命��多行（`MultipleResultsFound`）；
+    独占库使每例起点为空且互不干扰。
+
+    Args:
+        isolate_settings: 配置隔离夹具（先执行，这里再覆盖库 URL）。
+        isolated_platform_db_url: 独占平台库连接串。
+        isolated_tenant_db_url: 独占租户库连接串。
+        monkeypatch: 环境变量覆盖。
+    """
+    from bms_core.core.config import get_settings
+
+    monkeypatch.setenv("BMS_DATABASE__PLATFORM__URL", isolated_platform_db_url)
+    monkeypatch.setenv("BMS_DATABASE__TENANTS__URL", isolated_tenant_db_url)
+    get_settings.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+async def prepared_db(isolated_dbs: None) -> AsyncIterator[None]:
     """建表：按隔离后的租户库连接串建出本产品与共享表（HTTP 路径按库读写，不自动建表）。
 
     Args:
-        isolate_settings: 配置隔离夹具（保证环境变量已就位）。
+        isolated_dbs: 独占库覆盖（依赖顺序保证先于建表）。
 
     Yields:
         None: 用例运行期。
     """
-    del isolate_settings
     register_product_tables()
     import_models("mdm")
     engine = create_async_engine(os.environ["BMS_DATABASE__TENANTS__URL"])
