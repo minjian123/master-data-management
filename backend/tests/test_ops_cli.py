@@ -12,6 +12,11 @@ from bms_core.core.exceptions import ConfigError
 from ops import check_modules, contract_snapshot, db_admin, migrate
 from services.module_registry import MDM_SERVICE_RECORDS, SERVICE_KEY
 
+pytestmark = pytest.mark.own_db(
+    "被测对象是**运维 CLI 的建库与迁移编排**（`db_admin` / `migrate` 按服务与租户模板派生库文件、"
+    "建库 / 迁移 / 校验），库文件本身就是被测产物；共享库是固定单文件、无法表达派生拓扑"
+)
+
 KIWI_CASE_ID = 2253
 """Kiwi TCMS 策展用例编号（mdm 阶段一 01_01）。"""
 

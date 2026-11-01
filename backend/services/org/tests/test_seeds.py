@@ -23,6 +23,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from mdm.seeds import seed_admin_codes
 from mdm.seeds.permissions import BUSINESS_CODE, BUSINESS_NAME, PERMISSION_ACTIONS, expected_rows
 
+pytestmark = pytest.mark.own_db(
+    "被测对象是**权限码种子编排本身**（`seed_admin_codes` 首次写入 / 幂等重跑 / 期望行覆盖校验），"
+    "需要在空库上比对「新增 / 跳过 / 校验」计数；共享库恒已播种"
+)
+
 _TABLES: list[Table] = [
     cast("Table", SysBusiness.__table__),
     cast("Table", SysAction.__table__),
