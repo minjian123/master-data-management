@@ -65,7 +65,7 @@ remote = "origin"
 branch = "main"
 doc_globs = ["*.md", "*.txt", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.svg", "*.webp", "*.pdf"]
 
-# ---- 预检步骤（声明序即执行序；`--fast` 只跑 always，`--full` 追加 full）----
+# ---- 预检步骤（声明序即执行序；`--fast` 只跑 always，`--full` 追加 full + scoped；全量测试仅 CI）----
 [[preflight.steps]]
 label = "行尾：工作树 CRLF 检查（应为 LF 的文件不得残留 CRLF）"
 cmd = ["uv", "run", "engkit", "eol", "--quiet"]
@@ -139,7 +139,7 @@ type = "scoped_tests"
 preset = "scoped"
 
 [[preflight.steps]]
-label = "后端测试：聚合全量（--full；含行 + 分支 100% 覆盖率门禁）"
+label = "后端测试：聚合全量（--full；仅 CI；含行 + 分支 100% 覆盖率门禁）"
 type = "full_tests"
 preset = "full"
 
@@ -151,6 +151,8 @@ window_seconds = 1800
 scripts = []
 repo_dirs = ["services", "ops", "alembic"]
 dir_test_threshold = 20
+# 一律视为全量测试的目录前缀（相对 pytest 工作目录 backend；命中即拦，不受文件数阈值影响）
+full_test_dirs = []
 
 
 # ---- 基座校验器规则（`engkit base <名>`；缺段 = 该校验器未启用）----

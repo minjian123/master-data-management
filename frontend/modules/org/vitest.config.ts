@@ -23,6 +23,8 @@ export default defineConfig({
     alias: { '@bms-scripts': join(BMS_FRONTEND_DIR, 'scripts') },
   },
   test: {
+    // 全量测试守卫：开发期间无过滤全跑会被拒绝（实现唯一在 engkit，口径见《测试规范》）
+    globalSetup: ['../../../scripts/testing/vitest_guard.mjs'],
     environment: 'jsdom',
     include: ['tests/**/*.spec.ts'],
     // 用例含动态导入（页面 / 插槽件经 element-plus 内联转译）与挂载渲染，缺省 5s 偏紧
