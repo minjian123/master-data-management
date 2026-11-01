@@ -5,7 +5,7 @@
 """
 
 import os
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -18,6 +18,13 @@ from bms_core.core.context import (
     current_trace_id,
     current_user_id,
 )
+from bms_core.testing.fixtures import (
+    ns,
+    shared_platform_db_url,
+    shared_platform_engine,
+    shared_tenant_db_url,
+    shared_tenant_engine,
+)
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
@@ -28,8 +35,15 @@ __all__ = [
     "client",
     "fake_tenant_source",
     "isolate_settings",
+    "ns",
+    "platform_db_prepare",
     "reset_request_context",
     "service_app",
+    "shared_platform_db_url",
+    "shared_platform_engine",
+    "shared_tenant_db_url",
+    "shared_tenant_engine",
+    "tenant_db_prepare",
 ]
 
 _PROVIDER_KEYS = (
@@ -54,6 +68,10 @@ def isolate_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterato
     注意 `BMS_BACKEND_ROOT` **必须保留**：它由 `mdm` 包导入期声明（路径依赖接入 bms 源码后，
     基座按它定位本仓 `config.toml` / 迁移链）。清掉会让配置定位回落到 bms 仓的 `config.toml`
     （Redis 幂等存储 / 缓存等真实实现被启用），用例随后连不上 Redis 而报 503。
+
+    **单库化开关（04-6-2）**：切共享库只需把下面两行 URL 换成 `shared_platform_db_url` /
+    `shared_tenant_db_url` 两个夹具（并加进函数签名）；准备集实现已就位（`tests_support.shared_db`），
+    待 mdm 全仓用例按命名空间改造完成后再打开——否则用例的「空库起点 / 整表计数」假设会红。
 
     Args:
         monkeypatch: pytest monkeypatch 夹具。
@@ -81,6 +99,30 @@ def isolate_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterato
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
+
+
+@pytest.fixture(scope="session")
+def platform_db_prepare() -> Callable[[str], None]:
+    """共享平台库准备集回调（mdm 侧实现，见 `tests_support.shared_db`）。
+
+    Returns:
+        Callable[[str], None]: 接受连接串的准备函数。
+    """
+    from tests_support.shared_db import prepare_platform
+
+    return prepare_platform
+
+
+@pytest.fixture(scope="session")
+def tenant_db_prepare() -> Callable[[str], None]:
+    """共享租户库准备集回调（同上）。
+
+    Returns:
+        Callable[[str], None]: 接受连接串的准备函数。
+    """
+    from tests_support.shared_db import prepare_tenant
+
+    return prepare_tenant
 
 
 @pytest.fixture(autouse=True)
