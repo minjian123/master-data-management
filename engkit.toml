@@ -143,10 +143,6 @@ label = "后端测试：聚合全量（--full；仅 CI；含行 + 分支 100% �
 type = "full_tests"
 preset = "full"
 
-[runonce]
-cache_dir = ".cache/run_once"
-window_seconds = 1800
-
 [guard]
 scripts = []
 repo_dirs = ["services", "ops", "alembic"]
