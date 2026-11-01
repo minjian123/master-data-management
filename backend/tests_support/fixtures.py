@@ -64,22 +64,23 @@ _KEPT_ENV_PREFIXES = ("BMS_TEST_", "BMS_BACKEND_ROOT")
 
 
 @pytest.fixture(autouse=True)
-def isolate_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
-    """隔离配置：清 `BMS_` 环境变量 → 固定 test 环境 → 临时 SQLite 库 → 关闭外部真实实现。
+def isolate_settings(
+    monkeypatch: pytest.MonkeyPatch, shared_platform_db_url: str, shared_tenant_db_url: str
+) -> Iterator[None]:
+    """隔离配置：清 `BMS_` 环境变量 → 固定 test 环境 → **共享测试库** → 关闭外部真实实现。
 
     注意 `BMS_BACKEND_ROOT` **必须保留**：它由 `mdm` 包导入期声明（路径依赖接入 bms 源码后，
     基座按它定位本仓 `config.toml` / 迁移链）。清掉会让配置定位回落到 bms 仓的 `config.toml`
     （Redis 幂等存储 / 缓存等真实实现被启用），用例随后连不上 Redis 而报 503。
 
-    **单库化开关（04-6-2）**：切共享库只需把下面两行 URL 换成 `shared_platform_db_url` /
-    `shared_tenant_db_url` 两个夹具（并加进函数签名）；准备集（`tests_support.shared_db`）与
-    独占库夹具（`isolated_*_db_url`）已就位。打开前需先按命名空间改造余下用例——已知 6 类失败模式：
-    固定业务编码 / `form_key` 取单行（`MultipleResultsFound`）、授权视图与权限码叠加（30001）、
-    内置种子行被当作用例自造行。
+    **单库化（04-6-2 批 5）**：平台库 / 租户库一律指向 `.cache/test/{platform,tenant}.db`
+    （准备集 `tests_support.shared_db` 一次性建表播种），用例靠命名空间叠加、不再每例一份临时库；
+    `own_db` 白名单文件（迁移 / 运维 CLI / 播种编排）显式依赖 `isolated_*_db_url` 走独占库。
 
     Args:
         monkeypatch: pytest monkeypatch 夹具。
-        tmp_path: 用例级临时目录（临时 SQLite 库落此）。
+        shared_platform_db_url: 共享平台库连接串（会话级）。
+        shared_tenant_db_url: 共享租户库连接串（会话级）。
 
     Yields:
         None: 用例运行期。
@@ -88,12 +89,12 @@ def isolate_settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterato
         if key.startswith("BMS_") and not key.startswith(_KEPT_ENV_PREFIXES):
             monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("BMS_ENV", "test")
-    # 临时库：清 sqlite_dir 基址与连接串模板，使显式 URL 生效
+    # 共享库：清 sqlite_dir 基址与连接串模板，使显式 URL 生效
     monkeypatch.setenv("BMS_DATABASE__SQLITE_DIR", "")
     monkeypatch.setenv("BMS_DATABASE__PLATFORM__URL_TEMPLATE", "")
     monkeypatch.setenv("BMS_DATABASE__TENANTS__URL_TEMPLATE", "")
-    monkeypatch.setenv("BMS_DATABASE__PLATFORM__URL", f"sqlite+aiosqlite:///{tmp_path / 'mdm_platform.db'}")
-    monkeypatch.setenv("BMS_DATABASE__TENANTS__URL", f"sqlite+aiosqlite:///{tmp_path / 'mdm_tenant_demo.db'}")
+    monkeypatch.setenv("BMS_DATABASE__PLATFORM__URL", shared_platform_db_url)
+    monkeypatch.setenv("BMS_DATABASE__TENANTS__URL", shared_tenant_db_url)
     # 单测不走上报 / 拉取注册表的启动链（基座 `registry.register_on_startup` 文档口径：单测置 false）。
     # 生产 / 部署态仍为 true：启动期上报本仓清单并投影平台权威快照，失败拒启。
     monkeypatch.setenv("BMS_REGISTRY__REGISTER_ON_STARTUP", "false")
