@@ -420,6 +420,31 @@ async def test_platform_user_source_maps_rows_and_fails_closed() -> None:
     assert [item.id for item in await source.by_ids(mdm_env.ids(2001, 2002))] == [2001]
     assert list(await source.by_ids(mdm_env.ids())) == []
 
+    # 平台 JSON 把雪花 ID 序列化为字符串：解析侧按数字字符串接受（契约面仍回 int）
+    stringed = await PlatformMdmUserSource(
+        mdm_env.StubPlatformClient(
+            payload=ConcurrentStableDict(
+                {
+                    "code": 0,
+                    "message": "",
+                    "data": ConcurrentStableDict(
+                        {
+                            "list": [
+                                ConcurrentStableDict(
+                                    {"id": "2001", "username": "u1", "name": "字符串 id", "status": "enabled"}
+                                )
+                            ],
+                            "total": 1,
+                            "page": 1,
+                            "size": 20,
+                        }
+                    ),
+                }
+            )
+        )
+    ).query()
+    assert [item.id for item in stringed.list] == [2001]
+
     with pytest.raises(MdmSourceUnavailableError) as unreachable:
         await PlatformMdmUserSource(_UnreachableClient()).query()
     assert unreachable.value.code == 330101
@@ -455,7 +480,28 @@ async def test_platform_user_source_maps_rows_and_fails_closed() -> None:
                             {
                                 "list": [
                                     ConcurrentStableDict(
-                                        {"id": "1", "username": "u1", "name": "非法 id", "status": "enabled"}
+                                        {"id": "abc", "username": "u1", "name": "非法 id", "status": "enabled"}
+                                    )
+                                ]
+                            }
+                        ),
+                    }
+                )
+            )
+        ).query()
+
+    with pytest.raises(MdmSourceUnavailableError):
+        await PlatformMdmUserSource(
+            mdm_env.StubPlatformClient(
+                payload=ConcurrentStableDict(
+                    {
+                        "code": 0,
+                        "message": "",
+                        "data": ConcurrentStableDict(
+                            {
+                                "list": [
+                                    ConcurrentStableDict(
+                                        {"id": True, "username": "u1", "name": "布尔 id", "status": "enabled"}
                                     )
                                 ]
                             }

@@ -222,9 +222,7 @@ def _to_user(item: object) -> MdmUser:
     missing = [name for name in _ITEM_COLUMNS if name not in row]
     if missing:
         raise MdmSourceUnavailableError(f"{_INTERFACE}返回契约非法：缺列 {'、'.join(sorted(missing))}")
-    user_id = row.get("id")
-    if not isinstance(user_id, int):
-        raise MdmSourceUnavailableError(f"{_INTERFACE}返回契约非法：id 非整数")
+    user_id = _user_id(row.get("id"))
     return MdmUser(
         id=user_id,
         username=_text(row.get("username")),
@@ -234,6 +232,27 @@ def _to_user(item: object) -> MdmUser:
         phone=_optional_text(row.get("phone")),
         email=_optional_text(row.get("email")),
     )
+
+
+def _user_id(value: object) -> int:
+    """取用户主键（兼容平台 JSON 把雪花 ID 序列化为字符串）。
+
+    Args:
+        value: 原始值（int 或纯数字字符串）。
+
+    Returns:
+        int: 用户主键。
+
+    Raises:
+        MdmSourceUnavailableError: 非整数值（330101）。
+    """
+    if isinstance(value, bool):
+        raise MdmSourceUnavailableError(f"{_INTERFACE}返回契约非法：id 非整数")
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.strip().lstrip("-").isdigit():
+        return int(value.strip())
+    raise MdmSourceUnavailableError(f"{_INTERFACE}返回契约非法：id 非整数")
 
 
 def _text(value: object) -> str:
