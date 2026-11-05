@@ -98,6 +98,11 @@ async def require_mdm_reader(
         if service is not None:
             if service in MDM_READER_SERVICES:
                 return
+            if service == DEFAULT_GATEWAY_SERVICE_IDENTITY:
+                # 北南向：网关为用户请求代发服务票据（sub=gateway），真实身份在
+                # `X-User-Id` 等身份头里，交由登录态校验（`require_auth`）按边缘身份组装。
+                await require_auth(request, verifier, store)
+                return
             raise AuthError("服务身份不在允许清单")
     await require_auth(request, verifier, store)
 

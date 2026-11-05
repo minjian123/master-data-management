@@ -20,7 +20,7 @@ from bms_core.oauth.token import TOKEN_AUDIENCE_SERVICE
 from bms_core.oauth.verify import BaseTokenVerifier, VerifiedToken, get_token_verifier
 from bms_core.scope.base import ScopeCondition
 from bms_core.servicecall.base import BaseServiceClient, ServiceRequest, ServiceResponse
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -269,6 +269,26 @@ async def test_exit_service_identity_whitelist(service_app: FastAPI, client: Asy
         assert nameless.status_code == 401 and nameless.json()["code"] == 20001
     finally:
         await engine.dispose()
+
+
+@pytest.mark.kiwi_id(2256)
+async def test_mdm_reader_gateway_service_token_falls_back_to_auth(monkeypatch: pytest.MonkeyPatch) -> None:
+    """北南向：网关代发服务票据（sub=gateway）不作东西向服务身份，回落登录态校验。"""
+    called: list[bool] = []
+
+    async def _auth(*args: object, **kwargs: object) -> None:
+        del args, kwargs
+        called.append(True)
+
+    monkeypatch.setattr("mdm.api.open_read.require_auth", _auth)
+    request = Request({"type": "http", "headers": [(b"authorization", b"Bearer stub-token")]})
+
+    await require_mdm_reader(request, _VerifierStub(service="gateway"), None)  # type: ignore[arg-type]
+    assert called == [True]
+
+    # 缺服务标识仍按「不可识别服务身份」拒绝，不借网关分支放行
+    with pytest.raises(AuthError):
+        await require_mdm_reader(request, _VerifierStub(service=""), None)  # type: ignore[arg-type]
 
 
 @pytest.mark.kiwi_id(2256)
