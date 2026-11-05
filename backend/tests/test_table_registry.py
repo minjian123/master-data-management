@@ -17,7 +17,7 @@ from bms_core.services.table_registry import (
     unit_tables,
 )
 
-from services.table_registry import MDM_TABLE_RECORDS, ORG_DOMAIN, register, table_names
+from services.table_registry import MDM_DOMAIN, MDM_TABLE_RECORDS, register, table_names
 
 
 @pytest.fixture(autouse=True)
@@ -41,15 +41,15 @@ def test_mdm_table_records_shape() -> None:
     )
     for record in MDM_TABLE_RECORDS:
         assert record.owner == "mdm"
-        assert record.domain == ORG_DOMAIN
+        assert record.domain == MDM_DOMAIN
         assert record.datasource == Datasource.TENANT
         assert record.status == TableStatus.ENABLED
 
 
 @pytest.mark.kiwi_id(2255)
 def test_register_injects_into_series_and_view() -> None:
-    """装载期注册：注入记录进合并视图与 `org:tenant` 清单表集；清空后回到平台清单。"""
-    assert "mdm_dept" not in series_tables(ORG_DOMAIN, Datasource.TENANT)
+    """装载期注册：注入记录进合并视图与 `mdm:tenant` 清单表集；清空后回到平台清单。"""
+    assert "mdm_dept" not in series_tables(MDM_DOMAIN, Datasource.TENANT)
     assert table_owner("mdm_dept") is None
 
     register()
@@ -57,19 +57,19 @@ def test_register_injects_into_series_and_view() -> None:
     assert len(injected_table_records()) == 6
     assert table_owner("mdm_dept") == "mdm"
     assert len(table_ownership_view()) == len(TABLE_OWNERSHIP) + 6
-    series = series_tables(ORG_DOMAIN, Datasource.TENANT)
+    series = series_tables(MDM_DOMAIN, Datasource.TENANT)
     assert all(name in series for name in table_names())
     # 基础设施表不进域清单（每库一份，由部署单元级建表集追加；架构 39 §4.1 例外）
     infra = ConcurrentStableSet({"sys_outbox", "sys_event_consumed", "sys_event_dead_letter"})
     assert not (infra & series)
-    unit = unit_tables((ORG_DOMAIN,), Datasource.TENANT)
+    unit = unit_tables((MDM_DOMAIN,), Datasource.TENANT)
     assert infra <= unit
     assert all(name in unit for name in table_names())
     assert TableOwnershipRegistry().validate() == []
-    assert not series_tables(ORG_DOMAIN, Datasource.ARCHIVE), "租户层产品表不进归档清单"
+    assert not series_tables(MDM_DOMAIN, Datasource.ARCHIVE), "租户层产品表不进归档清单"
 
     reset_table_records()
-    assert "mdm_dept" not in series_tables(ORG_DOMAIN, Datasource.TENANT)
+    assert "mdm_dept" not in series_tables(MDM_DOMAIN, Datasource.TENANT)
 
 
 @pytest.mark.kiwi_id(2255)

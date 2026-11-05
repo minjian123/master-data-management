@@ -64,6 +64,6 @@
 | 2026-10-07 | v1 | 新建表结构（mdm 组织域，自 bms 概要设计 05 迁入） | minjian |
 | 2026-10-08 | v2 | 增 `code` 部门编码列（必填 / 租户内唯一 / 可改）与唯一约束 `uq_mdm_dept_code_deleted_at`；存量按 `id` 升序回填 `DEPT` + 定长序号（迁移 `0003_dept_code`） | minjian |
 | 2026-10-22 | v3 | 系统字段对齐：增 `form_key`（表单标识，固定 `mdm_dept`、保存后不变）与复合唯一 `uq_mdm_dept_form_key_deleted_at`；存量按 DDL 缺省回填（迁移 `0005_mdm_form_key`，任务 `01_02/_04`） | minjian |
-| 2026-10-23 | v4 | 服务标识归并（任务 `01_05`）：表名 `org_*` → `mdm_*`、迁移链 `org:tenant` → `mdm:tenant`、库 `mdm_org_{code}` → `mdm_{code}`；约束 / 索引名同步为 `uq_mdm_*` / `idx_mdm_*` | minjian |
+| 2026-10-23 | v4 | 服务标识归并（任务 `01_05`）：表名 `org_*` → `mdm_*`、迁移链 `mdm:tenant` → `mdm:tenant`、库 `mdm_org_{code}` → `mdm_{code}`；约束 / 索引名同步为 `uq_mdm_*` / `idx_mdm_*` | minjian |
 
 > 数据表设计 · 与 bms《数据库开发规范》「数据表文件规范」节配套

@@ -7,8 +7,8 @@
     uv run python -m ops.event_contracts check              # 零漂移 + 兼容校验（CI / 预检用）
 
 - **契约来源**：产品侧声明模块 `mdm.events`（经 `register_product_event_contracts()` 登记），
-  与平台默认契约合并（本产品服务不注册平台契约，合并结果即本产品 5 条 `org.*`）；
-- **事件域校验**：域名须在服务目录 `SERVICE_CATALOG.event_domain` 登记（`org` 已登记）；
+  与平台默认契约合并（本产品服务不注册平台契约，合并结果即本产品 5 条 `mdm.*`）；
+- **事件域校验**：域名须在服务目录 `SERVICE_CATALOG.event_domain` 登记（`mdm` 已登记）；
 - **确定性**：同代码 → 同文本（缩进 2 / 键排序 / 非 ASCII 直出），供 Git 比对与零漂移校验；
 - **兼容**：与快照比对（事件类型不得消失 + 字段只增不删 + 订阅覆盖）。
 """

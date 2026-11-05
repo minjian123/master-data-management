@@ -70,12 +70,12 @@ def test_declared_status_matches_exception_classes() -> None:
 
 
 def test_declared_fields_are_complete() -> None:
-    """字段：`message_key` 形如 `mdm.error.<snake>`、业务域 `org`、级别枚举、描述非空、状态启用。"""
+    """字段：`message_key` 形如 `mdm.error.<snake>`、业务域 `mdm`、级别枚举、描述非空、状态启用。"""
     for code, item in _declared().items():
         message_key = str(item["message_key"])
         assert message_key.startswith("mdm.error."), f"错误码 {code} 文案键前缀不符"
         assert message_key.removeprefix("mdm.error.").islower(), f"错误码 {code} 文案键须为小写"
-        assert item["domain"] == "org"
+        assert item["domain"] == "mdm"
         assert item["severity"] in {"info", "warning", "error"}
         assert str(item["description"]).strip()
         assert item.get("status", "enabled") == "enabled"

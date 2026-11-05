@@ -104,7 +104,7 @@ mdm 以**产品服务（独立服务）**形态接入 BMS 平台（见 bms《平
 | 业务码 | `mdm` | 域区分走目录与错误码段，不再走业务码 |
 | 错误码段 | 按域分配（`33xxxx` 起） | 段号注册制、不随服务名变更 |
 | 事件域 | `mdm` | 事件名 `mdm.{对象}.{动作}`；域归属由服务行声明 |
-| 迁移清单 | `org:platform` / `org:tenant`（归档用 `archive:archive`） | **清单名随业务域**（07C：业务域是架构边界，服务标识只用于库键）；版本记录表 `alembic_version_org` |
+| 迁移清单 | `mdm:platform` / `mdm:tenant`（归档用 `archive:archive`） | **清单名随业务域**（07C：业务域是架构边界，服务标识只用于库键）；版本记录表 `alembic_version_mdm` |
 | 库名 | `mdm` / `mdm_{租户}` / `mdm_archive` | `[database].name_prefix` 等于服务标识时基座派生去重 |
 | 对外命名空间 | `/api/mdm/v1/mdm/...` | 产品路由 `mdm/mdm → mdm`（产品清单登记） |
 

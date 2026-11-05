@@ -23,7 +23,7 @@ _EXPECTED_TYPES = (
 
 @pytest.mark.kiwi_id(2255)
 def test_org_event_contracts_shape() -> None:
-    """契约形态：6 条、事件域名 `org`、载荷字段为小写下划线且不含信封保留键。"""
+    """契约形态：6 条、事件域名为 `mdm`、载荷字段为小写下划线且不含信封保留键。"""
     assert tuple(contract.event_type for contract in ORG_EVENT_CONTRACTS) == _EXPECTED_TYPES
     for contract in ORG_EVENT_CONTRACTS:
         assert contract.domain == "mdm"

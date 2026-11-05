@@ -41,7 +41,7 @@ from mdm.services.role_dept import RoleDeptService
 from mdm.services.role_post import RolePostService
 from mdm.services.user_dept import UserDeptService
 from mdm.services.user_post import UserPostService
-from services.table_registry import ORG_DOMAIN
+from services.table_registry import MDM_DOMAIN
 from services.table_registry import register as register_product_tables
 
 DEPT_TREE_MAX_DEPTH_KEY = "mdm.dept_tree_max_depth"
@@ -329,7 +329,7 @@ def _match_user(
 
 
 async def make_session() -> tuple[AsyncSession, AsyncEngine]:
-    """建内存 SQLite 会话并创建 `org:tenant` 部署单元建表集（org 六表 + 基础设施三表）。
+    """建内存 SQLite 会话并创建 `mdm:tenant` 部署单元建表集（org 六表 + 基础设施三表）。
 
     Returns:
         tuple[AsyncSession, AsyncEngine]: （会话，引擎）。
@@ -342,8 +342,8 @@ async def make_session() -> tuple[AsyncSession, AsyncEngine]:
     )
     # 表归属产品注入（bms 12_04）：清单表集派生依赖注入记录，故建表前先注册
     register_product_tables()
-    import_models(ORG_DOMAIN)
-    names = sorted(unit_tables((ORG_DOMAIN,), Datasource.TENANT))
+    import_models(MDM_DOMAIN)
+    names = sorted(unit_tables((MDM_DOMAIN,), Datasource.TENANT))
     tables = [cast("Table", Base.metadata.tables[name]) for name in names]
     async with engine.begin() as connection:
         await connection.run_sync(lambda conn: Base.metadata.create_all(conn, tables=tables))

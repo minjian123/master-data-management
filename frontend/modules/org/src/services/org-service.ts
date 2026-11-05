@@ -39,8 +39,12 @@ import { toIdParam } from '../domain'
 
 /** 产品键（与平台侧产品登记同源）。 */
 export const ORG_PRODUCT = 'mdm'
-/** 组织域段（产品自持域）。 */
-export const ORG_DOMAIN = 'mdm'
+/** 组织域段（产品自持域；对外仍走产品命名空间段 `mdm`）。 */
+/**
+ * 对外域段（产品命名空间段）：**保持产品键 `mdm`**，与业务域 `mdm` 解耦——外部调用方只认
+ * `/api/mdm/v1/mdm/...`，不需要知道 mdm 内部按业务域怎么分（后续 ref / sup 等域同样走这个段）。
+ */
+export const ORG_NAMESPACE = 'mdm'
 
 /**
  * 组织域管理面作用域（每次取用；请求能力未注入即抛哨兵错误）。
@@ -48,7 +52,7 @@ export const ORG_DOMAIN = 'mdm'
  * @returns 产品域请求作用域。
  */
 function scope(): ModuleApiScope {
-  return requiredHostApi().product(ORG_PRODUCT, ORG_DOMAIN)
+  return requiredHostApi().product(ORG_PRODUCT, ORG_NAMESPACE)
 }
 
 /* ---------------------------------- 部门 ---------------------------------- */

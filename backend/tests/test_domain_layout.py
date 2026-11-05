@@ -57,7 +57,7 @@ def test_render_matches_committed_layout() -> None:
 
     assert document == committed
     assert document["version"] == 1
-    assert any(item["domain_key"] == "org" and item["service_key"] == "mdm" for item in document["domains"])
+    assert any(item["domain_key"] == "mdm" and item["service_key"] == "mdm" for item in document["domains"])
 
 
 def test_render_dedupes_and_omits_empty_name(monkeypatch: pytest.MonkeyPatch) -> None:

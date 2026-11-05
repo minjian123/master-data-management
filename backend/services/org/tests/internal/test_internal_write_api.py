@@ -55,7 +55,7 @@ class _PlatformVerifier(BaseTokenVerifier):
             service="platform",
             audience=ConcurrentStableFrozenList((audience,)),
             # 07C 04_03 起入站先判域归属：调用方服务 JWT 须声明能力所属业务域（组织域 = org）
-            domains=ConcurrentStableFrozenList(("org",)),
+            domains=ConcurrentStableFrozenList(("mdm",)),
         )
 
 

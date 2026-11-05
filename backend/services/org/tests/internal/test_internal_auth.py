@@ -60,7 +60,7 @@ class _VerifierStub(BaseTokenVerifier):
                 service=self._service,
                 audience=ConcurrentStableFrozenList((audience,)),
                 # 07C 04_03 起入站先判域归属：服务身份须声明能力所属业务域（组织域 = org）
-                domains=ConcurrentStableFrozenList(("org",)),
+                domains=ConcurrentStableFrozenList(("mdm",)),
             )
         raise AuthError("用户令牌不可用（替身）")
 

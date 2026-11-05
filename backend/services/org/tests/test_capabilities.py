@@ -40,7 +40,7 @@ def _declared(paths: ConcurrentStableList[Path] | None = None) -> ConcurrentStab
 
 
 def test_org_capabilities_match_manifest() -> None:
-    """五个端点能力逐项在清单中声明：同域（org）／有访问面／默认消费方含 platform。"""
+    """五个端点能力逐项在清单中声明：同域（mdm）／有访问面／默认消费方含 platform。"""
     declared = _declared()
 
     missing = [name for name in ORG_CAPABILITIES if name not in declared]
@@ -48,7 +48,7 @@ def test_org_capabilities_match_manifest() -> None:
 
     for name in ORG_CAPABILITIES:
         record = declared[name]
-        assert record.domain == "org", f"能力 {name} 的提供方业务域应为 org"
+        assert record.domain == "mdm", f"能力 {name} 的提供方业务域应为 mdm"
         assert record.path, f"能力 {name} 缺访问面路径"
         assert PLATFORM_CONSUMER in record.default_consumers, f"能力 {name} 的默认消费方缺 {PLATFORM_CONSUMER}"
 

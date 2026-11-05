@@ -2,8 +2,8 @@
   "version": 1,
   "domains": [
     {
-      "domain_key": "org",
-      "name": "组织主数据",
+      "domain_key": "mdm",
+      "name": "mdm 主数据",
       "service_key": "mdm",
       "status": "placement",
       "paths": [

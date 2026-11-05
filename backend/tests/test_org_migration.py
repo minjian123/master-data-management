@@ -1,4 +1,4 @@
-"""org:tenant 迁移清单（Kiwi 2255）：清单头 / 表集与模型零漂移 / 升降级往返（07C 按业务域）。"""
+"""mdm:tenant 迁移清单（Kiwi 2255）：清单头 / 表集与模型零漂移 / 升降级往返（07C 按业务域）。"""
 
 import asyncio
 from datetime import UTC, datetime
@@ -13,9 +13,9 @@ from bms_core.services.table_registry import series_tables, unit_tables
 from sqlalchemy import Connection, Engine, create_engine, inspect
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from services.table_registry import ORG_DOMAIN, register
+from services.table_registry import MDM_DOMAIN, register
 
-_SERIES = "org:tenant"
+_SERIES = "mdm:tenant"
 
 _ORG_TABLES = ("mdm_dept", "mdm_post", "mdm_user_post", "mdm_user_dept", "mdm_role_post", "mdm_role_dept")
 _ORG_TABLES_BASE = ("mdm_dept", "mdm_post", "mdm_user_post", "mdm_role_post", "mdm_role_dept")
@@ -101,20 +101,20 @@ def _sync_table_names(url: str) -> set[str]:
 
 @pytest.mark.kiwi_id(2255)
 def test_org_tenant_series_registered() -> None:
-    """清单注册：`org:tenant` 有脚本、清单头为 `0005_mdm_form_key`、域表集为六表（基础设施另计）。"""
+    """清单注册：`mdm:tenant` 有脚本、清单头为 `0005_mdm_form_key`、域表集为六表（基础设施另计）。"""
     register()
     series = resolve_series(_SERIES)
     assert has_revisions(series)
     assert head_revision(series) == "0005_mdm_form_key"
-    tables = series_tables(ORG_DOMAIN, "tenant")
+    tables = series_tables(MDM_DOMAIN, "tenant")
     assert all(name in tables for name in _ORG_TABLES)
-    unit = unit_tables((ORG_DOMAIN,), "tenant")
+    unit = unit_tables((MDM_DOMAIN,), "tenant")
     assert all(name in unit for name in (*_ORG_TABLES, *_INFRA_TABLES))
 
 
 @pytest.mark.kiwi_id(2255)
 async def test_org_tenant_migration_upgrades_with_zero_drift(tmp_path: Path) -> None:
-    """迁移：`org:tenant` 升到 head 建齐八表，且库结构与模型元数据零漂移。"""
+    """迁移：`mdm:tenant` 升到 head 建齐八表，且库结构与模型元数据零漂移。"""
     register()
     url = f"sqlite+aiosqlite:///{tmp_path / 'mdm.db'}"
     await asyncio.to_thread(_upgrade, url)

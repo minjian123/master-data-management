@@ -59,6 +59,6 @@
 | 2026-10-07 | v1 | 新建表结构（mdm 组织域，原 bms `sys_user_post` 迁入） | minjian |
 | 2026-10-07 | v2 | 主键口径修订：联合主键 → 雪花 `id` 主键 + `(user_id, post_id, deleted_at)` 复合唯一；补软删除与 `version`（对齐基座 `BaseModel` 与 bms 现役实现） | minjian |
 | 2026-10-09 | v3 | 增 `is_primary` 主要岗位标记（同用户至多一个，服务侧事务保证；跨仓来源 bms 阶段七需求 `07-11`）；补主要项语义说明；**不新增索引**（查询走 `user_id` 先导的唯一索引） | minjian |
-| 2026-10-23 | v4 | 服务标识归并（任务 `01_05`）：表名 `org_*` → `mdm_*`、迁移链 `org:tenant` → `mdm:tenant`、库 `mdm_org_{code}` → `mdm_{code}`；约束 / 索引名同步为 `uq_mdm_*` / `idx_mdm_*` | minjian |
+| 2026-10-23 | v4 | 服务标识归并（任务 `01_05`）：表名 `org_*` → `mdm_*`、迁移链 `mdm:tenant` → `mdm:tenant`、库 `mdm_org_{code}` → `mdm_{code}`；约束 / 索引名同步为 `uq_mdm_*` / `idx_mdm_*` | minjian |
 
 > 数据表设计 · 与 bms《数据库开发规范》「数据表文件规范」节配套

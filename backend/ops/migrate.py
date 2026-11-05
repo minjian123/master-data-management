@@ -11,13 +11,13 @@ uv run python -m ops.migrate --code demo --code acme        # 追加服务租户
 uv run python -m ops.migrate --target tenant --url "dm+dmPython://SYSDBA:pass@host:5236" --schema MDM_MIGRCHECK
 ```
 
-- **维度分工（07C）**：迁移清单按**业务域 × 数据源**组织（`org:platform` / `org:tenant`），
+- **维度分工（07C）**：迁移清单按**业务域 × 数据源**组织（`mdm:platform` / `mdm:tenant`），
   业务域是架构边界；**服务标识只用于库键**（`mdm` / `mdm_{code}`），两者解耦；
 - **服务维度**：缺省取本产品清单在运服务（`local_service_keys()`）；`--service` 可重复显式指定；
 - **租户维度**：`--code`（可重复，库名基 = 编码）。**不读租户注册库**——`platform_tenant` 库归平台
   `tenant` 服务，产品侧不跨服务直读；租户全集编排由平台侧负责（bms `ops.migrate_tenants`）；
-- **清单映射**：平台服务库 `mdm_{service}` → 清单 `org:platform`；服务租户库 `mdm_{service}_{code}`
-  → 清单 `org:tenant`；归档库 `mdm_archive` → 清单 `platform:archive`（归档库不服务化）；
+- **清单映射**：平台服务库 `mdm_{service}` → 清单 `mdm:platform`；服务租户库 `mdm_{service}_{code}`
+  → 清单 `mdm:tenant`；归档库 `mdm_archive` → 清单 `platform:archive`（归档库不服务化）；
 - **执行**：逐库经基座 `upgrade_series`（`command.upgrade(cfg, "head")`）；
 - **幂等**：目标版本表已为清单 head → 「已是最新（跳过）」；清单无脚本 → 「无脚本（跳过）」；
 - **失败不中断**：单库失败记 ERROR 并继续，末尾汇总；存在失败退出码 1；
@@ -50,7 +50,7 @@ from bms_core.db.migration import (
 from sqlalchemy.engine import make_url
 
 from services.module_registry import local_service_keys
-from services.table_registry import ORG_DOMAIN
+from services.table_registry import MDM_DOMAIN
 from services.table_registry import register as register_product_tables
 
 # 表归属**产品注入**（bms 12_04）：迁移链表集派生需先注册本产品表归属（幂等）
@@ -160,8 +160,8 @@ def service_tasks(
     resolved = settings or get_settings()
     factory = EngineFactory(resolved, allow_cross_service=True)  # 运维通道：批量迁移按各服务库执行
     tasks: ConcurrentStableList[MigrationTask] = ConcurrentStableList()
-    platform_series = resolve_series(build_series_name(ORG_DOMAIN, DATASOURCE_PLATFORM))
-    tenant_series = resolve_series(build_series_name(ORG_DOMAIN, DATASOURCE_TENANT))
+    platform_series = resolve_series(build_series_name(MDM_DOMAIN, DATASOURCE_PLATFORM))
+    tenant_series = resolve_series(build_series_name(MDM_DOMAIN, DATASOURCE_TENANT))
     for service in services:
         if include_platform:
             tasks.add(
@@ -201,7 +201,7 @@ def build_tasks(args: argparse.Namespace) -> ConcurrentStableList[MigrationTask]
     if args.target == "tenant":
         if not args.url:
             raise ConfigError("`--target tenant` 需显式 `--url`（单库模式：演练 / 指定库）")
-        series = resolve_series(build_series_name(ORG_DOMAIN, DATASOURCE_TENANT))
+        series = resolve_series(build_series_name(MDM_DOMAIN, DATASOURCE_TENANT))
         return ConcurrentStableList([MigrationTask(series=series, label="tenant", url=args.url, schema=args.schema)])
 
     if args.target == "archive":
@@ -213,7 +213,7 @@ def build_tasks(args: argparse.Namespace) -> ConcurrentStableList[MigrationTask]
     if args.target == "platform":
         if args.url:  # 单库模式（演练）：指定服务的平台服务库
             service = services[0]
-            series = resolve_series(build_series_name(ORG_DOMAIN, DATASOURCE_PLATFORM))
+            series = resolve_series(build_series_name(MDM_DOMAIN, DATASOURCE_PLATFORM))
             return ConcurrentStableList(
                 [MigrationTask(series=series, label=build_platform_db_key(service), url=args.url, schema=args.schema)]
             )

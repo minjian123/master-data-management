@@ -322,15 +322,15 @@ def test_migrate_service_tasks_without_platform(monkeypatch: pytest.MonkeyPatch)
         include_archive=True,
     )
     series_names = [task.series.name for task in tasks]
-    assert all(not name.startswith("org:platform") for name in series_names)
-    assert any(name.startswith("org:tenant") for name in series_names)
+    assert all(not name.startswith("mdm:platform") for name in series_names)
+    assert any(name.startswith("mdm:tenant") for name in series_names)
     assert any(name.startswith("archive:archive") for name in series_names)
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 async def test_migrate_run_tasks_reports_three_outcomes(monkeypatch: pytest.MonkeyPatch) -> None:
     """执行汇总：已最新（跳过）/ 迁移完成（成功）/ 抛错（失败）三类结果均如实登记。"""
-    series = migrate.resolve_series(migrate.build_series_name(migrate.ORG_DOMAIN, migrate.DATASOURCE_PLATFORM))
+    series = migrate.resolve_series(migrate.build_series_name(migrate.MDM_DOMAIN, migrate.DATASOURCE_PLATFORM))
     tasks = migrate.ConcurrentStableList(
         [migrate.MigrationTask(series=series, label="mdm", url="sqlite+aiosqlite:///mdm_run.db")]
     )

@@ -64,12 +64,12 @@ strategies = ["select", "match"]
 status = "enabled"
 
 # ---- 能力（第五类记录）----
-# 能力名 = {产品}.{业务域}.{能力}；domain 是**业务域**（org），不是服务标识（mdm）。
+# 能力名 = {产品}.{对象}.{能力}；domain 是**业务域**（mdm），不是数据对象（org / ref / sup）。
 # 访问面须能在本仓公开契约 `deploy/contracts/mdm.json` 的 paths 中定位（参数名归一化比较）。
 
 [[collaborations]]
 name = "mdm.org.user-roles"
-domain = "org"
+domain = "mdm"
 kind = "read"
 path = "/api/v1/mdm/user-roles"
 contract_version = "0.1.0"
@@ -77,7 +77,7 @@ default_consumers = ["platform"]
 
 [[collaborations]]
 name = "mdm.org.user-posts.assign"
-domain = "org"
+domain = "mdm"
 kind = "txn-branch"
 path = "/api/v1/mdm/internal/user-posts/{user_id}"
 branch_id = "m"
@@ -87,7 +87,7 @@ default_consumers = ["platform"]
 
 [[collaborations]]
 name = "mdm.org.user-depts.assign"
-domain = "org"
+domain = "mdm"
 kind = "txn-branch"
 path = "/api/v1/mdm/internal/user-depts/{user_id}"
 branch_id = "m"
@@ -97,7 +97,7 @@ default_consumers = ["platform"]
 
 [[collaborations]]
 name = "mdm.org.role-posts.assign"
-domain = "org"
+domain = "mdm"
 kind = "txn-branch"
 path = "/api/v1/mdm/internal/role-posts/{role_id}"
 branch_id = "m"
@@ -107,7 +107,7 @@ default_consumers = ["platform"]
 
 [[collaborations]]
 name = "mdm.org.role-depts.assign"
-domain = "org"
+domain = "mdm"
 kind = "txn-branch"
 path = "/api/v1/mdm/internal/role-depts/{role_id}"
 branch_id = "m"
@@ -117,7 +117,7 @@ default_consumers = ["platform"]
 
 [[collaborations]]
 name = "mdm.org.dept-data"
-domain = "org"
+domain = "mdm"
 kind = "dataset"
 path = "/api/v1/mdm/data-source/dept-tree"
 data_source_key = "mdm_dept"
@@ -127,7 +127,7 @@ default_consumers = ["platform"]
 
 [[collaborations]]
 name = "mdm.org.post-data"
-domain = "org"
+domain = "mdm"
 kind = "dataset"
 path = "/api/v1/mdm/data-source/posts"
 data_source_key = "mdm_post"
@@ -137,7 +137,7 @@ default_consumers = ["platform"]
 
 [[collaborations]]
 name = "mdm.org.admin-codes"
-domain = "org"
+domain = "mdm"
 kind = "codes"
 permission_codes = ["mdm:query", "mdm:create", "mdm:update", "mdm:delete"]
 contract_version = "0.1.0"
@@ -171,7 +171,7 @@ sys_permission = "business_id,action_id"
 
 [[errcodes]]
 code = 330031
-domain = "org"
+domain = "mdm"
 http_status = 404
 message_key = "mdm.error.post_not_found"
 severity = "warning"
@@ -179,7 +179,7 @@ description = "岗位不存在"
 
 [[errcodes]]
 code = 330032
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.post_code_exists"
 severity = "warning"
@@ -187,7 +187,7 @@ description = "岗位 code 已存在"
 
 [[errcodes]]
 code = 330033
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.post_dept_unavailable"
 severity = "warning"
@@ -195,7 +195,7 @@ description = "归属部门不存在或已停用"
 
 [[errcodes]]
 code = 330034
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.post_has_users"
 severity = "warning"
@@ -203,7 +203,7 @@ description = "岗位仍关联用户，禁止删除"
 
 [[errcodes]]
 code = 330035
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.post_has_roles"
 severity = "warning"
@@ -211,7 +211,7 @@ description = "岗位仍绑定角色，禁止删除"
 
 [[errcodes]]
 code = 330036
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.post_code_format"
 severity = "warning"
@@ -219,7 +219,7 @@ description = "岗位 code 不符合格式约束"
 
 [[errcodes]]
 code = 330051
-domain = "org"
+domain = "mdm"
 http_status = 404
 message_key = "mdm.error.dept_not_found"
 severity = "warning"
@@ -227,7 +227,7 @@ description = "部门不存在"
 
 [[errcodes]]
 code = 330052
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.dept_parent_unavailable"
 severity = "warning"
@@ -235,7 +235,7 @@ description = "父部门不存在或已停用"
 
 [[errcodes]]
 code = 330053
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.dept_cycle"
 severity = "warning"
@@ -243,7 +243,7 @@ description = "移动形成环：父部门不能是自身或其后代"
 
 [[errcodes]]
 code = 330054
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.dept_has_children"
 severity = "warning"
@@ -251,7 +251,7 @@ description = "部门仍存在子部门，禁止删除"
 
 [[errcodes]]
 code = 330055
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.dept_referenced"
 severity = "warning"
@@ -259,7 +259,7 @@ description = "部门仍被岗位 / 用户引用，禁止删除"
 
 [[errcodes]]
 code = 330056
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.dept_has_roles"
 severity = "warning"
@@ -267,7 +267,7 @@ description = "部门仍存在角色分配，禁止删除"
 
 [[errcodes]]
 code = 330057
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.dept_depth_exceeded"
 severity = "warning"
@@ -275,7 +275,7 @@ description = "部门树深度超出上限"
 
 [[errcodes]]
 code = 330058
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.dept_children_limit"
 severity = "warning"
@@ -283,7 +283,7 @@ description = "同级子部门数超出上限"
 
 [[errcodes]]
 code = 330059
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.dept_name_exists"
 severity = "warning"
@@ -291,7 +291,7 @@ description = "同父部门名称已存在"
 
 [[errcodes]]
 code = 330060
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.dept_code_exists"
 severity = "warning"
@@ -299,7 +299,7 @@ description = "部门编码已存在（租户内唯一）"
 
 [[errcodes]]
 code = 330061
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.dept_code_format"
 severity = "warning"
@@ -307,7 +307,7 @@ description = "部门编码不符合格式约束"
 
 [[errcodes]]
 code = 330071
-domain = "org"
+domain = "mdm"
 http_status = 404
 message_key = "mdm.error.user_post_not_found"
 severity = "warning"
@@ -315,7 +315,7 @@ description = "用户-岗位关联不存在"
 
 [[errcodes]]
 code = 330072
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.user_post_limit_exceeded"
 severity = "warning"
@@ -323,7 +323,7 @@ description = "单用户岗位数超出上限"
 
 [[errcodes]]
 code = 330081
-domain = "org"
+domain = "mdm"
 http_status = 404
 message_key = "mdm.error.role_post_not_found"
 severity = "warning"
@@ -331,7 +331,7 @@ description = "角色-岗位分配不存在"
 
 [[errcodes]]
 code = 330091
-domain = "org"
+domain = "mdm"
 http_status = 404
 message_key = "mdm.error.role_dept_not_found"
 severity = "warning"
@@ -339,7 +339,7 @@ description = "角色-部门分配不存在"
 
 [[errcodes]]
 code = 330101
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.org_source_unavailable"
 severity = "error"
@@ -347,7 +347,7 @@ description = "用户来源不可达 / 未装配（组织只读出口的用户�
 
 [[errcodes]]
 code = 330111
-domain = "org"
+domain = "mdm"
 http_status = 404
 message_key = "mdm.error.user_dept_not_found"
 severity = "warning"
@@ -355,7 +355,7 @@ description = "用户-部门关联不存在"
 
 [[errcodes]]
 code = 330112
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.user_dept_limit_exceeded"
 severity = "warning"
@@ -363,7 +363,7 @@ description = "单用户部门数超出上限"
 
 [[errcodes]]
 code = 330113
-domain = "org"
+domain = "mdm"
 http_status = 200
 message_key = "mdm.error.user_primary_not_assigned"
 severity = "warning"
@@ -378,8 +378,8 @@ description = "主要项置位目标不在该用户已分配集合内"
 # 字段口径见 07C《03_01 业务域级边界护栏》详细设计 §3.1.1。
 
 [[domains]]
-domain_key = "org"
-name = "组织主数据"
+domain_key = "mdm"
+name = "mdm 主数据"
 service_key = "mdm"
 status = "placement"
 paths = [

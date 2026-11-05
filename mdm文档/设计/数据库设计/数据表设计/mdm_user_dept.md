@@ -58,6 +58,6 @@
 | 日期 | 版本 | 变更 | 作者 |
 | --- | --- | --- | --- |
 | 2026-10-09 | v1 | 新建表结构（mdm 组织域；用户-部门多对多 + 主要部门标记；跨仓来源 bms 阶段七需求 `07-11`） | minjian |
-| 2026-10-23 | v2 | 服务标识归并（任务 `01_05`）：表名 `org_*` → `mdm_*`、迁移链 `org:tenant` → `mdm:tenant`、库 `mdm_org_{code}` → `mdm_{code}`；约束 / 索引名同步为 `uq_mdm_*` / `idx_mdm_*` | minjian |
+| 2026-10-23 | v2 | 服务标识归并（任务 `01_05`）：表名 `org_*` → `mdm_*`、迁移链 `mdm:tenant` → `mdm:tenant`、库 `mdm_org_{code}` → `mdm_{code}`；约束 / 索引名同步为 `uq_mdm_*` / `idx_mdm_*` | minjian |
 
 > 数据表设计 · 与 bms《数据库开发规范》「数据表文件规范」节配套
