@@ -54,7 +54,7 @@
       <ul>
         <li>树：点选节点 → 右侧详情面板；支持关键字定位与状态标识</li>
         <li>移动：选择新上级时排除自身及子孙；提示 ancestors 级联更新与数据范围重算</li>
-        <li>编码：必填、租户内唯一（软删除后可复用）、创建后可修改；格式受系统参数 <code>org.dept_code_pattern</code> 约束</li>
+        <li>编码：必填、租户内唯一（软删除后可复用）、创建后可修改；格式受系统参数 <code>mdm.dept_code_pattern</code> 约束</li>
         <li>删除：有子部门 / 岗位 / 成员 / 角色分配时拒绝并给出明确提示</li>
       </ul>
 
@@ -62,7 +62,7 @@
       <ul>
         <li>概要：<a href="../../概要设计/03_概要设计_部门管理.md">部门管理</a></li>
         <li>架构：<a href="../../../../bms文档/设计/架构设计/15_架构设计_子系统_权限计算引擎.md">《架构设计 · 权限计算引擎》</a>（主体链与数据范围）</li>
-        <li>数据库：<a href="../../数据库设计/数据表设计/org_dept.md">org_dept</a>、<a href="../../数据库设计/数据表设计/org_role_dept.md">org_role_dept</a></li>
+        <li>数据库：<a href="../../数据库设计/数据表设计/mdm_dept.md">mdm_dept</a>、<a href="../../数据库设计/数据表设计/mdm_role_dept.md">mdm_role_dept</a></li>
       </ul>
 
       <h2 id="iter">5. 迭代记录</h2>

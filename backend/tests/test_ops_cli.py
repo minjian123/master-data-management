@@ -48,7 +48,7 @@ def test_load_and_register_manifest_reports_errors(tmp_path: Path, capsys: pytes
         capsys: pytest 输出捕获夹具。
     """
     broken = tmp_path / "mdm.toml"
-    broken.write_text('product_key = "mdm"\n\n[[collaborations]]\nname = "mdm.org.x"\n', encoding="utf-8")
+    broken.write_text('product_key = "mdm"\n\n[[collaborations]]\nname = "mdm.mdm.x"\n', encoding="utf-8")
 
     errors = check_modules.load_and_register_manifest(broken)
 
@@ -144,7 +144,7 @@ def test_migrate_dry_run_with_tenant_codes(monkeypatch: pytest.MonkeyPatch, caps
 def test_migrate_skips_chains_without_scripts(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """分链迁移实跑：本期 org 链无脚本 → 逐目标「无脚本（跳过）」且退出码 0（不建连、不建表）。"""
+    """分链迁移实跑：本期 mdm 链无脚本 → 逐目标「无脚本（跳过）」且退出码 0（不建连、不建表）。"""
     _enable_sqlite_templates(monkeypatch)
     assert migrate.main([]) == 0
     assert "无脚本（跳过）" in capsys.readouterr().out

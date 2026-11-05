@@ -5,7 +5,7 @@
 1. 服务标识与产品标识同为 `mdm`，服务行四要素闭合（`service_key` / `table_prefix` / `event_domain` / 错误码段）；
 2. 六表全部 `mdm_` 前缀且归属服务 `mdm`（表前缀首段 = 服务标识，基座硬校验）；
 3. `form_key` / `table` / `data_source_key` 三者同名闭合；
-4. 事件契约 6 条全部落在 `mdm.` 域（无 `org.` 残留）；
+4. 事件契约 6 条全部落在 `mdm.` 域（无 `mdm.` 残留）；
 5. 公开契约快照文件名 = 服务标识（`deploy/contracts/mdm.json` 在、旧名不在）；
 6. 产品自持声明 `deploy/registry/mdm.toml` 的服务行与代码清单逐字段同值（07B `02_01` 起为 toml）；
 7. 库名派生：`[database].name_prefix` 等于服务标识时去重（`mdm` / `mdm_{租户}`），不等于时保持拼接。
@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 from bms_core.db.keys import platform_database_name, tenant_database_name
 
-from mdm.events.contracts import ORG_EVENT_CONTRACTS
+from mdm.events.contracts import MDM_EVENT_CONTRACTS
 from services.form_registry import MDM_FORM_RECORDS
 from services.module_registry import MDM_SERVICE_RECORDS, PRODUCT_KEY, SERVICE_KEY
 from services.table_registry import MDM_TABLE_RECORDS
@@ -81,11 +81,11 @@ def test_form_key_and_data_source_key_close_with_table_name() -> None:
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 def test_event_contracts_all_in_mdm_domain() -> None:
-    """事件契约 6 条，全部落在 `mdm.` 域（无 `org.` 旧域残留）。"""
-    event_types = [contract.event_type for contract in ORG_EVENT_CONTRACTS]
+    """事件契约 6 条，全部落在 `mdm.` 域（无 `mdm.` 旧域残留）。"""
+    event_types = [contract.event_type for contract in MDM_EVENT_CONTRACTS]
     assert len(event_types) == 6
     assert all(event_type.startswith("mdm.") for event_type in event_types)
-    assert not any(event_type.startswith("org.") for event_type in event_types)
+    assert not any(event_type.startswith("mdm.") for event_type in event_types)
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
@@ -93,8 +93,8 @@ def test_public_contract_snapshot_named_after_service() -> None:
     """公开契约快照文件名 = 服务标识（新名在、旧名不在）。"""
     assert (_CONTRACTS_DIR / "mdm.json").is_file()
     assert (_CONTRACTS_DIR / "baseline" / "mdm.json").is_file()
-    assert not (_CONTRACTS_DIR / "org.json").exists()
-    assert not (_CONTRACTS_DIR / "baseline" / "org.json").exists()
+    assert not (_CONTRACTS_DIR / "mdm.json").exists()
+    assert not (_CONTRACTS_DIR / "baseline" / "mdm.json").exists()
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
@@ -120,5 +120,5 @@ def test_database_names_dedupe_when_prefix_equals_service() -> None:
     """库名派生：前缀等于服务标识时去重，不等时保持拼接。"""
     assert platform_database_name("mdm", prefix="mdm") == "mdm"
     assert tenant_database_name("mdm", "acme", prefix="mdm") == "mdm_acme"
-    assert platform_database_name("org", prefix="bms") == "bms_org"
-    assert tenant_database_name("org", "acme", prefix="bms") == "bms_org_acme"
+    assert platform_database_name("mdm", prefix="bms") == "bms_mdm"
+    assert tenant_database_name("mdm", "acme", prefix="bms") == "bms_mdm_acme"

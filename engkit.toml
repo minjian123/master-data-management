@@ -15,7 +15,7 @@ plan_dir_pattern = "^项目/[^/]+/计划/"
 root = "backend"
 groups = ["services"]
 test_prefix = "test_"
-projects = ["services/org"]
+projects = ["services/mdm"]
 coverage_packages = ["mdm", "services", "ops"]
 
 [selection]

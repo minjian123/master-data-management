@@ -27,7 +27,7 @@
         "title": "ApiResponse",
         "type": "object"
       },
-      "ApiResponse_BasePageResponse_OrgPost__": {
+      "ApiResponse_BasePageResponse_MdmPost__": {
         "properties": {
           "code": {
             "default": 0,
@@ -37,7 +37,7 @@
           "data": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/BasePageResponse_OrgPost_"
+                "$ref": "#/components/schemas/BasePageResponse_MdmPost_"
               },
               {
                 "type": "null"
@@ -50,10 +50,10 @@
             "type": "string"
           }
         },
-        "title": "ApiResponse[BasePageResponse[OrgPost]]",
+        "title": "ApiResponse[BasePageResponse[MdmPost]]",
         "type": "object"
       },
-      "ApiResponse_BasePageResponse_OrgUser__": {
+      "ApiResponse_BasePageResponse_MdmUser__": {
         "properties": {
           "code": {
             "default": 0,
@@ -63,7 +63,7 @@
           "data": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/BasePageResponse_OrgUser_"
+                "$ref": "#/components/schemas/BasePageResponse_MdmUser_"
               },
               {
                 "type": "null"
@@ -76,7 +76,7 @@
             "type": "string"
           }
         },
-        "title": "ApiResponse[BasePageResponse[OrgUser]]",
+        "title": "ApiResponse[BasePageResponse[MdmUser]]",
         "type": "object"
       },
       "ApiResponse_BasePageResponse_PostItem__": {
@@ -209,7 +209,7 @@
         "title": "ApiResponse[DeptUserIds]",
         "type": "object"
       },
-      "ApiResponse_OrgDeptTree_": {
+      "ApiResponse_MdmDeptTree_": {
         "properties": {
           "code": {
             "default": 0,
@@ -219,7 +219,7 @@
           "data": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/OrgDeptTree"
+                "$ref": "#/components/schemas/MdmDeptTree"
               },
               {
                 "type": "null"
@@ -232,10 +232,10 @@
             "type": "string"
           }
         },
-        "title": "ApiResponse[OrgDeptTree]",
+        "title": "ApiResponse[MdmDeptTree]",
         "type": "object"
       },
-      "ApiResponse_OrgNameRefs_": {
+      "ApiResponse_MdmNameRefs_": {
         "properties": {
           "code": {
             "default": 0,
@@ -245,7 +245,7 @@
           "data": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/OrgNameRefs"
+                "$ref": "#/components/schemas/MdmNameRefs"
               },
               {
                 "type": "null"
@@ -258,10 +258,10 @@
             "type": "string"
           }
         },
-        "title": "ApiResponse[OrgNameRefs]",
+        "title": "ApiResponse[MdmNameRefs]",
         "type": "object"
       },
-      "ApiResponse_OrgUserRoles_": {
+      "ApiResponse_MdmUserRoles_": {
         "properties": {
           "code": {
             "default": 0,
@@ -271,7 +271,7 @@
           "data": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/OrgUserRoles"
+                "$ref": "#/components/schemas/MdmUserRoles"
               },
               {
                 "type": "null"
@@ -284,7 +284,7 @@
             "type": "string"
           }
         },
-        "title": "ApiResponse[OrgUserRoles]",
+        "title": "ApiResponse[MdmUserRoles]",
         "type": "object"
       },
       "ApiResponse_PostItem_": {
@@ -469,11 +469,11 @@
         "title": "ApiResponse[UserPostIds]",
         "type": "object"
       },
-      "BasePageResponse_OrgPost_": {
+      "BasePageResponse_MdmPost_": {
         "properties": {
           "list": {
             "items": {
-              "$ref": "#/components/schemas/OrgPost"
+              "$ref": "#/components/schemas/MdmPost"
             },
             "title": "List",
             "type": "array"
@@ -497,14 +497,14 @@
           "page",
           "size"
         ],
-        "title": "BasePageResponse[OrgPost]",
+        "title": "BasePageResponse[MdmPost]",
         "type": "object"
       },
-      "BasePageResponse_OrgUser_": {
+      "BasePageResponse_MdmUser_": {
         "properties": {
           "list": {
             "items": {
-              "$ref": "#/components/schemas/OrgUser"
+              "$ref": "#/components/schemas/MdmUser"
             },
             "title": "List",
             "type": "array"
@@ -528,7 +528,7 @@
           "page",
           "size"
         ],
-        "title": "BasePageResponse[OrgUser]",
+        "title": "BasePageResponse[MdmUser]",
         "type": "object"
       },
       "BasePageResponse_PostItem_": {
@@ -869,13 +869,13 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
-      "OrgDept": {
+      "MdmDept": {
         "description": "组织部门（嵌套树节点；部门树一次性返回、不分页）。",
         "properties": {
           "children": {
             "description": "子部门（嵌套树）",
             "items": {
-              "$ref": "#/components/schemas/OrgDept"
+              "$ref": "#/components/schemas/MdmDept"
             },
             "title": "Children",
             "type": "array"
@@ -925,25 +925,25 @@
           "code",
           "name"
         ],
-        "title": "OrgDept",
+        "title": "MdmDept",
         "type": "object"
       },
-      "OrgDeptTree": {
+      "MdmDeptTree": {
         "description": "组织部门树响应（一次性返回、不分页；`items` 为根节点序列，子节点嵌套）。",
         "properties": {
           "items": {
             "description": "部门树根节点序列（`children` 嵌套）",
             "items": {
-              "$ref": "#/components/schemas/OrgDept"
+              "$ref": "#/components/schemas/MdmDept"
             },
             "title": "Items",
             "type": "array"
           }
         },
-        "title": "OrgDeptTree",
+        "title": "MdmDeptTree",
         "type": "object"
       },
-      "OrgNameRef": {
+      "MdmNameRef": {
         "description": "批量回显项（按 id 回显名称；已删除 / 停用不抛错，以字段标记）。",
         "properties": {
           "exists": {
@@ -979,25 +979,25 @@
           "id",
           "name"
         ],
-        "title": "OrgNameRef",
+        "title": "MdmNameRef",
         "type": "object"
       },
-      "OrgNameRefs": {
+      "MdmNameRefs": {
         "description": "名称回显响应（按请求插入序返回；未命中项占位）。",
         "properties": {
           "items": {
             "description": "回显项序列（保持请求插入序）",
             "items": {
-              "$ref": "#/components/schemas/OrgNameRef"
+              "$ref": "#/components/schemas/MdmNameRef"
             },
             "title": "Items",
             "type": "array"
           }
         },
-        "title": "OrgNameRefs",
+        "title": "MdmNameRefs",
         "type": "object"
       },
-      "OrgPost": {
+      "MdmPost": {
         "description": "组织岗位（展示所需最小字段）。",
         "properties": {
           "code": {
@@ -1045,10 +1045,10 @@
           "code",
           "name"
         ],
-        "title": "OrgPost",
+        "title": "MdmPost",
         "type": "object"
       },
-      "OrgUser": {
+      "MdmUser": {
         "description": "组织用户（展示所需最小字段；手机号 / 邮箱默认脱敏）。",
         "properties": {
           "avatar": {
@@ -1114,10 +1114,10 @@
           "id",
           "username"
         ],
-        "title": "OrgUser",
+        "title": "MdmUser",
         "type": "object"
       },
-      "OrgUserRoles": {
+      "MdmUserRoles": {
         "description": "按用户解析其经岗位 / 部门获得的角色（并集去重；不含用户直接角色）。",
         "properties": {
           "role_ids": {
@@ -1129,7 +1129,7 @@
             "type": "array"
           }
         },
-        "title": "OrgUserRoles",
+        "title": "MdmUserRoles",
         "type": "object"
       },
       "PostCreateRequest": {
@@ -1567,7 +1567,7 @@
     "/api/v1/mdm/data-source/dept-tree": {
       "get": {
         "description": "组织数据源 · 部门树（一次性返回、不分页；数据范围限定外的部门不入树）。",
-        "operationId": "get_dept_tree_api_v1_org_data_source_dept_tree_get",
+        "operationId": "get_dept_tree_api_v1_mdm_data_source_dept_tree_get",
         "parameters": [
           {
             "in": "query",
@@ -1591,7 +1591,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_OrgDeptTree_"
+                  "$ref": "#/components/schemas/ApiResponse_MdmDeptTree_"
                 }
               }
             },
@@ -1660,14 +1660,14 @@
         },
         "summary": "Get Dept Tree",
         "tags": [
-          "org-open-read"
+          "mdm-open-read"
         ]
       }
     },
     "/api/v1/mdm/data-source/posts": {
       "get": {
         "description": "组织数据源 · 岗位（关键字 / 部门含子级 / 状态 / 分页）。",
-        "operationId": "list_posts_api_v1_org_data_source_posts_get",
+        "operationId": "list_posts_api_v1_mdm_data_source_posts_get",
         "parameters": [
           {
             "in": "query",
@@ -1799,7 +1799,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_BasePageResponse_OrgPost__"
+                  "$ref": "#/components/schemas/ApiResponse_BasePageResponse_MdmPost__"
                 }
               }
             },
@@ -1868,14 +1868,14 @@
         },
         "summary": "List Posts",
         "tags": [
-          "org-open-read"
+          "mdm-open-read"
         ]
       }
     },
     "/api/v1/mdm/data-source/users": {
       "get": {
         "description": "组织数据源 · 用户（关键字 / 部门 / 含子级 / 状态 / 分页）。\n\n部门过滤口径：映射为「该部门含子树下岗位、且用户已分配该岗位」的候选集——\n用户归属部门归本域 `mdm_user_dept`（2026-10-09 起），**不经平台字段**（`sys_user` 不落组织字段）。",
-        "operationId": "list_users_api_v1_org_data_source_users_get",
+        "operationId": "list_users_api_v1_mdm_data_source_users_get",
         "parameters": [
           {
             "in": "query",
@@ -2007,7 +2007,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_BasePageResponse_OrgUser__"
+                  "$ref": "#/components/schemas/ApiResponse_BasePageResponse_MdmUser__"
                 }
               }
             },
@@ -2076,7 +2076,7 @@
         },
         "summary": "List Users",
         "tags": [
-          "org-open-read"
+          "mdm-open-read"
         ]
       }
     },
@@ -2176,7 +2176,7 @@
         },
         "summary": "List Depts",
         "tags": [
-          "org-depts"
+          "mdm-depts"
         ]
       },
       "post": {
@@ -2286,7 +2286,7 @@
         },
         "summary": "Create Dept",
         "tags": [
-          "org-depts"
+          "mdm-depts"
         ]
       }
     },
@@ -2379,7 +2379,7 @@
         },
         "summary": "Delete Dept",
         "tags": [
-          "org-depts"
+          "mdm-depts"
         ]
       },
       "get": {
@@ -2470,7 +2470,7 @@
         },
         "summary": "Get Dept",
         "tags": [
-          "org-depts"
+          "mdm-depts"
         ]
       },
       "put": {
@@ -2571,7 +2571,7 @@
         },
         "summary": "Update Dept",
         "tags": [
-          "org-depts"
+          "mdm-depts"
         ]
       }
     },
@@ -2674,7 +2674,7 @@
         },
         "summary": "Move Dept",
         "tags": [
-          "org-depts"
+          "mdm-depts"
         ]
       }
     },
@@ -2767,7 +2767,7 @@
         },
         "summary": "List Dept Roles",
         "tags": [
-          "org-depts"
+          "mdm-depts"
         ]
       }
     },
@@ -2860,7 +2860,7 @@
         },
         "summary": "List Dept Users",
         "tags": [
-          "org-depts"
+          "mdm-depts"
         ]
       }
     },
@@ -3058,7 +3058,7 @@
         },
         "summary": "List Posts",
         "tags": [
-          "org-posts"
+          "mdm-posts"
         ]
       },
       "post": {
@@ -3168,7 +3168,7 @@
         },
         "summary": "Create Post",
         "tags": [
-          "org-posts"
+          "mdm-posts"
         ]
       }
     },
@@ -3261,7 +3261,7 @@
         },
         "summary": "Delete Post",
         "tags": [
-          "org-posts"
+          "mdm-posts"
         ]
       },
       "get": {
@@ -3352,7 +3352,7 @@
         },
         "summary": "Get Post",
         "tags": [
-          "org-posts"
+          "mdm-posts"
         ]
       },
       "put": {
@@ -3453,7 +3453,7 @@
         },
         "summary": "Update Post",
         "tags": [
-          "org-posts"
+          "mdm-posts"
         ]
       }
     },
@@ -3546,7 +3546,7 @@
         },
         "summary": "List Post Roles",
         "tags": [
-          "org-posts"
+          "mdm-posts"
         ]
       }
     },
@@ -3639,14 +3639,14 @@
         },
         "summary": "List Post Users",
         "tags": [
-          "org-posts"
+          "mdm-posts"
         ]
       }
     },
     "/api/v1/mdm/resolve-names": {
       "get": {
         "description": "名称回显（`target` + `id_in` 逗号分隔；未命中项占位、不抛错）。",
-        "operationId": "resolve_names_api_v1_org_resolve_names_get",
+        "operationId": "resolve_names_api_v1_mdm_resolve_names_get",
         "parameters": [
           {
             "in": "query",
@@ -3674,7 +3674,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_OrgNameRefs_"
+                  "$ref": "#/components/schemas/ApiResponse_MdmNameRefs_"
                 }
               }
             },
@@ -3743,7 +3743,7 @@
         },
         "summary": "Resolve Names",
         "tags": [
-          "org-open-read"
+          "mdm-open-read"
         ]
       }
     },
@@ -3836,7 +3836,7 @@
         },
         "summary": "List Role Depts",
         "tags": [
-          "org-role-depts"
+          "mdm-role-depts"
         ]
       }
     },
@@ -3957,7 +3957,7 @@
         },
         "summary": "Assign Role Depts",
         "tags": [
-          "org-role-depts"
+          "mdm-role-depts"
         ]
       }
     },
@@ -4059,7 +4059,7 @@
         },
         "summary": "Unassign Role Dept",
         "tags": [
-          "org-role-depts"
+          "mdm-role-depts"
         ]
       }
     },
@@ -4152,7 +4152,7 @@
         },
         "summary": "List Role Posts",
         "tags": [
-          "org-role-posts"
+          "mdm-role-posts"
         ]
       }
     },
@@ -4273,7 +4273,7 @@
         },
         "summary": "Assign Role Posts",
         "tags": [
-          "org-role-posts"
+          "mdm-role-posts"
         ]
       }
     },
@@ -4375,7 +4375,7 @@
         },
         "summary": "Unassign Role Post",
         "tags": [
-          "org-role-posts"
+          "mdm-role-posts"
         ]
       }
     },
@@ -4468,7 +4468,7 @@
         },
         "summary": "List User Depts",
         "tags": [
-          "org-user-depts"
+          "mdm-user-depts"
         ]
       },
       "put": {
@@ -4587,7 +4587,7 @@
         },
         "summary": "Assign User Depts",
         "tags": [
-          "org-user-depts"
+          "mdm-user-depts"
         ]
       }
     },
@@ -4690,7 +4690,7 @@
         },
         "summary": "Set Primary Dept",
         "tags": [
-          "org-user-depts"
+          "mdm-user-depts"
         ]
       }
     },
@@ -4792,7 +4792,7 @@
         },
         "summary": "Unassign User Dept",
         "tags": [
-          "org-user-depts"
+          "mdm-user-depts"
         ]
       }
     },
@@ -4885,7 +4885,7 @@
         },
         "summary": "List User Posts",
         "tags": [
-          "org-user-posts"
+          "mdm-user-posts"
         ]
       }
     },
@@ -5006,7 +5006,7 @@
         },
         "summary": "Assign User Posts",
         "tags": [
-          "org-user-posts"
+          "mdm-user-posts"
         ]
       }
     },
@@ -5109,7 +5109,7 @@
         },
         "summary": "Set Primary Post",
         "tags": [
-          "org-user-posts"
+          "mdm-user-posts"
         ]
       }
     },
@@ -5211,14 +5211,14 @@
         },
         "summary": "Unassign User Post",
         "tags": [
-          "org-user-posts"
+          "mdm-user-posts"
         ]
       }
     },
     "/api/v1/mdm/user-roles": {
       "get": {
         "description": "按用户解析其经岗位 / 部门获得的角色（并集去重；结果短时缓存 + 写侧失效代）。\n\n供 bms 权限引擎跨服务汇总（用户直接角色 `sys_user_role` 由消费方合并）。",
-        "operationId": "get_user_roles_api_v1_org_user_roles_get",
+        "operationId": "get_user_roles_api_v1_mdm_user_roles_get",
         "parameters": [
           {
             "in": "query",
@@ -5235,7 +5235,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_OrgUserRoles_"
+                  "$ref": "#/components/schemas/ApiResponse_MdmUserRoles_"
                 }
               }
             },
@@ -5304,7 +5304,7 @@
         },
         "summary": "Get User Roles",
         "tags": [
-          "org-open-read"
+          "mdm-open-read"
         ]
       }
     },

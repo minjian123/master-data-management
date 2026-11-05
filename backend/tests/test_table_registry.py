@@ -30,7 +30,7 @@ def _reset_injected_records() -> Iterator[None]:  # pyright: ignore[reportUnused
 
 @pytest.mark.kiwi_id(2255)
 def test_mdm_table_records_shape() -> None:
-    """mdm 自持清单：六表、归属 `org`、租户库、状态启用（与数据库设计登记一致）。"""
+    """mdm 自持清单：六表、归属 `mdm`、租户库、状态启用（与数据库设计登记一致）。"""
     assert table_names() == (
         "mdm_dept",
         "mdm_post",

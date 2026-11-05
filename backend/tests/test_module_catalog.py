@@ -147,7 +147,7 @@ def test_product_dimension_ownership_mismatch_detected() -> None:
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 def test_product_dimension_running_service_missing_detected() -> None:
     """产品维度断言 ④：注入清单未登记运行服务即拒。"""
-    record = _record(module_key="mdmorg", service_key=None, table_prefix="mdmorg_", event_domain="mdmorg")
+    record = _record(module_key="mdmmdm", service_key=None, table_prefix="mdmmdm_", event_domain="mdmmdm")
     errors = validate_product_service_records(
         ConcurrentStableList([record]), service_key=SERVICE_KEY, product_key=PRODUCT_KEY
     )

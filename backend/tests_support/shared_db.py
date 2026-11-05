@@ -6,7 +6,7 @@
 - **平台库**：先注册本产品表归属（`services.table_registry.register()`，供归属视图与对账用例），
   再导入 mdm 自有模型（`mdm.models::MODEL_MODULES`）后建表；本仓平台库仅作测试底座，不种服务目录；
   种子租户与主键对齐沿用基座默认（`demo → 1001` / `acme → 2002`，与 `FakeTenantSource` 同口径）。
-- **租户库**：域集合取本仓已知域（`org`，由 `deploy/boundaries/domain_layout.json` 与表归属派生），
+- **租户库**：域集合取本仓已知域（`mdm`，由 `deploy/boundaries/domain_layout.json` 与表归属派生），
   建表集经基座 `domains_metadata` 按「域 × 数据源」派生，已含 `mdm_*` 六表 + 基础设施表。
 
 `.ready` 版本戳由本文件源码摘要派生（`bms_core.testing.fixtures::version_for`），准备内容一改即自动重建。
@@ -44,7 +44,7 @@ def prepare_platform(url: str) -> None:
 
 
 def prepare_tenant(url: str) -> None:
-    """准备租户库：域并集（`org`）建表 → 系统参数种子（幂等）。
+    """准备租户库：域并集（`mdm`）建表 → 系统参数种子（幂等）。
 
     Args:
         url: 共享租户库连接串。

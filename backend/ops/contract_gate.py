@@ -3,7 +3,7 @@
 用法::
 
     uv run python -m ops.contract_gate check                 # 基线 ↔ 实时公开契约，破坏性变更即失败
-    uv run python -m ops.contract_gate check --service org   # 指定服务
+    uv run python -m ops.contract_gate check --service mdm   # 指定服务
     uv run python -m ops.contract_gate check --engine oasdiff            # 强制 oasdiff（缺 docker 即失败）
     uv run python -m ops.contract_gate check --engine structural         # 强制结构化判定
     uv run python -m ops.contract_gate baseline-update --all # 人工更新基线（走评审合入）

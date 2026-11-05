@@ -62,7 +62,7 @@ def test_structural_breaking_detects_removals_and_allows_additions() -> None:
             }
         ),
         schemas=ConcurrentStableDict(
-            {"OrgUser": ConcurrentStableDict({"properties": ConcurrentStableDict({"id": {}, "phone": {}})})}
+            {"MdmUser": ConcurrentStableDict({"properties": ConcurrentStableDict({"id": {}, "phone": {}})})}
         ),
     )
     unchanged = _doc(
@@ -77,8 +77,8 @@ def test_structural_breaking_detects_removals_and_allows_additions() -> None:
         ),
         schemas=ConcurrentStableDict(
             {
-                "OrgUser": ConcurrentStableDict({"properties": ConcurrentStableDict({"id": {}, "phone": {}, "x": {}})}),
-                "OrgPost": ConcurrentStableDict({"properties": ConcurrentStableDict({})}),
+                "MdmUser": ConcurrentStableDict({"properties": ConcurrentStableDict({"id": {}, "phone": {}, "x": {}})}),
+                "MdmPost": ConcurrentStableDict({"properties": ConcurrentStableDict({})}),
             }
         ),
     )
@@ -93,13 +93,13 @@ def test_structural_breaking_detects_removals_and_allows_additions() -> None:
             }
         ),
         schemas=ConcurrentStableDict(
-            {"OrgUser": ConcurrentStableDict({"properties": ConcurrentStableDict({"id": {}})})}
+            {"MdmUser": ConcurrentStableDict({"properties": ConcurrentStableDict({"id": {}})})}
         ),
     )
     problems = list(structural_breaking(baseline, broken))
     assert any("删除路径：/b" in item for item in problems)
     assert any("删除响应码：GET /a [404]" in item for item in problems)
-    assert any("删除 schema 属性：OrgUser.phone" in item for item in problems)
+    assert any("删除 schema 属性：MdmUser.phone" in item for item in problems)
     assert len(problems) == 3
 
 
@@ -249,9 +249,9 @@ def test_structural_breaking_skips_non_http_and_removed_operation() -> None:
 
 def test_structural_breaking_reports_removed_schema() -> None:
     """结构化判定：基线组件 schema 整体消失记「删除组件 schema」。"""
-    base = _doc(paths=ConcurrentStableDict(), schemas=ConcurrentStableDict({"OrgDept": {"properties": {}}}))
+    base = _doc(paths=ConcurrentStableDict(), schemas=ConcurrentStableDict({"MdmDept": {"properties": {}}}))
     current = _doc(paths=ConcurrentStableDict(), schemas=ConcurrentStableDict())
-    assert list(structural_breaking(base, current)) == ["删除组件 schema：OrgDept"]
+    assert list(structural_breaking(base, current)) == ["删除组件 schema：MdmDept"]
 
 
 def test_mapping_rejects_non_mapping() -> None:

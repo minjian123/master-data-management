@@ -45,8 +45,8 @@ def _entry(domain_key: str, *, name: str = "", service_key: str = "mdm") -> Any:
         name=name,
         service_key=service_key,
         status="placement",
-        paths=["backend/services/org/src/mdm/org/"],
-        public_api=["mdm.org"],
+        paths=["backend/services/mdm/src/mdm/mdm/"],
+        public_api=["mdm.mdm"],
     )
 
 
@@ -67,14 +67,14 @@ def test_render_dedupes_and_omits_empty_name(monkeypatch: pytest.MonkeyPatch) ->
         monkeypatch: pytest monkeypatch 夹具。
     """
     manifests = [
-        _manifest([_entry("org", name="组织主数据")], ["bms文档/"]),
-        _manifest([_entry("org", service_key="other"), _entry("user")], ["bms文档/", "engkit文档/"]),
+        _manifest([_entry("mdm", name="组织主数据")], ["bms文档/"]),
+        _manifest([_entry("mdm", service_key="other"), _entry("user")], ["bms文档/", "engkit文档/"]),
     ]
     monkeypatch.setattr("bms_core.registry.products.load_product_manifests", lambda paths: manifests)
 
     document = check_modules.render_domain_layout()
 
-    assert [item["domain_key"] for item in document["domains"]] == ["org", "user"]
+    assert [item["domain_key"] for item in document["domains"]] == ["mdm", "user"]
     assert document["domains"][0]["name"] == "组织主数据"
     assert "name" not in document["domains"][1]
     assert document["domains"][0]["service_key"] == "mdm"

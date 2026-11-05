@@ -1,7 +1,7 @@
 """产品自持错误码声明 ↔ 代码逐条对账（07B `02_05` 第七类记录）。
 
 `deploy/registry/mdm.toml` 的 `[[errcodes]]` 段是**对外承诺的唯一声明**，须与
-`mdm/errors.py` 的 `OrgErrorCode` 枚举及异常类 `http_status_` 逐条一致：
+`mdm/errors.py` 的 `MdmErrorCode` 枚举及异常类 `http_status_` 逐条一致：
 码集合相同、`http_status` 相同、`message_key` 形如 `mdm.error.<snake>`、描述与级别齐备。
 
 新增用例的 Kiwi 编号由 07B `05_01` 统一登记后回填（本批不标 `kiwi_id`）。
@@ -18,7 +18,7 @@ import pytest
 from bms_core.core.concurrent import ConcurrentStableDict
 
 from mdm import errors as errors_module
-from mdm.errors import OrgError, OrgErrorCode
+from mdm.errors import MdmError, MdmErrorCode
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 """mdm 仓根（本文件位于 `backend/tests/`）。"""
@@ -48,7 +48,7 @@ def _raised_status() -> ConcurrentStableDict[int, int]:
     """
     statuses: ConcurrentStableDict[int, int] = ConcurrentStableDict()
     for _, member in inspect.getmembers(errors_module, lambda item: isinstance(item, type)):
-        if not issubclass(member, OrgError) or member is OrgError:
+        if not issubclass(member, MdmError) or member is MdmError:
             continue
         error = member()
         statuses.set(error.code, error.http_status)
@@ -56,8 +56,8 @@ def _raised_status() -> ConcurrentStableDict[int, int]:
 
 
 def test_declared_codes_match_enum() -> None:
-    """码集合：声明与 `OrgErrorCode` 枚举完全一致（不漏登、不多登）。"""
-    assert set(_declared()) == {int(member) for member in OrgErrorCode}
+    """码集合：声明与 `MdmErrorCode` 枚举完全一致（不漏登、不多登）。"""
+    assert set(_declared()) == {int(member) for member in MdmErrorCode}
 
 
 def test_declared_status_matches_exception_classes() -> None:

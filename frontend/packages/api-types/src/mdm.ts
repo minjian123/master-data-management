@@ -945,28 +945,28 @@ export interface components {
              */
             message: string;
         };
-        /** ApiResponse[BasePageResponse[OrgPost]] */
-        ApiResponse_BasePageResponse_OrgPost__: {
+        /** ApiResponse[BasePageResponse[MdmPost]] */
+        ApiResponse_BasePageResponse_MdmPost__: {
             /**
              * Code
              * @default 0
              */
             code: number;
-            data?: components["schemas"]["BasePageResponse_OrgPost_"] | null;
+            data?: components["schemas"]["BasePageResponse_MdmPost_"] | null;
             /**
              * Message
              * @default ok
              */
             message: string;
         };
-        /** ApiResponse[BasePageResponse[OrgUser]] */
-        ApiResponse_BasePageResponse_OrgUser__: {
+        /** ApiResponse[BasePageResponse[MdmUser]] */
+        ApiResponse_BasePageResponse_MdmUser__: {
             /**
              * Code
              * @default 0
              */
             code: number;
-            data?: components["schemas"]["BasePageResponse_OrgUser_"] | null;
+            data?: components["schemas"]["BasePageResponse_MdmUser_"] | null;
             /**
              * Message
              * @default ok
@@ -1071,42 +1071,42 @@ export interface components {
              */
             message: string;
         };
-        /** ApiResponse[OrgDeptTree] */
-        ApiResponse_OrgDeptTree_: {
+        /** ApiResponse[MdmDeptTree] */
+        ApiResponse_MdmDeptTree_: {
             /**
              * Code
              * @default 0
              */
             code: number;
-            data?: components["schemas"]["OrgDeptTree"] | null;
+            data?: components["schemas"]["MdmDeptTree"] | null;
             /**
              * Message
              * @default ok
              */
             message: string;
         };
-        /** ApiResponse[OrgNameRefs] */
-        ApiResponse_OrgNameRefs_: {
+        /** ApiResponse[MdmNameRefs] */
+        ApiResponse_MdmNameRefs_: {
             /**
              * Code
              * @default 0
              */
             code: number;
-            data?: components["schemas"]["OrgNameRefs"] | null;
+            data?: components["schemas"]["MdmNameRefs"] | null;
             /**
              * Message
              * @default ok
              */
             message: string;
         };
-        /** ApiResponse[OrgUserRoles] */
-        ApiResponse_OrgUserRoles_: {
+        /** ApiResponse[MdmUserRoles] */
+        ApiResponse_MdmUserRoles_: {
             /**
              * Code
              * @default 0
              */
             code: number;
-            data?: components["schemas"]["OrgUserRoles"] | null;
+            data?: components["schemas"]["MdmUserRoles"] | null;
             /**
              * Message
              * @default ok
@@ -1211,10 +1211,10 @@ export interface components {
              */
             message: string;
         };
-        /** BasePageResponse[OrgPost] */
-        BasePageResponse_OrgPost_: {
+        /** BasePageResponse[MdmPost] */
+        BasePageResponse_MdmPost_: {
             /** List */
-            list: components["schemas"]["OrgPost"][];
+            list: components["schemas"]["MdmPost"][];
             /** Page */
             page: number;
             /** Size */
@@ -1222,10 +1222,10 @@ export interface components {
             /** Total */
             total: number;
         };
-        /** BasePageResponse[OrgUser] */
-        BasePageResponse_OrgUser_: {
+        /** BasePageResponse[MdmUser] */
+        BasePageResponse_MdmUser_: {
             /** List */
-            list: components["schemas"]["OrgUser"][];
+            list: components["schemas"]["MdmUser"][];
             /** Page */
             page: number;
             /** Size */
@@ -1500,15 +1500,15 @@ export interface components {
             primary_post_id?: number | null;
         };
         /**
-         * OrgDept
+         * MdmDept
          * @description 组织部门（嵌套树节点；部门树一次性返回、不分页）。
          */
-        OrgDept: {
+        MdmDept: {
             /**
              * Children
              * @description 子部门（嵌套树）
              */
-            children?: components["schemas"]["OrgDept"][];
+            children?: components["schemas"]["MdmDept"][];
             /**
              * Code
              * @description 部门编码（租户内唯一）
@@ -1543,21 +1543,21 @@ export interface components {
             status: string;
         };
         /**
-         * OrgDeptTree
+         * MdmDeptTree
          * @description 组织部门树响应（一次性返回、不分页；`items` 为根节点序列，子节点嵌套）。
          */
-        OrgDeptTree: {
+        MdmDeptTree: {
             /**
              * Items
              * @description 部门树根节点序列（`children` 嵌套）
              */
-            items?: components["schemas"]["OrgDept"][];
+            items?: components["schemas"]["MdmDept"][];
         };
         /**
-         * OrgNameRef
+         * MdmNameRef
          * @description 批量回显项（按 id 回显名称；已删除 / 停用不抛错，以字段标记）。
          */
-        OrgNameRef: {
+        MdmNameRef: {
             /**
              * Exists
              * @description 对象是否存在
@@ -1588,21 +1588,21 @@ export interface components {
             target: string;
         };
         /**
-         * OrgNameRefs
+         * MdmNameRefs
          * @description 名称回显响应（按请求插入序返回；未命中项占位）。
          */
-        OrgNameRefs: {
+        MdmNameRefs: {
             /**
              * Items
              * @description 回显项序列（保持请求插入序）
              */
-            items?: components["schemas"]["OrgNameRef"][];
+            items?: components["schemas"]["MdmNameRef"][];
         };
         /**
-         * OrgPost
+         * MdmPost
          * @description 组织岗位（展示所需最小字段）。
          */
-        OrgPost: {
+        MdmPost: {
             /**
              * Code
              * @description 岗位编码
@@ -1637,10 +1637,10 @@ export interface components {
             status: string;
         };
         /**
-         * OrgUser
+         * MdmUser
          * @description 组织用户（展示所需最小字段；手机号 / 邮箱默认脱敏）。
          */
-        OrgUser: {
+        MdmUser: {
             /**
              * Avatar
              * @description 头像地址
@@ -1680,10 +1680,10 @@ export interface components {
             username: string;
         };
         /**
-         * OrgUserRoles
+         * MdmUserRoles
          * @description 按用户解析其经岗位 / 部门获得的角色（并集去重；不含用户直接角色）。
          */
-        OrgUserRoles: {
+        MdmUserRoles: {
             /**
              * Role Ids
              * @description 角色 id 集合（岗位链在前、部门链补入，去重）
@@ -1954,7 +1954,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_OrgDeptTree_"];
+                    "application/json": components["schemas"]["ApiResponse_MdmDeptTree_"];
                 };
             };
             /** @description 未认证 */
@@ -2041,7 +2041,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_BasePageResponse_OrgPost__"];
+                    "application/json": components["schemas"]["ApiResponse_BasePageResponse_MdmPost__"];
                 };
             };
             /** @description 未认证 */
@@ -2128,7 +2128,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_BasePageResponse_OrgUser__"];
+                    "application/json": components["schemas"]["ApiResponse_BasePageResponse_MdmUser__"];
                 };
             };
             /** @description 未认证 */
@@ -3713,7 +3713,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_OrgNameRefs_"];
+                    "application/json": components["schemas"]["ApiResponse_MdmNameRefs_"];
                 };
             };
             /** @description 未认证 */
@@ -4893,7 +4893,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_OrgUserRoles_"];
+                    "application/json": components["schemas"]["ApiResponse_MdmUserRoles_"];
                 };
             };
             /** @description 未认证 */

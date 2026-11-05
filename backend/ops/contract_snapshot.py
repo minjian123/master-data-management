@@ -10,7 +10,7 @@
 - **快照生成走内存构建**：动态导入各在运服务 `ApplicationFactory`，`create(None)` 构造应用后取
   `app.openapi()`（不启 lifespan、不连库）；渲染与校验复用 `bms_core.services.service_contract`；
 - **产品侧自持**：平台侧 `enabled_service_records()` 排除产品分组服务（其契约不在 bms
-  `deploy/contracts/`），故本 CLI 遍历**本产品清单**（`MDM_SERVICE_RECORDS`）导出 `org.json`；
+  `deploy/contracts/`），故本 CLI 遍历**本产品清单**（`MDM_SERVICE_RECORDS`）导出 `mdm.json`；
 - **确定性**：同代码 → 同文本（缩进 2 / 键排序 / 非 ASCII 直出），供 Git 比对与零漂移校验；
 - **契约基线与破坏性变更门禁**（oasdiff）在有业务端点（01_02 / 01_03）后引入，本期仅快照 + 零漂移。
 """

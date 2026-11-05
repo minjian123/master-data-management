@@ -64,11 +64,11 @@ strategies = ["select", "match"]
 status = "enabled"
 
 # ---- 能力（第五类记录）----
-# 能力名 = {产品}.{对象}.{能力}；domain 是**业务域**（mdm），不是数据对象（org / ref / sup）。
+# 能力名 = {产品}.{对象}.{能力}；domain 是**业务域**（mdm），与能力名第二段的数据对象不是同一概念。
 # 访问面须能在本仓公开契约 `deploy/contracts/mdm.json` 的 paths 中定位（参数名归一化比较）。
 
 [[collaborations]]
-name = "mdm.org.user-roles"
+name = "mdm.mdm.user-roles"
 domain = "mdm"
 kind = "read"
 path = "/api/v1/mdm/user-roles"
@@ -76,7 +76,7 @@ contract_version = "0.1.0"
 default_consumers = ["platform"]
 
 [[collaborations]]
-name = "mdm.org.user-posts.assign"
+name = "mdm.mdm.user-posts.assign"
 domain = "mdm"
 kind = "txn-branch"
 path = "/api/v1/mdm/internal/user-posts/{user_id}"
@@ -86,7 +86,7 @@ contract_version = "0.1.0"
 default_consumers = ["platform"]
 
 [[collaborations]]
-name = "mdm.org.user-depts.assign"
+name = "mdm.mdm.user-depts.assign"
 domain = "mdm"
 kind = "txn-branch"
 path = "/api/v1/mdm/internal/user-depts/{user_id}"
@@ -96,7 +96,7 @@ contract_version = "0.1.0"
 default_consumers = ["platform"]
 
 [[collaborations]]
-name = "mdm.org.role-posts.assign"
+name = "mdm.mdm.role-posts.assign"
 domain = "mdm"
 kind = "txn-branch"
 path = "/api/v1/mdm/internal/role-posts/{role_id}"
@@ -106,7 +106,7 @@ contract_version = "0.1.0"
 default_consumers = ["platform"]
 
 [[collaborations]]
-name = "mdm.org.role-depts.assign"
+name = "mdm.mdm.role-depts.assign"
 domain = "mdm"
 kind = "txn-branch"
 path = "/api/v1/mdm/internal/role-depts/{role_id}"
@@ -116,7 +116,7 @@ contract_version = "0.1.0"
 default_consumers = ["platform"]
 
 [[collaborations]]
-name = "mdm.org.dept-data"
+name = "mdm.mdm.dept-data"
 domain = "mdm"
 kind = "dataset"
 path = "/api/v1/mdm/data-source/dept-tree"
@@ -126,7 +126,7 @@ contract_version = "0.1.0"
 default_consumers = ["platform"]
 
 [[collaborations]]
-name = "mdm.org.post-data"
+name = "mdm.mdm.post-data"
 domain = "mdm"
 kind = "dataset"
 path = "/api/v1/mdm/data-source/posts"
@@ -136,7 +136,7 @@ contract_version = "0.1.0"
 default_consumers = ["platform"]
 
 [[collaborations]]
-name = "mdm.org.admin-codes"
+name = "mdm.mdm.admin-codes"
 domain = "mdm"
 kind = "codes"
 permission_codes = ["mdm:query", "mdm:create", "mdm:update", "mdm:delete"]
@@ -166,7 +166,7 @@ sys_permission = "business_id,action_id"
 
 # ---- 错误码（第七类记录）----
 # 段位取自本文件服务行 `errcode_segment = "33"`（6 位码 = 2 位段 + 4 位序号，不手写段）；
-# 与 `backend/services/org/src/mdm/errors.py` 的 `OrgErrorCode` 枚举及异常类 `http_status_` 逐条对齐
+# 与 `backend/services/mdm/src/mdm/errors.py` 的 `MdmErrorCode` 枚举及异常类 `http_status_` 逐条对齐
 # （对账断言见 `backend/tests/test_error_code_declaration.py`）。文案键格式 `<product>.error.<snake>`。
 
 [[errcodes]]
@@ -341,7 +341,7 @@ description = "角色-部门分配不存在"
 code = 330101
 domain = "mdm"
 http_status = 200
-message_key = "mdm.error.org_source_unavailable"
+message_key = "mdm.error.mdm_source_unavailable"
 severity = "error"
 description = "用户来源不可达 / 未装配（组织只读出口的用户维度取数通道）"
 
@@ -383,10 +383,10 @@ name = "mdm 主数据"
 service_key = "mdm"
 status = "placement"
 paths = [
-  "backend/services/org/src/mdm/org/**/*.py",
-  "backend/services/org/src/mdm/models/**/*.py",
-  "backend/services/org/src/mdm/repositories/**/*.py",
-  "backend/services/org/src/mdm/schemas/**/*.py",
-  "backend/services/org/src/mdm/services/**/*.py",
+  "backend/services/mdm/src/mdm/mdm/**/*.py",
+  "backend/services/mdm/src/mdm/models/**/*.py",
+  "backend/services/mdm/src/mdm/repositories/**/*.py",
+  "backend/services/mdm/src/mdm/schemas/**/*.py",
+  "backend/services/mdm/src/mdm/services/**/*.py",
 ]
-public_api = ["mdm.org"]
+public_api = ["mdm.mdm"]

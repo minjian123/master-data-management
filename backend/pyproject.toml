@@ -61,7 +61,7 @@ include = ["services"]
 # alembic 迁移脚本不纳入类型检查（含大量动态写法）
 ignore = ["alembic"]
 # src 布局：把服务源码根加入解析路径，供 `import mdm` 与严格类型检查
-extraPaths = ["services/org/src"]
+extraPaths = ["services/mdm/src"]
 # 共享基座 `bms-core` 为**跨仓安装包**（site-packages，未随包发布 `py.typed` 声明）：
 # 缺 stub 提示降级；自有代码仍按 strict 全量检查（基座侧以源码形式纳入其本仓检查）。
 reportMissingTypeStubs = false
@@ -73,12 +73,12 @@ asyncio_mode = "auto"
 #   并挂上重命令 / 全量测试守卫；仓内不再另写采集或拦截实现（口径见 engkit《工程化工具包说明》§4.4）
 addopts = "--import-mode=importlib -p engkit.coverage_plugin"
 testpaths = [
-    "services/org/tests",
+    "services/mdm/tests",
     "tests",
 ]
 pythonpath = [
     ".",
-    "services/org/src",
+    "services/mdm/src",
 ]
 markers = [
     "kiwi_id: Kiwi TCMS 用例编号（如 @pytest.mark.kiwi_id(1)）",

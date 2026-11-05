@@ -891,7 +891,7 @@ wheels = [
 [[package]]
 name = "mdm"
 version = "0.1.0"
-source = { editable = "services/org" }
+source = { editable = "services/mdm" }
 dependencies = [
     { name = "bms-core" },
     { name = "fastapi" },

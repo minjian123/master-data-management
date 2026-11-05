@@ -26,7 +26,7 @@ const srcDir = join(pkgDir, 'src')
 /**
  * 生成文件头（统一标注「勿手改」与来源）。
  *
- * @param domain 域简称（如 `org`）。
+ * @param domain 域简称（如 `mdm`）。
  * @param source 快照相对路径。
  * @returns 头部注释文本。
  */

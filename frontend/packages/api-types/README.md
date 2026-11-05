@@ -1,10 +1,10 @@
 # 产品契约类型包（frontend/packages/api-types）
 
-> `@mdm/api-types`：由 mdm **产品自持**契约快照生成的前端类型（按域一份，当前 `org`）。
+> `@mdm/api-types`：由 mdm **产品自持**契约快照生成的前端类型（按域一份，当前 `mdm`）。
 
 ## 定位
 
-- 消费产品契约快照生成前端类型，供 mdm 模块（当前 `@mdm/module_org`）与后续消费方共享同一套接口类型。
+- 消费产品契约快照生成前端类型，供 mdm 模块（当前 `@mdm/module_mdm`）与后续消费方共享同一套接口类型。
 - **事实源是产品契约快照**：`mdm/deploy/contracts/<域>.json`（由后端 `ops.contract_snapshot export` 产出）。
   与 bms 侧 `@bms/api_types` 的关系：**并列、互不混用**——平台服务契约类型取 bms 包，产品契约类型取本包。
 - **生成物不手改**：`src/*.ts` 由 `scripts/generate.mjs` 产出；后端端点变更后重生成。
@@ -25,7 +25,7 @@ pnpm run api-types:check        # gen:check + typecheck + lint + test 聚合
 frontend/packages/api-types/
 ├── src/
 │   ├── index.ts    # 包根出口（按域命名空间导出）
-│   └── org.ts      # 组织域契约类型（`mdm_dept` / `mdm_post` 等 schema 与端点）
+│   └── mdm.ts      # 组织域契约类型（`mdm_dept` / `mdm_post` 等 schema 与端点）
 ├── scripts/        # generate.mjs（契约快照 → 类型；`--check` 零漂移）
 └── tests/          # 生成物一致性用例（覆盖快照全部路径 / 导出面 / 生成头）
 ```

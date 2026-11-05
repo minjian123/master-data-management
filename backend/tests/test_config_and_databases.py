@@ -57,12 +57,12 @@ def test_env_var_overrides_toml(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 async def test_service_identity_written_back_to_settings(service_app: FastAPI) -> None:
-    """服务身份回写：应用装配后服务标识为 `org`（链名 / 库名 / 探针响应的共同来源）。"""
+    """服务身份回写：应用装配后服务标识为 `mdm`（链名 / 库名 / 探针响应的共同来源）。"""
     assert service_app.state.service_identity.name == "mdm"
     assert get_settings().app.service == "mdm"
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 async def test_event_domains_include_product_domain(service_app: FastAPI) -> None:
-    """事件契约域取应用级视图：产品服务自有事件域 `org` 随注入记录生效（01_03 事件发布前置）。"""
+    """事件契约域取应用级视图：产品服务自有事件域 `mdm` 随注入记录生效（01_03 事件发布前置）。"""
     assert "mdm" in service_app.state.module_registry.event_domains()

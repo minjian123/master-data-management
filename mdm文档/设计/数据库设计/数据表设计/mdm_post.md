@@ -11,7 +11,7 @@
 | 归属库 | mdm 租户库 `mdm_{code}`（归属服务 `mdm`） |
 | 覆盖模块 | 02-岗位管理（岗位定义） |
 | 上游依据 | 《[概要设计 · 岗位管理](../../概要设计/02_概要设计_岗位管理.md)》、《[架构设计 · 总览](../../架构设计/01_架构设计_总览.md)》「域服务划分与数据边界」节 |
-| ORM 模型 | `mdm/models/post.py::OrgPost`（继承 `BaseModel`） |
+| ORM 模型 | `mdm/models/post.py::MdmPost`（继承 `BaseModel`） |
 | 状态 | 已落库（需求 `01-2` / 任务 `01_02`，2026-10-07；岗位码「创建后不可改」于 2026-10-08 放开；系统字段 `form_key` / `parent_id` 随嵌套子任务 `02-04` 于 2026-10-22 补齐） |
 | 相关节点 | [数据库设计总览](../01_数据库设计_总览.md)、[mdm_dept](mdm_dept.md)、[mdm_user_post](mdm_user_post.md)、[mdm_role_post](mdm_role_post.md) |
 
@@ -62,6 +62,6 @@
 | 2026-10-07 | v1 | 新建表结构（mdm 组织域，自 bms 概要设计 08 迁入） | minjian |
 | 2026-10-08 | v2 | 岗位码由「创建后不可改」放开为可改（仅应用层行为，无结构变更） | minjian |
 | 2026-10-22 | v3 | 系统字段对齐：增 `form_key`（表单标识，固定 `mdm_post`）+ 复合唯一 `uq_mdm_post_form_key_deleted_at`，增 `parent_id`（非层级字典冗余、可空、不建索引）；存量按 DDL 缺省回填（迁移 `0005_mdm_form_key`，任务 `01_02/_04`） | minjian |
-| 2026-10-23 | v4 | 服务标识归并（任务 `01_05`）：表名 `org_*` → `mdm_*`、迁移链 `mdm:tenant` → `mdm:tenant`、库 `mdm_org_{code}` → `mdm_{code}`；约束 / 索引名同步为 `uq_mdm_*` / `idx_mdm_*` | minjian |
+| 2026-10-23 | v4 | 服务标识归并（任务 `01_05`）：表名 `mdm_*` → `mdm_*`、迁移链 `mdm:tenant` → `mdm:tenant`、库 `mdm_{code}` → `mdm_{code}`；约束 / 索引名同步为 `uq_mdm_*` / `idx_mdm_*` | minjian |
 
 > 数据表设计 · 与 bms《数据库开发规范》「数据表文件规范」节配套

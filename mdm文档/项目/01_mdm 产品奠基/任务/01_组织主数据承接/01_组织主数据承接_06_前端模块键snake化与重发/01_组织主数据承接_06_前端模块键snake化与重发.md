@@ -12,20 +12,20 @@
 | 父任务 | [01_组织主数据承接](../01_组织主数据承接.md) |
 | 对应需求 | [01-7](../../../需求/01_需求_组织主数据承接.md#r01-7) |
 | 依赖 | `01_04`（前端工程与运行时模块，已交付）、`01_05`（服务标识归并，已交付） |
-| 前置事实 | bms `07C 03_03` 已把 `MODULE_NAME_PATTERN` 收紧为 snake_case（2026-10-25），`mdm-org` 会被宿主拒载 |
+| 前置事实 | bms `07C 03_03` 已把 `MODULE_NAME_PATTERN` 收紧为 snake_case（2026-10-25），`mdm-mdm` 会被宿主拒载 |
 | 负责人 | minjian |
 
 ## 2. 任务内容 <a id="content"></a>
 
-1. **模块标识**：`manifest.name` 与 Module Federation 容器名 `MODULE_NAME` 改 `mdm_org`。
-2. **派生键**：四个插件 / 区域项键、两个 i18n 文案包键前缀改 `mdm_org:`。
-3. **包名与样式前缀**：`@mdm/module-org` → `@mdm/module_org`（工作区与脚本同步）；CSS 前缀 `.mdm-org-` → `.mdm_org-`。
+1. **模块标识**：`manifest.name` 与 Module Federation 容器名 `MODULE_NAME` 改 `mdm`。
+2. **派生键**：四个插件 / 区域项键、两个 i18n 文案包键前缀改 `mdm:`。
+3. **包名与样式前缀**：`@mdm/module-mdm` → `@mdm/module_mdm`（工作区与脚本同步）；CSS 前缀 `.mdm-mdm-` → `.mdm-`。
 4. **测试与现行文档**：模块定义 / 注册 / 构建断言同步；现行架构 / 需求 / 任务文档改新口径（历史记录保留原文）；`data-test` 属性值不改。
-5. **重发与下线**：重建产物、跨仓发布演练；旧 `mdm-org` 不再登记（不留双形态）。
+5. **重发与下线**：重建产物、跨仓发布演练；旧 `mdm-mdm` 不再登记（不留双形态）。
 
 ## 3. 完成标准 <a id="accept"></a>
 
-mdm 仓 `frontend/` 的 `src` / `tests` / 构建配置与现行文档无 `mdm-org` 残留；前端 `lint` / `typecheck` / 全量用例 / 构建通过；新产物可被 bms 宿主按 `MODULE_NAME_PATTERN` 接受并加载；发布条目与宿主清单按 `mdm_org` 登记，旧条目下线。
+mdm 仓 `frontend/` 的 `src` / `tests` / 构建配置与现行文档无 `mdm-mdm` 残留；前端 `lint` / `typecheck` / 全量用例 / 构建通过；新产物可被 bms 宿主按 `MODULE_NAME_PATTERN` 接受并加载；发布条目与宿主清单按 `mdm` 登记，旧条目下线。
 
 ## 4. 参考文档 <a id="ref"></a>
 

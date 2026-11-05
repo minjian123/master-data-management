@@ -1,5 +1,5 @@
 # MDM 主数据仓库流水线
-# 现状：产品工程骨架与平台接入（01_01）+ 组织主数据域实现（01_02）——uv workspace + org 服务（五表 + 管理面端点）
+# 现状：产品工程骨架与平台接入（01_01）+ 组织主数据域实现（01_02）——uv workspace + mdm 服务（五表 + 管理面端点）
 #       + 运维脚本 + 公开契约快照 + 事件契约快照 + **前端工作区（01_04：组织域运行时模块 + 契约类型包）**
 #       + **运行镜像构建与推送（01_07：首次部署）**。
 # 门禁：门禁冒烟（无条件必跑）/ ruff / pyright（strict）/ pytest + 覆盖率（engkit 采集口径）/ 离线清单 +
@@ -228,7 +228,7 @@ frontend-lint:
     - *frontend-setup
     - pnpm run lint
     - pnpm run api-types:typecheck
-    - pnpm run org:typecheck
+    - pnpm run mdm:typecheck
 
 frontend-test:
   stage: test
@@ -240,11 +240,11 @@ frontend-test:
     - pnpm run api-types:test
     # 模块用例 + 覆盖率采集（行 + 分支；门禁阈值口径见《AI开发规范》「覆盖率要求」节，
     # 本地按变更源文件 `--coverage.include=… --coverage.thresholds.lines=100 --coverage.thresholds.branches=100` 收口）
-    - pnpm --filter @mdm/module_org run test:cov
+    - pnpm --filter @mdm/module_mdm run test:cov
   coverage: '/^All files\s*\|\s*(\d+(?:\.\d+)?)/'
   artifacts:
     when: always
-    paths: [frontend/modules/org/coverage/]
+    paths: [frontend/modules/mdm/coverage/]
     expire_in: 30 days
 
 frontend-build:
@@ -252,19 +252,19 @@ frontend-build:
   image: node:24
   script:
     - *frontend-setup
-    - pnpm run org:build
+    - pnpm run mdm:build
     # 体积预算（复用平台 module-metrics 单一计量）
-    - pnpm run org:budget
+    - pnpm run mdm:budget
     # 产物面隔离扫描（平台护栏同判据）
-    - pnpm run org:guard
+    - pnpm run mdm:guard
   artifacts:
     # 部署侧用（01_07）：服务器不装 node / pnpm，按 SHA 取本产物后经 `node:24` 容器跑
     # bms `release-module.mjs publish`（四关校验 + 清单登记）。归档「模块工程元数据 + 产物」两件：
     # 发布脚本要读 `package.json` 判定模块名 / 版本，只给 dist 会被拒（缺工程清单）。
     when: on_success
     paths:
-      - frontend/modules/org/dist/
-      - frontend/modules/org/package.json
+      - frontend/modules/mdm/dist/
+      - frontend/modules/mdm/package.json
     expire_in: 30 days
 
 # ---- 运行镜像：按 SHA 构建并推 GitLab Registry（01_07 首次部署）----
