@@ -24,6 +24,10 @@ x-service-env: &service-env
   BMS_DATABASE__PLATFORM__PASSWORD: ${BMS_DATABASE__PLATFORM__PASSWORD:-}
   BMS_DATABASE__TENANTS__URL_TEMPLATE: ${BMS_DATABASE__TENANTS__URL_TEMPLATE:?}
   BMS_DATABASE__TENANTS__PASSWORD: ${BMS_DATABASE__TENANTS__PASSWORD:-}
+  # 归档库（config.toml 缺省为 SQLite 文件；部署态必须显式指向平台 MySQL，
+  # 否则归档链落到容器内临时文件——一次性迁移容器退出即丢，归档数据「假建成」）
+  BMS_DATABASE__ARCHIVE__URL: ${BMS_DATABASE__ARCHIVE__URL:-mysql+aiomysql://mdm_app@mysql:3306/mdm_archive}
+  BMS_DATABASE__ARCHIVE__PASSWORD: ${BMS_DATABASE__ARCHIVE__PASSWORD:-}
   # 外部依赖（Compose DNS，禁硬编码 IP）
   BMS_REDIS__URL: ${BMS_REDIS__URL:-redis://redis:6379/0}
   BMS_TRACER__OTLP_ENDPOINT: ${BMS_TRACER__OTLP_ENDPOINT:-http://otel-collector:4318}
