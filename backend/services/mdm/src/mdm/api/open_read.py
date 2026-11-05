@@ -30,7 +30,7 @@ from bms_core.collaboration.grant import check_capability_access
 from bms_core.config.base import BaseConfigSource
 from bms_core.core.concurrent import ConcurrentStableList
 from bms_core.core.config import Settings
-from bms_core.core.exceptions import AuthError, ParamError, PermissionError
+from bms_core.core.exceptions import AuthError, ParamError
 from bms_core.core.logging import get_logger
 from bms_core.core.plugin import resolve_plugin
 from bms_core.db.session import DbSession
@@ -117,6 +117,8 @@ async def require_user_roles_reader(
 
     与 `require_mdm_reader` 的差别只有一处：服务间调用不再按调用方白名单，而是判定该服务对
     `mdm.mdm.user-roles` 是否有有效分配（`07B 03_01` 收编口径）；登录态通道（前端菜单取数）不变。
+    网关代发的服务票据（`sub=gateway`）不是能力消费方，按北南向处理：回落登录态校验，
+    由 `X-User-Id` 等身份头组装真实用户，绝不因「网关票据」直接放行能力出口。
 
     Args:
         request: 请求对象。
@@ -126,7 +128,7 @@ async def require_user_roles_reader(
 
     Raises:
         AuthError: 缺少 / 无效凭证（20001 / 401）。
-        PermissionError: 服务身份无有效分配 / 授权已过期 / 网关代发票据（30001 / 403）。
+        PermissionError: 服务身份无有效分配 / 授权已过期（30001 / 403）。
         CatalogError: 能力未登记或授权视图来源未装配（配置漂移，拒启级）。
         SessionAuthError: 登录态会话标记缺失 / 不一致（20012 / 401）。
     """
@@ -135,7 +137,8 @@ async def require_user_roles_reader(
         service = await _service_identity(verifier, token)
         if service is not None:
             if service == DEFAULT_GATEWAY_SERVICE_IDENTITY:
-                raise PermissionError(f"网关代发的服务票据不得作为能力消费方：{CAPABILITY_MDM_USER_ROLES}")
+                await require_auth(request, verifier, store)
+                return
             await check_capability_access(CAPABILITY_MDM_USER_ROLES, service, metrics=metrics)
             return
     await require_auth(request, verifier, store)

@@ -286,6 +286,10 @@ async def test_mdm_reader_gateway_service_token_falls_back_to_auth(monkeypatch: 
     await require_mdm_reader(request, _VerifierStub(service="gateway"), None)  # type: ignore[arg-type]
     assert called == [True]
 
+    called.clear()
+    await require_user_roles_reader(request, _VerifierStub(service="gateway"), None, None)  # type: ignore[arg-type]
+    assert called == [True]
+
     # 缺服务标识仍按「不可识别服务身份」拒绝，不借网关分支放行
     with pytest.raises(AuthError):
         await require_mdm_reader(request, _VerifierStub(service=""), None)  # type: ignore[arg-type]
@@ -315,11 +319,10 @@ async def test_user_roles_service_identity_uses_capability_grant(
         assert "identity" in denied.json()["message"]
 
         # 网关代发的服务票据只代表「请求来自网关」：即便有分配也不得作为能力消费方
-        grant_source.grant(CAPABILITY_MDM_USER_ROLES, consumer="gateway")
+        # 网关代发服务票据不再作为能力消费方，回落登录态校验；无边缘身份 → 401
         service_app.dependency_overrides[get_token_verifier] = lambda: _VerifierStub(service="gateway")
         gateway = await client.get(f"{EXIT_BASE}/user-roles", params={"user_id": 2001}, headers=headers)
-        assert gateway.status_code == 403 and gateway.json()["code"] == 30001
-        assert "网关代发" in gateway.json()["message"]
+        assert gateway.status_code == 401 and gateway.json()["code"] == 20001
 
         # 登录态通道不受影响：非服务令牌回落 `require_auth`，替身对 api 受众同样拒 → 401
         service_app.dependency_overrides[get_token_verifier] = lambda: _VerifierStub()
