@@ -48,7 +48,9 @@ COPY mdm/backend/services/org/pyproject.toml services/org/pyproject.toml
 RUN uv sync --frozen --no-dev --no-install-workspace --package mdm && rm -rf /root/.cache
 
 # 工作区成员源码（产品服务清单模块 + 目标服务）
-COPY mdm/backend/services/module_registry.py services/module_registry.py
+# `services/*.py` 是**产品自持清单**（服务目录 / 表归属 / 表单标识），`ops.migrate` / `ops.provision`
+# 与启动期表归属注入都依赖它——只拷 `module_registry.py` 会让迁移 / 建库容器在镜像内 `ModuleNotFound`。
+COPY mdm/backend/services/*.py services/
 COPY mdm/backend/services/${SERVICE}/src services/${SERVICE}/src
 RUN uv sync --frozen --no-dev --package mdm && rm -rf /root/.cache
 
