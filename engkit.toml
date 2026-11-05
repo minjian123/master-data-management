@@ -194,7 +194,7 @@ plan_id_pattern = '^\d{2}_\d{2}$'
 [rules.prototype]
 record_pattern = '^mdm文档/项目/[^/]+/任务/.+/测试/[^/]+\.md$'
 context_pattern = '^mdm文档/项目/[^/]+/任务/.+/(设计|实施|测试)/[^/]+\.md$'
-prototype_ref_pattern = '设计/((?:原型设计|组件设计)/[^\s()\[\]"`<>|]*\.html)'
+prototype_ref_pattern = '(设计/(?:原型设计|组件设计)/[^\s()\[\]"`<>|{},]*\.html)'
 ui_patterns = ['^frontend/.*\.vue$']
 section_heading = '^##.*原型'
 screenshot_pattern = '\]\(([^)\s]+\.png)\)'
