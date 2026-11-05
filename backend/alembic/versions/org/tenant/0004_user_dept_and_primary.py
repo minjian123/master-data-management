@@ -16,6 +16,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import sqlalchemy as sa
+from bms_core.models.base import SnowflakeId
 
 from alembic import op
 
@@ -41,11 +42,11 @@ def _common_columns() -> tuple[sa.Column[Any], ...]:
         tuple[sa.Column[Any], ...]: 公共列元组（每次调用返回新实例）。
     """
     return (
-        sa.Column("id", sa.BigInteger(), primary_key=True, comment="主键（雪花 ID）"),
+        sa.Column("id", SnowflakeId, primary_key=True, comment="主键（雪花 ID）"),
         sa.Column("created_at", sa.DateTime(), nullable=False, comment="创建时间（UTC）"),
-        sa.Column("created_by", sa.BigInteger(), nullable=True, comment="创建人"),
+        sa.Column("created_by", SnowflakeId, nullable=True, comment="创建人"),
         sa.Column("updated_at", sa.DateTime(), nullable=False, comment="更新时间（UTC）"),
-        sa.Column("updated_by", sa.BigInteger(), nullable=True, comment="更新人"),
+        sa.Column("updated_by", SnowflakeId, nullable=True, comment="更新人"),
         sa.Column("deleted_at", sa.DateTime(), nullable=True, comment="软删除时间（NULL=未删）"),
         sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1"), comment="乐观锁版本"),
     )
@@ -56,8 +57,8 @@ def upgrade() -> None:
     op.create_table(
         "mdm_user_dept",
         *_common_columns(),
-        sa.Column("user_id", sa.BigInteger(), nullable=False, comment=USER_ID_COMMENT),
-        sa.Column("dept_id", sa.BigInteger(), nullable=False, comment=DEPT_ID_COMMENT),
+        sa.Column("user_id", SnowflakeId, nullable=False, comment=USER_ID_COMMENT),
+        sa.Column("dept_id", SnowflakeId, nullable=False, comment=DEPT_ID_COMMENT),
         sa.Column("is_primary", sa.Boolean(), nullable=False, comment=PRIMARY_COMMENT),
         sa.UniqueConstraint("user_id", "dept_id", "deleted_at", name="uq_mdm_user_dept_user_dept_deleted_at"),
     )

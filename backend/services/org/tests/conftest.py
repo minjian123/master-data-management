@@ -35,3 +35,15 @@ __all__ = [
     "shared_tenant_engine",
     "tenant_db_prepare",
 ]
+
+
+def pytest_sessionstart(session: object) -> None:
+    """会话起始：清空共享测试库并钉定工程根（工程级 rootdir 也要执行，口径同工作区根）。
+
+    Args:
+        session: pytest 会话对象（未使用）。
+    """
+    del session
+    from tests_support.fixtures import prepare_shared_db_session
+
+    prepare_shared_db_session()

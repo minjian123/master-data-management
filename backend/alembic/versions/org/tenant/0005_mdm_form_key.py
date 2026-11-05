@@ -19,6 +19,7 @@ Create Date: 2026-10-22
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+from bms_core.models.base import SnowflakeId
 
 from alembic import op
 
@@ -71,7 +72,7 @@ def upgrade() -> None:
                 comment=FORM_KEY_COMMENT,
             )
         )
-        batch.add_column(sa.Column("parent_id", sa.BigInteger(), nullable=True, comment=PARENT_ID_COMMENT))
+        batch.add_column(sa.Column("parent_id", SnowflakeId, nullable=True, comment=PARENT_ID_COMMENT))
     with op.batch_alter_table("mdm_post") as batch:
         batch.alter_column(
             "form_key",

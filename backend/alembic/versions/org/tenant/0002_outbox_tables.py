@@ -14,6 +14,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import sqlalchemy as sa
+from bms_core.models.base import SnowflakeId
 
 from alembic import op
 
@@ -30,11 +31,11 @@ def _base_columns() -> tuple[sa.Column[Any], ...]:
         tuple[sa.Column[Any], ...]: 公共列元组。
     """
     return (
-        sa.Column("id", sa.BigInteger(), primary_key=True, comment="主键（雪花 ID）"),
+        sa.Column("id", SnowflakeId, primary_key=True, comment="主键（雪花 ID）"),
         sa.Column("created_at", sa.DateTime(), nullable=False, comment="创建时间（UTC）"),
-        sa.Column("created_by", sa.BigInteger(), nullable=True, comment="创建人"),
+        sa.Column("created_by", SnowflakeId, nullable=True, comment="创建人"),
         sa.Column("updated_at", sa.DateTime(), nullable=False, comment="更新时间（UTC）"),
-        sa.Column("updated_by", sa.BigInteger(), nullable=True, comment="更新人"),
+        sa.Column("updated_by", SnowflakeId, nullable=True, comment="更新人"),
         sa.Column("deleted_at", sa.DateTime(), nullable=True, comment="软删除时间（NULL=未删）"),
         sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1"), comment="乐观锁版本"),
     )
@@ -55,7 +56,7 @@ def upgrade() -> None:
             comment="事件契约版本（X.Y.Z）",
         ),
         sa.Column("aggregate_key", sa.String(length=128), nullable=True, comment="聚合 / 分区键（同聚合按序）"),
-        sa.Column("tenant_id", sa.BigInteger(), nullable=True, comment="租户主键（雪花 id）"),
+        sa.Column("tenant_id", SnowflakeId, nullable=True, comment="租户主键（雪花 id）"),
         sa.Column("payload", sa.JSON(), nullable=False, comment="事件负载"),
         sa.Column("occurred_at", sa.DateTime(), nullable=False, comment="事件发生时间（UTC）"),
         sa.Column(
@@ -89,7 +90,7 @@ def upgrade() -> None:
         sa.Column("event_type", sa.String(length=128), nullable=False, comment="事件类型"),
         sa.Column("consumer", sa.String(length=128), nullable=True, comment="消费者标识（source=consumer）"),
         sa.Column("aggregate_key", sa.String(length=128), nullable=True, comment="聚合 / 分区键"),
-        sa.Column("tenant_id", sa.BigInteger(), nullable=True, comment="租户主键（雪花 id）"),
+        sa.Column("tenant_id", SnowflakeId, nullable=True, comment="租户主键（雪花 id）"),
         sa.Column("payload", sa.JSON(), nullable=False, comment="事件负载（便于重投 / 排障）"),
         sa.Column("error_msg", sa.String(length=512), nullable=False, comment="失败原因（截断）"),
         sa.Column("retry_count", sa.Integer(), nullable=False, server_default=sa.text("0"), comment="已重试次数"),

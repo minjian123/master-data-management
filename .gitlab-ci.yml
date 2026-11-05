@@ -1,10 +1,12 @@
 # MDM 主数据仓库流水线
 # 现状：产品工程骨架与平台接入（01_01）+ 组织主数据域实现（01_02）——uv workspace + org 服务（五表 + 管理面端点）
-#       + 运维脚本 + 公开契约快照 + 事件契约快照 + **前端工作区（01_04：组织域运行时模块 + 契约类型包）**。
-# 门禁：门禁冒烟（无条件必跑）/ ruff / pyright（strict）/ pytest + 覆盖率 / 离线清单 + 公开契约零漂移 + 事件契约零漂移
-#       + 文档（链接与锚点 / 文档口径，跨仓工程化工具包 engkit）
-#       + 前端（契约类型零漂移 / 类型检查 / lint / 用例 / 模块构建体积预算与产物面隔离）。
-# 未启用（随后续任务引入）：镜像构建与扫描、三库（MySQL / PostgreSQL / DM8）集成、服务子流水线、E2E、Allure。
+#       + 运维脚本 + 公开契约快照 + 事件契约快照 + **前端工作区（01_04：组织域运行时模块 + 契约类型包）**
+#       + **运行镜像构建与推送（01_07：首次部署）**。
+# 门禁：门禁冒烟（无条件必跑）/ ruff / pyright（strict）/ pytest + 覆盖率（engkit 采集口径）/ 离线清单 +
+#       公开契约零漂移 + 事件契约零漂移 + 文档（链接与锚点 / 文档口径，跨仓工程化工具包 engkit）
+#       + 前端（契约类型零漂移 / 类型检查 / lint / 用例 / 模块构建体积预算与产物面隔离）
+#       + 镜像（按 SHA 推 GitLab Registry）。
+# 未启用（随后续任务引入）：镜像扫描、三库（MySQL / PostgreSQL / DM8）集成、服务子流水线、E2E、Allure。
 
 workflow:
   rules:
@@ -19,6 +21,7 @@ workflow:
 stages:
   - lint
   - test
+  - build
 
 default:
   tags: [mdm]
@@ -163,14 +166,33 @@ backend-test:
   stage: test
   variables:
     BMS_ENV: test
+    # 覆盖率采集口径（01_07）：与本地预检同源——`engkit.coverage_plugin` 按 `MDM_COVERAGE_DATA` 落盘
+    # （xdist worker 各落 `<基址>.<pid>`），再由 `engkit coverage` 合并判定，不再用 `pytest --cov`。
+    # 键位与 `engkit.toml` 的 `[coverage]` 一致；源范围 = 被测包（mdm / services / ops）。
+    MDM_COVERAGE_DATA: $CI_PROJECT_DIR/.cache/coverage/.coverage
+    MDM_COVERAGE_SOURCE: mdm,services,ops
   script:
     - *backend-setup
-    # 覆盖率硬门禁：行 + 分支 100%（与其他仓统一，不设例外）
+    # 测试库隔离（2026-11-05）：runner 工作区跨作业 / 跨流水线复用，共享测试库
+    # （`.cache/test/{platform,tenant}.db`）会残留上一轮数据；本次起 mdm 自己的 `pytest_sessionstart`
+    # 会在会话开始清库，这里再显式清一次目录与全部 `*.db`，双保险（防止清理失败时静默沿用旧库）。
+    - rm -rf "$CI_PROJECT_DIR/.cache/test" "$CI_PROJECT_DIR/.cache/coverage"
+    - find "$CI_PROJECT_DIR" -name '*.db' -not -path '*/.git/*' -delete
+    - find "$CI_PROJECT_DIR" -name '*.db-journal' -not -path '*/.git/*' -delete
+    # 覆盖率硬门禁：行 + 分支 100%（与其他仓统一，不设例外）；判定在 `engkit coverage` 内完成
+    - uv run pytest
     - >-
-      uv run pytest
-      --cov=mdm --cov=services --cov=ops
-      --cov-branch --cov-report=term --cov-fail-under=100
-  coverage: '/^TOTAL.*?\s+\d+\s+\d+\s+(\d+(?:\.\d+)?%)$/'
+      uv run engkit coverage
+      --root "$CI_PROJECT_DIR"
+      --data-file "$MDM_COVERAGE_DATA"
+      --out "$CI_PROJECT_DIR/coverage.json"
+      --module mdm --module services --module ops
+      --fail-under 100
+  coverage: '/percent=(\d+(?:\.\d+)?)/'
+  artifacts:
+    when: always
+    paths: [coverage.json]
+    expire_in: 30 days
 
 backend-modules:
   stage: test
@@ -235,4 +257,35 @@ frontend-build:
     - pnpm run org:budget
     # 产物面隔离扫描（平台护栏同判据）
     - pnpm run org:guard
+  artifacts:
+    # 部署侧用（01_07）：服务器不装 node / pnpm，按 SHA 取本产物后经 `node:24` 容器跑
+    # bms `release-module.mjs publish`（四关校验 + 清单登记）。只归档模块产物目录，不含源码与依赖。
+    when: success
+    paths: [frontend/modules/org/dist/]
+    expire_in: 30 days
+
+# ---- 运行镜像：按 SHA 构建并推 GitLab Registry（01_07 首次部署）----
+# 口径：
+# - 构建上下文是**仓库父目录**（`mdm/` 与 `bms/` 平级）：`bms-core` 为路径依赖，镜像需同时含
+#   `mdm/` 与 `bms/backend/libs/bms_core`，Docker 只能从单一上下文取其内容；
+# - 排除规则随仓库走（`mdm/deploy/Dockerfile.dockerignore`，Dockerfile 专用 ignore）；
+# - 凭据用 CI 预定义 `CI_REGISTRY_USER` / `CI_REGISTRY_PASSWORD`（本项目无需项目级变量）；
+# - `--provenance=false`：BuildKit 默认 attestation 清单推送会被 GitLab Registry 拒绝（blob unknown，bms 实测）；
+# - 镜像名与部署侧口径一致：`${MDM_REGISTRY_IMAGE_PREFIX}/mdm:<sha>`，缺省前缀取 `$CI_REGISTRY_IMAGE`。
+image-build:
+  stage: build
+  image: docker:27-cli
+  script:
+    # docker:27-cli 是 alpine 基底，无 git；bms_setup.sh 需要它（apt 不可用，走 apk）
+    - >-
+      sed -i 's|dl-cdn.alpinelinux.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apk/repositories
+      && apk add --no-cache git
+    - . scripts/tools/ci/bms_setup.sh
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+    - IMAGE="${MDM_REGISTRY_IMAGE_PREFIX:-$CI_REGISTRY_IMAGE}/mdm:$CI_COMMIT_SHORT_SHA"
+    - echo "[image] 构建 $IMAGE（上下文 = 仓库父目录）"
+    - cd ..
+    - docker build --provenance=false -f mdm/deploy/Dockerfile -t "$IMAGE" .
+    - docker push "$IMAGE"
+    - echo "[image] 已推送 $IMAGE"
 

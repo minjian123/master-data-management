@@ -12,6 +12,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import sqlalchemy as sa
+from bms_core.models.base import SnowflakeId
 
 from alembic import op
 
@@ -28,11 +29,11 @@ def _common_columns() -> tuple[sa.Column[Any], ...]:
         tuple[sa.Column[Any], ...]: 公共列元组（每次调用返回新实例，供多表复用）。
     """
     return (
-        sa.Column("id", sa.BigInteger(), primary_key=True, comment="主键（雪花 ID）"),
+        sa.Column("id", SnowflakeId, primary_key=True, comment="主键（雪花 ID）"),
         sa.Column("created_at", sa.DateTime(), nullable=False, comment="创建时间（UTC）"),
-        sa.Column("created_by", sa.BigInteger(), nullable=True, comment="创建人"),
+        sa.Column("created_by", SnowflakeId, nullable=True, comment="创建人"),
         sa.Column("updated_at", sa.DateTime(), nullable=False, comment="更新时间（UTC）"),
-        sa.Column("updated_by", sa.BigInteger(), nullable=True, comment="更新人"),
+        sa.Column("updated_by", SnowflakeId, nullable=True, comment="更新人"),
         sa.Column("deleted_at", sa.DateTime(), nullable=True, comment="软删除时间（NULL=未删）"),
         sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1"), comment="乐观锁版本"),
     )
@@ -45,7 +46,7 @@ def upgrade() -> None:
         *_common_columns(),
         sa.Column(
             "parent_id",
-            sa.BigInteger(),
+            SnowflakeId,
             nullable=True,
             comment="父部门 id（逻辑外键 → 本表 id，同库）；根部门为空",
         ),
@@ -77,7 +78,7 @@ def upgrade() -> None:
         *_common_columns(),
         sa.Column("code", sa.String(length=64), nullable=False, comment="岗位码（租户内唯一）"),
         sa.Column("name", sa.String(length=128), nullable=False, comment="岗位名称"),
-        sa.Column("dept_id", sa.BigInteger(), nullable=False, comment="归属部门 id（逻辑外键 → mdm_dept.id）"),
+        sa.Column("dept_id", SnowflakeId, nullable=False, comment="归属部门 id（逻辑外键 → mdm_dept.id）"),
         sa.Column("sort", sa.Integer(), nullable=False, server_default=sa.text("0"), comment="排序"),
         sa.Column(
             "status",
@@ -96,8 +97,8 @@ def upgrade() -> None:
     op.create_table(
         "mdm_user_post",
         *_common_columns(),
-        sa.Column("user_id", sa.BigInteger(), nullable=False, comment="用户 id（逻辑外键 → bms sys_user.id，跨服务）"),
-        sa.Column("post_id", sa.BigInteger(), nullable=False, comment="岗位 id（逻辑外键 → mdm_post.id，同库）"),
+        sa.Column("user_id", SnowflakeId, nullable=False, comment="用户 id（逻辑外键 → bms sys_user.id，跨服务）"),
+        sa.Column("post_id", SnowflakeId, nullable=False, comment="岗位 id（逻辑外键 → mdm_post.id，同库）"),
         sa.UniqueConstraint("user_id", "post_id", "deleted_at", name="uq_mdm_user_post_user_post_deleted_at"),
     )
     op.create_index("idx_mdm_user_post_deleted_at", "mdm_user_post", ["deleted_at"])
@@ -106,8 +107,8 @@ def upgrade() -> None:
     op.create_table(
         "mdm_role_post",
         *_common_columns(),
-        sa.Column("role_id", sa.BigInteger(), nullable=False, comment="角色 id（逻辑外键 → bms sys_role.id，跨服务）"),
-        sa.Column("post_id", sa.BigInteger(), nullable=False, comment="岗位 id（逻辑外键 → mdm_post.id，同库）"),
+        sa.Column("role_id", SnowflakeId, nullable=False, comment="角色 id（逻辑外键 → bms sys_role.id，跨服务）"),
+        sa.Column("post_id", SnowflakeId, nullable=False, comment="岗位 id（逻辑外键 → mdm_post.id，同库）"),
         sa.UniqueConstraint("role_id", "post_id", "deleted_at", name="uq_mdm_role_post_role_post_deleted_at"),
     )
     op.create_index("idx_mdm_role_post_deleted_at", "mdm_role_post", ["deleted_at"])
@@ -116,8 +117,8 @@ def upgrade() -> None:
     op.create_table(
         "mdm_role_dept",
         *_common_columns(),
-        sa.Column("role_id", sa.BigInteger(), nullable=False, comment="角色 id（逻辑外键 → bms sys_role.id，跨服务）"),
-        sa.Column("dept_id", sa.BigInteger(), nullable=False, comment="部门 id（逻辑外键 → mdm_dept.id，同库）"),
+        sa.Column("role_id", SnowflakeId, nullable=False, comment="角色 id（逻辑外键 → bms sys_role.id，跨服务）"),
+        sa.Column("dept_id", SnowflakeId, nullable=False, comment="部门 id（逻辑外键 → mdm_dept.id，同库）"),
         sa.UniqueConstraint("role_id", "dept_id", "deleted_at", name="uq_mdm_role_dept_role_dept_deleted_at"),
     )
     op.create_index("idx_mdm_role_dept_deleted_at", "mdm_role_dept", ["deleted_at"])

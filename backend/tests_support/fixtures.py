@@ -39,6 +39,7 @@ __all__ = [
     "isolated_tenant_db_url",
     "ns",
     "platform_db_prepare",
+    "prepare_shared_db_session",
     "reset_request_context",
     "service_app",
     "shared_platform_db_url",
@@ -212,3 +213,33 @@ async def client(service_app: FastAPI) -> AsyncIterator[AsyncClient]:
     """
     async with AsyncClient(transport=ASGITransport(app=service_app), base_url="http://test") as c:
         yield c
+
+
+_prepared = False
+"""会话级准备工作是否已做（根 conftest 与服务工程 conftest 都会调用，进程内只做一次）。"""
+
+
+def prepare_shared_db_session() -> None:
+    """会话起始准备：钉定工程根 → 串行化 DDL → 清空共享测试库（与基座测试插件同口径）。
+
+    为什么需要在 mdm 侧显式调用：mdm 的 `addopts` 只加载覆盖率入口插件，不加载
+    `bms_core.testing.plugin`——直接加载它会在导入期把 `bms_core.core.config` 拉到
+    `mdm` 导入（`BMS_BACKEND_ROOT` 尚未声明）之前，配置目录被固定成 bms 仓，mdm 配置
+    用例全红。故这里只复用基座的三个会话级原语，不整包加载插件。
+
+    **必须清库**：共享测试库（`.cache/test/{platform,tenant}.db`）按会话复用，若不清空，
+    上一会话写入的部门 / 岗位编码会让下一会话的创建用例撞唯一约束（CI runner 工作区
+    复用，且本地重复跑同样复现）。
+    """
+    global _prepared
+    if _prepared:
+        return
+    _prepared = True
+    from bms_core.testing import ddl
+    from bms_core.testing import fixtures as base_fixtures
+
+    base_fixtures.configure_project_root(os.getcwd())
+    ddl.serialize_ddl()
+    failed = base_fixtures.clear_shared_db_files()
+    if failed:
+        print(f"[mdm tests] 共享测试库清理失败（句柄占用），本次沿用旧库：{failed}")

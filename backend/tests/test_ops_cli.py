@@ -9,7 +9,7 @@ import pytest
 from bms_core.core.config import get_settings
 from bms_core.core.exceptions import ConfigError
 
-from ops import check_modules, contract_snapshot, db_admin, migrate
+from ops import check_modules, contract_snapshot, db_admin, migrate, provision
 from services.module_registry import MDM_SERVICE_RECORDS, SERVICE_KEY
 
 pytestmark = pytest.mark.own_db(
@@ -378,4 +378,100 @@ def test_contract_snapshot_module_entry_point(monkeypatch: pytest.MonkeyPatch, t
     monkeypatch.setattr(sys, "argv", ["ops.contract_snapshot", "check", "--root", str(tmp_path)])
     with pytest.raises(SystemExit) as excinfo:
         runpy.run_module("ops.contract_snapshot", run_name="__main__")
+    assert excinfo.value.code == 0
+
+
+def _point_databases_to(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """把三类库的连接串模板指向临时目录（建库真跑但不落仓库）。
+
+    Args:
+        monkeypatch: pytest monkeypatch 夹具。
+        tmp_path: 临时目录。
+    """
+    monkeypatch.setenv("BMS_DATABASE__PLATFORM__URL_TEMPLATE", f"sqlite+aiosqlite:///{tmp_path}/mdm_{{service}}.db")
+    monkeypatch.setenv(
+        "BMS_DATABASE__TENANTS__URL_TEMPLATE", f"sqlite+aiosqlite:///{tmp_path}/mdm_{{service}}_{{tenant}}.db"
+    )
+    monkeypatch.setenv("BMS_DATABASE__ARCHIVE__URL", f"sqlite+aiosqlite:///{tmp_path}/mdm_archive.db")
+    get_settings.cache_clear()
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_provision_dry_run_lists_databases(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """建库编排 dry-run：列出平台服务库 / 租户库 / 归档库（库键与脱敏连接串），不建连。"""
+    _point_databases_to(monkeypatch, tmp_path)
+    assert provision.main(["--dry-run", "--code", "demo"]) == 0
+    out = capsys.readouterr().out
+    assert "platform_mdm" in out
+    assert "tenant_mdm_demo" in out
+    assert "archive" in out
+    assert "dry-run=True" in out
+    assert not (tmp_path / "mdm_mdm.db").exists()
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_provision_creates_then_skips(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """建库编排实跑：首次新建、二次「已存在（跳过）」，均退出码 0。"""
+    _point_databases_to(monkeypatch, tmp_path)
+    assert provision.main(["--code", "demo"]) == 0
+    assert "新建" in capsys.readouterr().out
+    assert (tmp_path / "mdm_mdm.db").is_file()
+    assert (tmp_path / "mdm_mdm_demo.db").is_file()
+    assert provision.main(["--code", "demo"]) == 0
+    assert "已存在（跳过）" in capsys.readouterr().out
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_provision_reports_config_error(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """建库编排：缺省服务解析为空（产品清单无在运服务）→ 打印原因并退出码 1。"""
+    monkeypatch.setattr(provision, "local_service_keys", lambda: [])
+    assert provision.main(["--dry-run"]) == 1
+    assert "产品清单无在运服务" in capsys.readouterr().out
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_provision_service_resolution_and_targets(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """服务 / 目标解析：显式保序去重；裁剪开关只出对应目标；失败库计入汇总并置退出码 1。"""
+    _point_databases_to(monkeypatch, tmp_path)
+    assert list(provision.resolve_services(["mdm", "mdm"])) == ["mdm"]
+    settings = get_settings()
+    only_platform = provision.build_targets(
+        provision.ConcurrentStableList(["mdm"]),
+        provision.ConcurrentStableList(),
+        settings=settings,
+        include_tenants=False,
+        include_archive=False,
+    )
+    assert [target.key for target in only_platform] == ["platform_mdm"]
+    assert provision.ProvisionSummary(created=(), existing=(), failed=()).exit_code == 0
+    assert provision.ProvisionSummary(created=(), existing=(), failed=("archive",)).exit_code == 1
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+async def test_provision_run_records_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    """建库执行：单库抛错记为失败（不中断其余库）。"""
+
+    async def _boom(_target: object) -> bool:
+        raise RuntimeError("连不上库")
+
+    monkeypatch.setattr(provision, "create_database", _boom)
+    targets = provision.ConcurrentStableList(
+        [provision.ProvisionTarget(key="platform_mdm", url="sqlite+aiosqlite:///./mdm.db")]
+    )
+    summary = await provision.run(targets)
+    assert summary.failed == ("platform_mdm",)
+
+
+@pytest.mark.kiwi_id(KIWI_CASE_ID)
+def test_provision_module_entry_point(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """`python -m ops.provision` 入口按 CLI 参数执行并以退出码结束。"""
+    _point_databases_to(monkeypatch, tmp_path)
+    monkeypatch.delitem(sys.modules, "ops.provision", raising=False)
+    monkeypatch.setattr(sys, "argv", ["ops.provision", "--dry-run"])
+    with pytest.raises(SystemExit) as excinfo:
+        runpy.run_module("ops.provision", run_name="__main__")
     assert excinfo.value.code == 0

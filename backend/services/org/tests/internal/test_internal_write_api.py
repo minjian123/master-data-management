@@ -18,6 +18,7 @@ from bms_core.core.concurrent import ConcurrentStableFrozenList
 from bms_core.db.migration import import_models
 from bms_core.models.base import Base
 from bms_core.oauth.verify import BaseTokenVerifier, VerifiedToken, get_token_verifier
+from bms_core.testing.namespace import Namespace
 from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -49,7 +50,13 @@ class _PlatformVerifier(BaseTokenVerifier):
             VerifiedToken: 服务身份声明。
         """
         del token
-        return VerifiedToken(subject="gateway", service="platform", audience=ConcurrentStableFrozenList((audience,)))
+        return VerifiedToken(
+            subject="gateway",
+            service="platform",
+            audience=ConcurrentStableFrozenList((audience,)),
+            # 07C 04_03 起入站先判域归属：调用方服务 JWT 须声明能力所属业务域（组织域 = org）
+            domains=ConcurrentStableFrozenList(("org",)),
+        )
 
 
 class _ReplayStore:
@@ -108,25 +115,29 @@ def overrides(service_app: FastAPI, grant_source: StaticGrantSource) -> None:
     service_app.dependency_overrides[get_token_verifier] = lambda: _PlatformVerifier()
 
 
-async def _seed(client: AsyncClient) -> dict[str, int]:
-    """经管理面造「部门 + 岗位」两个目标。
+async def _seed(client: AsyncClient, ns: Namespace) -> dict[str, int]:
+    """经管理面造「部门 + 岗位」两个目标（编码带用例命名空间前缀，可跨会话重复执行）。
 
     Args:
         client: 测试客户端。
+        ns: 用例命名空间（单库叠加下生成唯一编码）。
 
     Returns:
         dict[str, int]: `dept` / `post` 两个 id。
     """
-    dept = await client.post(f"{ADMIN}/depts", json={"code": "hq", "name": "总部"})
+    dept = await client.post(f"{ADMIN}/depts", json={"code": ns.code("dept"), "name": ns.code("dept")})
     dept_id = int(dept.json()["data"]["id"])
-    post = await client.post(f"{ADMIN}/posts", json={"code": "dev", "name": "开发岗", "dept_id": dept_id})
+    # 岗位码格式（`^[A-Za-z][A-Za-z0-9_]{0,31}$`）不接受连字符，故用下划线拼接命名空间前缀
+    post = await client.post(
+        f"{ADMIN}/posts", json={"code": f"{ns.prefix}_post", "name": ns.code("post"), "dept_id": dept_id}
+    )
     return {"dept": dept_id, "post": int(post.json()["data"]["id"])}
 
 
 @pytest.mark.kiwi_id(2274)
-async def test_internal_write_endpoints_assign_and_echo(client: AsyncClient, overrides: None) -> None:
+async def test_internal_write_endpoints_assign_and_echo(client: AsyncClient, overrides: None, ns: Namespace) -> None:
     """四组内部写端点：全量覆盖 + 主要项落位，响应回生效后集合（与公开面同源）。"""
-    key = await _seed(client)
+    key = await _seed(client, ns)
     headers = {"Authorization": "Bearer service-token", "X-Tenant-ID": "demo"}
 
     user_posts = await client.put(
@@ -154,10 +165,10 @@ async def test_internal_write_endpoints_assign_and_echo(client: AsyncClient, ove
 
 @pytest.mark.kiwi_id(2274)
 async def test_internal_write_idempotency_replay_and_save(
-    service_app: FastAPI, client: AsyncClient, overrides: None
+    service_app: FastAPI, client: AsyncClient, overrides: None, ns: Namespace
 ) -> None:
     """幂等键：同键重放直接返回上次结果；键被占用但无结果时继续执行并保存结果。"""
-    key = await _seed(client)
+    key = await _seed(client, ns)
     headers = {"Authorization": "Bearer service-token", "X-Tenant-ID": "demo", "Idempotency-Key": "k-1"}
 
     service_app.dependency_overrides[get_idempotency_store] = lambda: _ReplayStore(
@@ -188,10 +199,10 @@ async def test_internal_write_idempotency_replay_and_save(
 
 @pytest.mark.kiwi_id(2274)
 async def test_internal_write_without_primary_and_first_submit(
-    service_app: FastAPI, client: AsyncClient, overrides: None
+    service_app: FastAPI, client: AsyncClient, overrides: None, ns: Namespace
 ) -> None:
     """不带主要项的分派：跳过第二次服务调用；首次提交（带键）保存结果供同键重放。"""
-    key = await _seed(client)
+    key = await _seed(client, ns)
     headers = {"Authorization": "Bearer service-token", "X-Tenant-ID": "demo", "Idempotency-Key": "k-2"}
 
     user_posts_store = _ReplayStore(None)
@@ -209,10 +220,10 @@ async def test_internal_write_without_primary_and_first_submit(
 
 @pytest.mark.kiwi_id(2274)
 async def test_internal_role_assignment_replays_idempotent_payload(
-    service_app: FastAPI, client: AsyncClient, overrides: None
+    service_app: FastAPI, client: AsyncClient, overrides: None, ns: Namespace
 ) -> None:
     """角色侧两个端点的同键重放：直接返回上次结果（不重复落库）。"""
-    key = await _seed(client)
+    key = await _seed(client, ns)
     headers = {"Authorization": "Bearer service-token", "X-Tenant-ID": "demo", "Idempotency-Key": "k-3"}
 
     service_app.dependency_overrides[get_idempotency_store] = lambda: _ReplayStore({"post_ids": [key["post"]]})

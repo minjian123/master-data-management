@@ -10,7 +10,8 @@
 #   镜像需自包含 ① bms 基座源码（`bms/backend/libs/bms_core` → `/opt/bms/...`，使 pyproject 里
 #   `../../bms/backend/libs/bms_core` 在容器内同样成立）、② `mdm/deploy/{registry,boundaries,contracts}`
 #   （产品自持声明 / 域布局 / 公开契约，供启动期装载校验与「码 → 状态 / 文案键」渲染）；
-#   上下文排除规则见**工作区根** `.dockerignore`；
+#   上下文排除规则见**本文件同级** `Dockerfile.dockerignore`（Dockerfile 专用 ignore，随仓库走；
+#   BuildKit 优先级高于上下文根的 `.dockerignore`）；
 # - 依赖以 uv.lock 锁定（--frozen）；`engkit` 仍为跨仓 git 源依赖（锁提交 SHA），需构建期可读该仓；
 # - 工作目录 /opt/mdm/backend：`services` 产品清单模块、`alembic.ini` 与 `config*.toml` 均相对该根定位；
 #   声明目录相对该根的父级（`/opt/mdm/deploy/...`）；
