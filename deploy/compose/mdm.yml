@@ -34,7 +34,9 @@ x-service-env: &service-env
   # 服务间同步调用（http + Compose DNS 基址模板；出站附自签服务 JWT）
   BMS_SERVICE_CLIENT__PROVIDER: http
   BMS_SERVICE_CLIENT__OPTIONS: '{"base_url_template":"http://{service}:8000","attach_service_token":true}'
-  # 边缘信任（dev 关旁路强制；prod 开 true）
+  # 边缘信任（dev 关旁路强制；prod 开 true）；实现必须是 service_jwt：
+  # 网关转发的是服务 JWT + 用户身份头，null 占位会让 mdm 把用户请求当成未授权服务身份
+  BMS_EDGE__PROVIDER: ${BMS_EDGE__PROVIDER:-service_jwt}
   BMS_EDGE__REQUIRE_GATEWAY_IDENTITY: ${BMS_EDGE__REQUIRE_GATEWAY_IDENTITY:-false}
   # 身份密钥（只经 .env 注入；空值允许装配、使用时 fail-closed）
   BMS_SERVICE_TOKEN__KEYS: ${BMS_SERVICE_TOKEN__KEYS:-}

@@ -71,6 +71,14 @@ active_kid = ""
 
 [service_token.keys]
 
+[edge]
+# 边缘信任实现：网关（北南向）与东西向调用都以**入站服务 JWT** 证明可信来源；
+# 空串 = null 占位（不信任任何来源）。产品部署必须启用，否则网关转发的用户身份头
+# （X-User-Id / X-Tenant-Id / X-User-Scopes）不会被采信，用户请求会被当作网关服务身份拒掉。
+provider = "service_jwt"
+# 旁路强制：dev 关（便于本地直连调试），prod 开（缺网关注入身份即 401）
+require_gateway_identity = false
+
 [token_verifier]
 # 统一校验实现选择（与平台仓同口径）：按 aud 分流——service 走本地服务 JWKS，api 走本地用户 JWKS
 provider = "unified"
