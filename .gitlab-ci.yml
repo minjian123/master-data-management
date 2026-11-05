@@ -259,9 +259,12 @@ frontend-build:
     - pnpm run org:guard
   artifacts:
     # 部署侧用（01_07）：服务器不装 node / pnpm，按 SHA 取本产物后经 `node:24` 容器跑
-    # bms `release-module.mjs publish`（四关校验 + 清单登记）。只归档模块产物目录，不含源码与依赖。
+    # bms `release-module.mjs publish`（四关校验 + 清单登记）。归档「模块工程元数据 + 产物」两件：
+    # 发布脚本要读 `package.json` 判定模块名 / 版本，只给 dist 会被拒（缺工程清单）。
     when: on_success
-    paths: [frontend/modules/org/dist/]
+    paths:
+      - frontend/modules/org/dist/
+      - frontend/modules/org/package.json
     expire_in: 30 days
 
 # ---- 运行镜像：按 SHA 构建并推 GitLab Registry（01_07 首次部署）----
