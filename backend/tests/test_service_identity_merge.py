@@ -79,22 +79,24 @@ def test_form_key_and_data_source_key_close_with_table_name() -> None:
         assert record.data_source_key == record.form_key
 
 
+# 临时护栏：`org` 是改名前的旧服务 / 域标识，不得回流；
+# 待 `org` 成为正式业务域 / 产品标识时删除本组反向断言。
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 def test_event_contracts_all_in_mdm_domain() -> None:
-    """事件契约 6 条，全部落在 `mdm.` 域（无 `mdm.` 旧域残留）。"""
+    """事件契约 6 条，全部落在 `mdm.` 域（无 `org.` 旧域残留）。"""
     event_types = [contract.event_type for contract in MDM_EVENT_CONTRACTS]
     assert len(event_types) == 6
     assert all(event_type.startswith("mdm.") for event_type in event_types)
-    assert not any(event_type.startswith("mdm.") for event_type in event_types)
+    assert not any(event_type.startswith("org.") for event_type in event_types)
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
 def test_public_contract_snapshot_named_after_service() -> None:
-    """公开契约快照文件名 = 服务标识（新名在、旧名不在）。"""
+    """公开契约快照文件名 = 服务标识（新名在、旧名不在；旧名护栏同上一用例的临时口径）。"""
     assert (_CONTRACTS_DIR / "mdm.json").is_file()
     assert (_CONTRACTS_DIR / "baseline" / "mdm.json").is_file()
-    assert not (_CONTRACTS_DIR / "mdm.json").exists()
-    assert not (_CONTRACTS_DIR / "baseline" / "mdm.json").exists()
+    assert not (_CONTRACTS_DIR / "org.json").exists()
+    assert not (_CONTRACTS_DIR / "baseline" / "org.json").exists()
 
 
 @pytest.mark.kiwi_id(KIWI_CASE_ID)
