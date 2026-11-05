@@ -34,6 +34,19 @@ def _table_names(connection: Connection) -> set[str]:
     return set(inspect(connection).get_table_names())
 
 
+def _column_names(connection: Connection, table: str) -> set[str]:
+    """取指定表的列名集合。
+
+    Args:
+        connection: 同步连接（或异步连接的 `run_sync` 回调）。
+        table: 表名。
+
+    Returns:
+        set[str]: 列名集合。
+    """
+    return {str(column["name"]) for column in inspect(connection).get_columns(table)}
+
+
 def _metadata_diff(connection: Connection) -> list[str]:
     """迁移后库结构 vs 清单元数据的逐项差异（零漂移断言用）。
 
@@ -101,11 +114,11 @@ def _sync_table_names(url: str) -> set[str]:
 
 @pytest.mark.kiwi_id(2255)
 def test_mdm_tenant_series_registered() -> None:
-    """清单注册：`mdm:tenant` 有脚本、清单头为 `0005_mdm_form_key`、域表集为六表（基础设施另计）。"""
+    """清单注册：`mdm:tenant` 有脚本、清单头为 `0006_outbox_trace_id`、域表集为六表（基础设施另计）。"""
     register()
     series = resolve_series(_SERIES)
     assert has_revisions(series)
-    assert head_revision(series) == "0005_mdm_form_key"
+    assert head_revision(series) == "0006_outbox_trace_id"
     tables = series_tables(MDM_DOMAIN, "tenant")
     assert all(name in tables for name in _MDM_TABLES)
     unit = unit_tables((MDM_DOMAIN,), "tenant")
@@ -124,10 +137,12 @@ async def test_mdm_tenant_migration_upgrades_with_zero_drift(tmp_path: Path) -> 
         async with engine.connect() as connection:
             names = await connection.run_sync(_table_names)
             diffs = await connection.run_sync(_metadata_diff)
+            outbox_columns = await connection.run_sync(_column_names, "sys_outbox")
     finally:
         await engine.dispose()
 
     assert all(name in names for name in (*_MDM_TABLES, *_INFRA_TABLES))
+    assert "trace_id" in outbox_columns  # 0006：发件箱链路 id（真库演练检出后补）
     assert diffs == []
 
 

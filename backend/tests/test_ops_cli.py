@@ -20,6 +20,9 @@ pytestmark = pytest.mark.own_db(
 KIWI_CASE_ID = 2253
 """Kiwi TCMS 策展用例编号（mdm 阶段一 01_01）。"""
 
+DEPLOY_KIWI_CASE_ID = 2431
+"""Kiwi TCMS 用例编号（mdm 01_07 首次部署：建库 / 分链迁移 CLI）。"""
+
 
 def _enable_sqlite_templates(monkeypatch: pytest.MonkeyPatch) -> None:
     """开启 SQLite 连接串模板（贴近 dev 口径：按服务 / 租户派生库文件）。
@@ -117,7 +120,7 @@ def test_contract_snapshot_build_app_imports_service_package() -> None:
     assert app.title == "mdm 组织主数据服务"
 
 
-@pytest.mark.kiwi_id(KIWI_CASE_ID)
+@pytest.mark.kiwi_id(DEPLOY_KIWI_CASE_ID)
 def test_migrate_dry_run_lists_mdm_databases(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -130,7 +133,7 @@ def test_migrate_dry_run_lists_mdm_databases(
     assert "mdm_archive.db" in out
 
 
-@pytest.mark.kiwi_id(KIWI_CASE_ID)
+@pytest.mark.kiwi_id(DEPLOY_KIWI_CASE_ID)
 def test_migrate_dry_run_with_tenant_codes(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     """分链迁移 dry-run（租户维度）：`--code` 派生服务租户库 `mdm_demo`。"""
     _enable_sqlite_templates(monkeypatch)
@@ -140,7 +143,7 @@ def test_migrate_dry_run_with_tenant_codes(monkeypatch: pytest.MonkeyPatch, caps
     assert "mdm_demo.db" in out
 
 
-@pytest.mark.kiwi_id(KIWI_CASE_ID)
+@pytest.mark.kiwi_id(DEPLOY_KIWI_CASE_ID)
 def test_migrate_skips_chains_without_scripts(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -396,7 +399,7 @@ def _point_databases_to(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None
     get_settings.cache_clear()
 
 
-@pytest.mark.kiwi_id(KIWI_CASE_ID)
+@pytest.mark.kiwi_id(DEPLOY_KIWI_CASE_ID)
 def test_provision_dry_run_lists_databases(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -411,7 +414,7 @@ def test_provision_dry_run_lists_databases(
     assert not (tmp_path / "mdm_mdm.db").exists()
 
 
-@pytest.mark.kiwi_id(KIWI_CASE_ID)
+@pytest.mark.kiwi_id(DEPLOY_KIWI_CASE_ID)
 def test_provision_creates_then_skips(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

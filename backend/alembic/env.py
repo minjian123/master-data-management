@@ -20,7 +20,7 @@ import re
 from collections.abc import Mapping
 from functools import partial
 
-from alembic.ddl.base import ColumnType, alter_table, format_column_name, format_type
+from alembic.ddl.base import ColumnComment, ColumnType, alter_table, format_column_name, format_table_name, format_type
 from alembic.ddl.impl import DefaultImpl
 from bms_core.core.config import get_settings
 from bms_core.core.exceptions import ConfigError
@@ -32,10 +32,11 @@ from bms_core.db.migration import (
     series_metadata,
     series_url,
 )
-from sqlalchemy import Connection, Engine, create_engine, pool
+from sqlalchemy import Connection, Engine, String, create_engine, pool
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.compiler import DDLCompiler
 
 from alembic import context
 from services.table_registry import register as register_product_tables
@@ -68,6 +69,29 @@ def _dm_visit_column_type(element: ColumnType, compiler: object, **kw: object) -
     column = format_column_name(compiler, element.column_name)  # type: ignore[arg-type]
     type_sql = format_type(compiler, element.type_)  # type: ignore[arg-type]
     return f"{table} MODIFY {column} {type_sql}"
+
+
+@compiles(ColumnComment, "dm")
+def _dm_visit_column_comment(element: ColumnComment, compiler: DDLCompiler, **kw: object) -> str:
+    """达梦列注释 DDL（`COMMENT ON COLUMN …`）。
+
+    Alembic 默认不给 `dm` 方言注册 `ColumnComment` 渲染器，迁移脚本里的 `comment=` 会直接
+    `UnsupportedCompilationError`（2026-11-05 真库演练实测）。达梦与 Oracle 同源，支持
+    `COMMENT ON COLUMN <表>.<列> IS '<注释>'`，故按该形态补齐。
+
+    Args:
+        element: Alembic 列注释构造。
+        compiler: DDL 编译器。
+        kw: 编译扩展参数（未使用）。
+
+    Returns:
+        str: 达梦 `COMMENT ON COLUMN …` 语句。
+    """
+    del kw
+    table = format_table_name(compiler, element.table_name, element.schema)
+    column = format_column_name(compiler, element.column_name)
+    literal = compiler.sql_compiler.render_literal_value(element.comment or "", String())
+    return f"COMMENT ON COLUMN {table}.{column} IS {literal}"
 
 
 class DMImpl(DefaultImpl):
