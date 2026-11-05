@@ -31,7 +31,7 @@ def _base_columns() -> tuple[sa.Column[Any], ...]:
         tuple[sa.Column[Any], ...]: 公共列元组。
     """
     return (
-        sa.Column("id", SnowflakeId, primary_key=True, comment="主键（雪花 ID）"),
+        sa.Column("id", SnowflakeId, primary_key=True, autoincrement=False, comment="主键（雪花 ID）"),
         sa.Column("created_at", sa.DateTime(), nullable=False, comment="创建时间（UTC）"),
         sa.Column("created_by", SnowflakeId, nullable=True, comment="创建人"),
         sa.Column("updated_at", sa.DateTime(), nullable=False, comment="更新时间（UTC）"),
