@@ -260,7 +260,7 @@ frontend-build:
   artifacts:
     # 部署侧用（01_07）：服务器不装 node / pnpm，按 SHA 取本产物后经 `node:24` 容器跑
     # bms `release-module.mjs publish`（四关校验 + 清单登记）。只归档模块产物目录，不含源码与依赖。
-    when: success
+    when: on_success
     paths: [frontend/modules/org/dist/]
     expire_in: 30 days
 
