@@ -1,0 +1,209 @@
+{
+  "version": 1,
+  "generated_at": "2026-11-07",
+  "entries": [
+    {
+      "file": "backend/services/mdm/src/mdm/api/open_read.py",
+      "line": "DEPT_SCOPE_FIELDS: tuple[str, ...] = (\"dept_id\", \"dept_ids\")",
+      "container": "tuple",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/src/mdm/api/open_read.py",
+      "line": "MDM_READER_SERVICES: tuple[str, ...] = (\"platform\",)",
+      "container": "tuple",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/src/mdm/capabilities.py",
+      "line": "MDM_CAPABILITIES: tuple[str, ...] = (",
+      "container": "tuple",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/src/mdm/events/contracts.py",
+      "line": "MDM_EVENT_CONTRACTS: tuple[EventContract, ...] = (",
+      "container": "tuple",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/src/mdm/mdm/base.py",
+      "line": "MDM_STATUSES: tuple[str, ...] = (\"enabled\", \"disabled\")",
+      "container": "tuple",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/src/mdm/mdm/base.py",
+      "line": "MDM_TARGETS: tuple[str, ...] = (\"user\", \"post\", \"dept\")",
+      "container": "tuple",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/src/mdm/mdm/user_source.py",
+      "line": "payload: dict[str, object] = {\"ids\": tuple(ids), \"page\": 1, \"size\": len(ids)}",
+      "container": "dict",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/src/mdm/mdm/user_source.py",
+      "line": "payload: dict[str, object] = {\"page\": page, \"size\": size}",
+      "container": "dict",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/src/mdm/models/__init__.py",
+      "line": "MODEL_MODULES: tuple[str, ...] = (",
+      "container": "tuple",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/src/mdm/seeds/permissions.py",
+      "line": "PERMISSION_ACTIONS: tuple[str, ...] = (\"query\", \"create\", \"update\", \"delete\")",
+      "container": "tuple",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/src/mdm/seeds/permissions.py",
+      "line": "def expected_rows() -> list[ExpectedRow]:",
+      "container": "list",
+      "position": "signature_return",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/api/test_admin_routes.py",
+      "line": "async def load(self, key: str) -> dict[str, Any] | None:",
+      "container": "dict",
+      "position": "signature_return",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/api/test_admin_routes.py",
+      "line": "async def save(self, key: str, payload: dict[str, Any]) -> None:",
+      "container": "dict",
+      "position": "signature_param",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/api/test_admin_routes.py",
+      "line": "def __init__(self, payload: dict[str, Any] | None) -> None:",
+      "container": "dict",
+      "position": "signature_param",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/api/test_admin_routes.py",
+      "line": "def _override(payload: dict[str, Any]) -> None:",
+      "container": "dict",
+      "position": "signature_param",
+      "count": 2
+    },
+    {
+      "file": "backend/services/mdm/tests/api/test_admin_routes.py",
+      "line": "self.saved: list[tuple[str, dict[str, Any]]] = []",
+      "container": "dict",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/api/test_admin_routes.py",
+      "line": "self.saved: list[tuple[str, dict[str, Any]]] = []",
+      "container": "list",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/api/test_admin_routes.py",
+      "line": "stores: list[_ReplayStore] = []",
+      "container": "list",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/internal/test_branch_participant.py",
+      "line": "payload: dict[str, object] = {",
+      "container": "dict",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/internal/test_internal_write_api.py",
+      "line": "async def _seed(client: AsyncClient, ns: Namespace) -> dict[str, int]:",
+      "container": "dict",
+      "position": "signature_return",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/internal/test_internal_write_api.py",
+      "line": "async def load(self, key: str) -> dict[str, Any] | None:",
+      "container": "dict",
+      "position": "signature_return",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/internal/test_internal_write_api.py",
+      "line": "async def save(self, key: str, payload: dict[str, Any]) -> None:",
+      "container": "dict",
+      "position": "signature_param",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/internal/test_internal_write_api.py",
+      "line": "def __init__(self, payload: dict[str, Any] | None) -> None:",
+      "container": "dict",
+      "position": "signature_param",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/internal/test_internal_write_api.py",
+      "line": "self.saved: list[tuple[str, dict[str, Any]]] = []",
+      "container": "dict",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/internal/test_internal_write_api.py",
+      "line": "self.saved: list[tuple[str, dict[str, Any]]] = []",
+      "container": "list",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/open_read/test_mdm_open_read_api.py",
+      "line": "called: list[bool] = []",
+      "container": "list",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/open_read/test_mdm_user_roles.py",
+      "line": "async def _seed_roles(session: AsyncSession) -> dict[str, int]:",
+      "container": "dict",
+      "position": "signature_return",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/test_config_and_entry.py",
+      "line": "calls: list[object] = []",
+      "container": "list",
+      "position": "local",
+      "count": 1
+    },
+    {
+      "file": "backend/services/mdm/tests/test_seeds.py",
+      "line": "_TABLES: list[Table] = [",
+      "container": "list",
+      "position": "local",
+      "count": 1
+    }
+  ]
+}
