@@ -68,7 +68,7 @@ doc_globs = ["*.md", "*.txt", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.svg", "*.w
 # ---- 预检步骤（声明序即执行序；`--fast` 只跑 always，`--full` 追加 full + scoped；全量测试仅 CI）----
 [[preflight.steps]]
 label = "行尾：工作树 CRLF 检查（应为 LF 的文件不得残留 CRLF）"
-cmd = ["uv", "run", "engkit", "eol", "--quiet"]
+cmd = ["uv", "run", "--project", "backend", "engkit", "eol", "--quiet"]
 
 [[preflight.steps]]
 label = "门禁冒烟：Python 版本"
@@ -127,11 +127,11 @@ cwd = "backend"
 
 [[preflight.steps]]
 label = "界面：check_prototype_review（本次改动含界面源码须有原型对照）"
-cmd = ["uv", "run", "engkit", "base", "prototype-review", "--changed", "origin/main"]
+cmd = ["uv", "run", "--project", "backend", "engkit", "base", "prototype-review", "--changed", "origin/main"]
 
 [[preflight.steps]]
 label = "基座：check_env_example（环境变量模板键位）"
-cmd = ["uv", "run", "engkit", "base", "env-example"]
+cmd = ["uv", "run", "--project", "backend", "engkit", "base", "env-example"]
 
 [[preflight.steps]]
 label = "后端测试：定向（选测 + 覆盖率门禁 + 扩圈）"
