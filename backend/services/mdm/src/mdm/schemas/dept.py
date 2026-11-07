@@ -3,15 +3,20 @@
 from typing import Annotated
 
 from bms_core.core.concurrent import ConcurrentStableList
-from bms_core.schemas.base import CONTRACT_COLLECTION, CONTRACT_STABLE_LIST, BaseSchema
+from bms_core.schemas.base import (
+    CONTRACT_COLLECTION,
+    CONTRACT_STABLE_LIST,
+    BaseSchema,
+    SnowflakeIdStr,
+)
 from pydantic import Field
 
 
 class DeptTreeNode(BaseSchema):
     """部门树节点（递归；`children` 为子节点）。"""
 
-    id: int
-    parent_id: int | None = None
+    id: SnowflakeIdStr
+    parent_id: SnowflakeIdStr | None = None
     code: str
     name: str
     ancestors: str
@@ -36,8 +41,8 @@ class DeptTree(BaseSchema):
 class DeptItem(BaseSchema):
     """部门明细（扁平）。"""
 
-    id: int
-    parent_id: int | None = None
+    id: SnowflakeIdStr
+    parent_id: SnowflakeIdStr | None = None
     code: str
     name: str
     ancestors: str
@@ -52,7 +57,7 @@ class DeptCreateRequest(BaseSchema):
         min_length=1, max_length=64, description="部门编码（租户内唯一；格式受 mdm.dept_code_pattern 约束）"
     )
     name: str = Field(min_length=1, max_length=128, description="部门名称（同父唯一）")
-    parent_id: int | None = Field(default=None, description="父部门 id（空 = 根部门）")
+    parent_id: SnowflakeIdStr | None = Field(default=None, description="父部门 id（空 = 根部门）")
     sort: int = Field(default=0, description="同级排序")
 
 
@@ -69,7 +74,7 @@ class DeptUpdateRequest(BaseSchema):
 class DeptMoveRequest(BaseSchema):
     """移动部门请求。"""
 
-    parent_id: int | None = Field(default=None, description="新父部门 id（空 = 移至根层级）")
+    parent_id: SnowflakeIdStr | None = Field(default=None, description="新父部门 id（空 = 移至根层级）")
     version: int | None = Field(default=None, description="客户端版本（乐观锁比对）")
 
 

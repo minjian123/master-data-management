@@ -3,17 +3,22 @@
 from typing import Annotated
 
 from bms_core.core.concurrent import ConcurrentStableList
-from bms_core.schemas.base import CONTRACT_COLLECTION, CONTRACT_STABLE_LIST, BaseSchema
+from bms_core.schemas.base import (
+    CONTRACT_COLLECTION,
+    CONTRACT_STABLE_LIST,
+    BaseSchema,
+    SnowflakeIdStr,
+)
 from pydantic import Field
 
 
 class PostItem(BaseSchema):
     """岗位明细。"""
 
-    id: int
+    id: SnowflakeIdStr
     code: str
     name: str
-    dept_id: int
+    dept_id: SnowflakeIdStr
     sort: int
     status: str
 
@@ -25,7 +30,7 @@ class PostCreateRequest(BaseSchema):
         min_length=1, max_length=64, description="岗位码（租户内唯一；格式受 mdm.post_code_pattern 约束）"
     )
     name: str = Field(min_length=1, max_length=128, description="岗位名称")
-    dept_id: int = Field(description="归属部门 id（须存在且启用）")
+    dept_id: SnowflakeIdStr = Field(description="归属部门 id（须存在且启用）")
     sort: int = Field(default=0, description="排序")
 
 
@@ -34,7 +39,7 @@ class PostUpdateRequest(BaseSchema):
 
     code: str | None = Field(default=None, min_length=1, max_length=64, description="岗位码（可改）")
     name: str | None = Field(default=None, min_length=1, max_length=128, description="岗位名称")
-    dept_id: int | None = Field(default=None, description="归属部门 id")
+    dept_id: SnowflakeIdStr | None = Field(default=None, description="归属部门 id")
     sort: int | None = Field(default=None, description="排序")
     status: str | None = Field(default=None, description="状态（enabled / disabled）")
     version: int | None = Field(default=None, description="客户端版本（乐观锁比对）")
