@@ -6,7 +6,7 @@
 # 口径：
 # - 服务名（Compose DNS）取服务标识 `mdm`，与平台网关 upstream 节点同口径——对外经产品命名空间
 #   `/api/mdm/v1/mdm/...` 暴露（网关由平台侧产品登记清单 + `PRODUCT_ROUTES` 生成，mdm 无需改网关）；
-# - **平台基础设施归 bms 部署**（网关 / 认证 / Redis / RocketMQ / 关系库 / Keycloak），本编排不重复；
+# - **平台基础设施归 bms 部署**（网关 / 认证 / Redis / 自研 msg 事件总线 / 关系库 / Keycloak），本编排不重复；
 #   mdm 服务经 .env 接入平台基础设施与平台网络（见 `networks.platform`）；
 # - 仅内部网络（expose 8000，不映射宿主端口），经平台网关统一入口访问，调试走 `docker compose exec`；
 # - 镜像标签必填（`MDM_TAG`，`:?` 语法无 latest 兜底）——由发布流程按版本台账注入；
