@@ -180,13 +180,16 @@ backend-test:
     - find "$CI_PROJECT_DIR" -name '*.db' -not -path '*/.git/*' -delete
     - find "$CI_PROJECT_DIR" -name '*.db-journal' -not -path '*/.git/*' -delete
     # 覆盖率硬门禁：行 + 分支 100%（与其他仓统一，不设例外）；判定在 `engkit coverage` 内完成
+    # 门禁范围**只含产品代码**：`services` 下 3 个产品模块逐个列出（测试包 `services/mdm/tests` 不计入，
+    # 2026-11-14 与 msg 同口径拍板）；新增 `services/*.py` 时同步登记。
     - uv run pytest
     - >-
       uv run engkit coverage
       --root "$CI_PROJECT_DIR"
       --data-file "$MDM_COVERAGE_DATA"
       --out "$CI_PROJECT_DIR/coverage.json"
-      --module mdm --module services --module ops
+      --module mdm --module ops
+      --module services.form_registry --module services.module_registry --module services.table_registry
       --fail-under 100
   coverage: '/percent=(\d+(?:\.\d+)?)/'
   artifacts:

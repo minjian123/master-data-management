@@ -16,7 +16,15 @@ root = "backend"
 groups = ["services"]
 test_prefix = "test_"
 projects = ["services/mdm"]
-coverage_packages = ["mdm", "services", "ops"]
+# 覆盖率门禁范围：只含产品代码。`services` 整包会把 `services/mdm/tests` 的测试代码也计入 100%
+# （2026-11-14 与 msg 同口径剔除）——故 `services` 下 3 个产品模块逐个列出；新增 `services/*.py` 时同步登记。
+coverage_packages = [
+  "mdm",
+  "ops",
+  "services.form_registry",
+  "services.module_registry",
+  "services.table_registry",
+]
 
 [selection]
 # 开发环（`测试改动内容.sh`）的依赖深度：direct = 只认直接 import，不做传递闭包
