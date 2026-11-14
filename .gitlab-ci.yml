@@ -221,7 +221,11 @@ backend-modules:
   - corepack enable
   - node --version
   - . scripts/tools/ci/bms_setup.sh
-  - cd frontend
+  # 基座依赖必须先装：模块经 `link:` 引用 bms 包（`@bms/core` / `@bms/ui_ep`），
+  # 其源码 import 的三方依赖只在 `bms/frontend/node_modules` 里；不装则 vue-tsc 报 TS2307
+  # （此前靠共享 runner 上其他流水线留下的 node_modules 才偶尔通过，2026-11-14 #1618 暴露）。
+  - cd "$CI_PROJECT_DIR/../bms" && pnpm install --frozen-lockfile
+  - cd "$CI_PROJECT_DIR/frontend"
   - pnpm install --frozen-lockfile
 
 frontend-lint:
