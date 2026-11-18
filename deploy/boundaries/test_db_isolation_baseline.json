@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "file": "backend/services/mdm/tests/internal/test_internal_write_api.py",
+      "code": "G1",
+      "count": 1
+    },
+    {
+      "file": "backend/tests/integration/test_mdm_tenant_migration_real.py",
+      "code": "G1",
+      "count": 1
+    },
+    {
+      "file": "backend/tests/test_mdm_migration.py",
+      "code": "G1",
+      "count": 11
+    }
+  ]
+}
