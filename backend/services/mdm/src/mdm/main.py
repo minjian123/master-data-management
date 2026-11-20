@@ -7,7 +7,9 @@
 
 启动钩子（07B `03_01`）：登记**远端授权视图来源**并预热本服务承载域（`mdm`）的 `provider` 视图——
 本服务的内部写通道与 `/user-roles` 出口按能力分配判定，授权权威在平台库，只能经平台内部出口拉取；
-平台未就绪时告警降级（不拒启），被收编端点首访仍 fail-closed。
+**平台不可达即拒启**（07B「启动期失败一律拒启」口径，07C `02_02` 同步），不带病启动。
+单测没有平台对端：由 `tests_support/fixtures.py` 的测试态跳过该钩子，授权视图改由
+`tests_support/grants.py` 的静态来源提供；钩子本身（含拒启语义）由专项用例直接调用覆盖。
 
 运行工作目录为 `backend/`（`services` 产品清单模块与 `alembic.ini` 均相对该根定位）。
 """
@@ -15,7 +17,7 @@
 from bms_core.application import BaseServiceApplicationFactory, StartupHook
 from bms_core.collaboration.bootstrap import bootstrap_remote_capability_grants
 from bms_core.core.concurrent import ConcurrentStableList
-from bms_core.core.config import Settings
+from bms_core.core.config import Settings, get_settings
 from bms_core.registry.forms import FormRecord
 from bms_core.services.module_registry import ModuleRecord
 from bms_core.services.table_registry import TableRecord
@@ -98,12 +100,17 @@ class ApplicationFactory(BaseServiceApplicationFactory):
 
         与平台侧「本库直读」来源相对：本服务是 `mdm.mdm.*` 能力的**提供方**，授权记录只在平台库，
         故经平台内部出口 `/api/v1/platform/internal/capability-grants` 拉取并缓存（TTL 由基座控制）。
-        预热失败只告警降级（`app.state.grant_view_degraded`），不阻断本服务启动——管面与登录态
-        出口不依赖授权面；被收编端点在视图缺失时抛 `CatalogError`（fail-closed，不留越权口子）。
+        **预热失败即拒启**（平台没就绪属部署顺序问题，不带病启动）；被收编端点在视图缺失时同样
+        抛 `CatalogError`（fail-closed，不留越权口子）。
+
+        单测没有平台对端（07B「无对端」环境配置，不是容错降级）：测试态返回空清单，授权视图改由
+        `tests_support/grants.py` 的静态来源提供；钩子本身与拒启语义由专项用例直接调用覆盖。
 
         Returns:
             ConcurrentStableList[StartupHook]: 启动钩子（插入序）。
         """
+        if get_settings().app.env == "test":
+            return ConcurrentStableList()
         return ConcurrentStableList([bootstrap_remote_capability_grants])
 
     def configure_service(self, app: FastAPI, settings: Settings) -> None:

@@ -99,6 +99,11 @@ def isolate_settings(
     # 单测不走上报 / 拉取注册表的启动链（基座 `registry.register_on_startup` 文档口径：单测置 false）。
     # 生产 / 部署态仍为 true：启动期上报本仓清单并投影平台权威快照，失败拒启。
     monkeypatch.setenv("BMS_REGISTRY__REGISTER_ON_STARTUP", "false")
+    # 单进程测试没有平台对端（基座口径，13_04 / 13_07）：启动期目录校验、接库初始化、运行期 DDL
+    # 一律关闭——目录校验与建表本身由专项用例显式开启覆盖；库结构只由准备集建一次。
+    monkeypatch.setenv("BMS_APP__VALIDATE_CATALOG_ON_STARTUP", "false")
+    monkeypatch.setenv("BMS_APP__SKIP_DB_INIT", "true")
+    monkeypatch.setenv("BMS_APP__ALLOW_RUNTIME_DDL", "false")
     for key in _PROVIDER_KEYS:
         monkeypatch.setenv(f"BMS_{key}__PROVIDER", "")
     monkeypatch.setitem(Settings.model_config, "env_file", None)
