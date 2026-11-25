@@ -13,9 +13,12 @@ mdm 以路径依赖装 engkit，故本入口只做 `uv run engkit push` 的参�
 
 用法（在仓库根）::
 
-    python3 scripts/tools/preflight/推送.py [--full]
-                                           [--remote origin] [--branch <分支>]
-                                           [--jobs auto|N|off] [--budget-seconds N]
+    backend/.venv/bin/python scripts/tools/preflight/推送.py [--full]
+                                                           [--remote origin] [--branch <分支>]
+                                                           [--jobs auto|N|off] [--budget-seconds N]
+
+必须用仓内 venv 解释器启动（Windows：`backend\\.venv\\Scripts\\python.exe`）：`推送.bat` /
+`推送.sh` 已固定走仓内 venv；engkit 本身由 `uv run --project backend` 在仓内环境执行，与启动解释器无关。
 """
 
 from __future__ import annotations
